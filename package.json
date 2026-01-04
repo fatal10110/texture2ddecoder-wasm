@@ -1,0 +1,65 @@
+{
+  "name": "texture2ddecoder-wasm",
+  "version": "1.0.0",
+  "description": "WebAssembly bindings for Texture2DDecoder - decode various texture formats (BC1-7, ETC, PVRTC, ASTC, etc.) with Unity asset decoder",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist/**/*",
+    "wasm/**/*"
+  ],
+  "scripts": {
+    "build:wasm": "bash scripts/build-wasm.sh",
+    "build:ts": "tsc",
+    "build": "npm run build:wasm && npm run build:ts",
+    "test": "tsx --test tests/**/*.test.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "texture",
+    "decoder",
+    "bc1",
+    "bc3",
+    "bc4",
+    "bc5",
+    "bc6",
+    "bc7",
+    "dxt1",
+    "dxt5",
+    "etc1",
+    "etc2",
+    "pvrtc",
+    "astc",
+    "atc",
+    "eac",
+    "crunch",
+    "unity",
+    "unity-asset",
+    "sprite",
+    "wasm",
+    "webassembly",
+    "texture-compression"
+  ],
+  "author": "K0lb3",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fatal10110/texture2ddecoder-wasm.git"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
+    "@types/node": "^20.10.0",
+    "adm-zip": "^0.5.16",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}

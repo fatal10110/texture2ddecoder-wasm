@@ -1,0 +1,32 @@
+# Set default behavior to auto-detect text files and perform LF normalization
+* text=auto
+
+# Source code
+*.cpp text
+*.h text
+*.hpp text
+*.c text
+*.ts text
+*.js text
+*.json text
+
+# Scripts
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Documentation
+*.md text
+*.txt text
+
+# Configuration
+*.yml text
+*.yaml text
+Makefile text
+
+# Binaries
+*.wasm binary
+*.node binary
+*.so binary
+*.dylib binary
+*.dll binary
+

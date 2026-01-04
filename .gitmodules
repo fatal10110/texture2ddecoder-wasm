@@ -1,0 +1,3 @@
+[submodule "texture2ddecoder"]
+	path = texture2ddecoder
+	url = git@github.com:K0lb3/texture2ddecoder.git
