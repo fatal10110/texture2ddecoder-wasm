@@ -10,6 +10,7 @@ build/
 # Build outputs
 wasm/*.js
 wasm/*.wasm
+*.tsbuildinfo
 
 # Test outputs
 *.log

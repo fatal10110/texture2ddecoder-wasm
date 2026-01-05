@@ -285,7 +285,19 @@ The texture compression codecs were derived from the following sources:
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) to learn about our development process, how to propose bugfixes and improvements, and how to build and test your changes.
+
+### Quick Start for Contributors
+
+1. Fork the repository
+2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/texture2ddecoder-wasm.git`
+3. Initialize submodules: `git submodule update --init --recursive`
+4. Install dependencies: `npm install`
+5. Build the project: `npm run build`
+6. Run tests: `npm test`
+7. Create a branch, make your changes, and submit a Pull Request
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 ## Platform Support
 
