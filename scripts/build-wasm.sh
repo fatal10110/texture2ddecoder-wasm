@@ -58,9 +58,10 @@ docker run --rm \
             -s ALLOW_MEMORY_GROWTH=1 \
             -s MODULARIZE=1 \
             -s EXPORT_NAME="createModule" \
-            -s ENVIRONMENT=node \
+            -s ENVIRONMENT=web,worker,node \
             -s FILESYSTEM=0 \
             -s DISABLE_EXCEPTION_CATCHING=0 \
+            -s ALLOW_TABLE_GROWTH=1 \
             -s EXPORTED_RUNTIME_METHODS=["ccall","cwrap"] \
             --bind \
             -std=c++17 \
