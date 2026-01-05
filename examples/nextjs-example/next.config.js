@@ -8,7 +8,7 @@ Setup Instructions (CDN approach - no file copying needed!):
 1. Install: npm install texture2ddecoder-wasm
 2. In your 'use client' component:
    import { initialize } from 'texture2ddecoder-wasm';
-   await initialize({ wasmPath: 'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm' });
+   await initialize({ wasmPath: 'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm' });
 
 Alternative (production with local files):
 1. Install: npm install texture2ddecoder-wasm
@@ -19,4 +19,3 @@ Alternative (production with local files):
 
 Note: No special webpack configuration needed.
 */
-

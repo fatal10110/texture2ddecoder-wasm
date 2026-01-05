@@ -58,6 +58,7 @@ docker run --rm \
             -s ALLOW_MEMORY_GROWTH=1 \
             -s MODULARIZE=1 \
             -s EXPORT_NAME="createModule" \
+            -s EXPORT_ES6=1 \
             -s ENVIRONMENT=web,worker,node \
             -s FILESYSTEM=0 \
             -s DISABLE_EXCEPTION_CATCHING=0 \

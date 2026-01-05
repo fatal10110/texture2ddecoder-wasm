@@ -7,15 +7,16 @@ This guide provides comprehensive setup instructions for using `texture2ddecoder
 **Starting with v1.2.0**, the library uses a simple URL-based API inspired by ffmpeg.wasm:
 
 ```typescript
-import { initialize } from 'texture2ddecoder-wasm';
+import { initialize } from "texture2ddecoder-wasm";
 
 // Copy WASM files to your public directory first
 // npx texture2ddecoder-copy-wasm public/wasm
 
-await initialize({ wasmPath: '/wasm' });
+await initialize({ wasmPath: "/wasm" });
 ```
 
 **Benefits:**
+
 - ✅ Simple, clean API - no module factory imports needed
 - ✅ Works seamlessly with modern frameworks (React, Vue, Svelte)
 - ✅ SSR-compatible (Next.js, Nuxt, SvelteKit)
@@ -51,40 +52,48 @@ The fastest way to get started - no installation or build tools required!
 ```html
 <!DOCTYPE html>
 <html>
-<head>
+  <head>
     <title>Texture Decoder</title>
-</head>
-<body>
+  </head>
+  <body>
     <script type="module">
-        // Import from jsDelivr CDN
-        import { initialize, decode_bc1 } from
-            'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/dist/index.mjs';
+      // Import from jsDelivr CDN
+      import {
+        initialize,
+        decode_bc1,
+      } from "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs";
 
-        // Point to WASM files on CDN
-        await initialize({ wasmPath: 'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm' });
+      // Point to WASM files on CDN
+      await initialize({
+        wasmPath:
+          "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
+      });
 
-        // Ready to decode!
-        console.log('Decoder initialized from CDN');
+      // Ready to decode!
+      console.log("Decoder initialized from CDN");
     </script>
-</body>
+  </body>
 </html>
 ```
 
 ### CDN URLs
 
 **Specific version (recommended for production):**
+
 ```
-https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/dist/index.mjs
-https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm/
+https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs
+https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm/
 ```
 
 **Latest version (good for development):**
+
 ```
 https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm/dist/index.mjs
 https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm/wasm/
 ```
 
 **Version range:**
+
 ```
 https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1/dist/index.mjs  // Latest 1.x.x
 https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2/dist/index.mjs  // Latest 1.2.x
@@ -95,7 +104,7 @@ https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2/dist/index.mjs  // Latest
 ✅ **Zero setup** - No npm, no build tools, just HTML  
 ✅ **Global CDN** - Fast loading from jsDelivr's worldwide network  
 ✅ **Cached** - Shared cache across websites using the same version  
-✅ **Always available** - No need to host WASM files yourself  
+✅ **Always available** - No need to host WASM files yourself
 
 ### Use Cases
 
@@ -114,17 +123,27 @@ See [examples/cdn-example.html](../examples/cdn-example.html) for a full working
 You can also use other npm-based CDNs:
 
 **unpkg:**
+
 ```javascript
-import { initialize, decode_bc1 } from
-    'https://unpkg.com/texture2ddecoder-wasm@1.2.0/dist/index.mjs';
-await initialize({ wasmPath: 'https://unpkg.com/texture2ddecoder-wasm@1.2.0/wasm' });
+import {
+  initialize,
+  decode_bc1,
+} from "https://unpkg.com/texture2ddecoder-wasm@1.2.1/dist/index.mjs";
+await initialize({
+  wasmPath: "https://unpkg.com/texture2ddecoder-wasm@1.2.1/wasm",
+});
 ```
 
 **esm.sh:**
+
 ```javascript
-import { initialize, decode_bc1 } from
-    'https://esm.sh/texture2ddecoder-wasm@1.2.0';
-await initialize({ wasmPath: 'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm' });
+import {
+  initialize,
+  decode_bc1,
+} from "https://esm.sh/texture2ddecoder-wasm@1.2.1";
+await initialize({
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
+});
 ```
 
 ---
@@ -136,6 +155,7 @@ Regardless of which bundler you use, there are a few universal principles:
 ### 1. WASM Files Must Be Served Statically
 
 WebAssembly modules cannot be bundled into JavaScript files. They must be:
+
 - Copied to your public/static directory
 - Served as separate files via HTTP(S)
 - Accessible at runtime
@@ -144,7 +164,7 @@ WebAssembly modules cannot be bundled into JavaScript files. They must be:
 
 ```typescript
 // Browser - provide the path where WASM files are served
-await initialize({ wasmPath: '/wasm' });
+await initialize({ wasmPath: "/wasm" });
 
 // Node.js - no path needed (auto-resolved)
 await initialize();
@@ -153,6 +173,7 @@ await initialize();
 ### 3. Environment Detection
 
 The library automatically detects whether it's running in:
+
 - **Browser** - Loads WASM via fetch/script tag
 - **Node.js** - Loads WASM from filesystem
 - **Web Worker** - Loads WASM with Worker-compatible methods
@@ -162,7 +183,7 @@ The library automatically detects whether it's running in:
 When bundling for browsers, always mark Node.js built-ins as external:
 
 ```javascript
-external: ['path', 'fs', 'crypto', 'module']
+external: ["path", "fs", "crypto", "module"];
 ```
 
 ---
@@ -187,10 +208,10 @@ npx texture2ddecoder-copy-wasm public/wasm
 
 ```typescript
 // src/main.ts
-import { initialize, decode_bc1 } from 'texture2ddecoder-wasm';
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 // Initialize with path to WASM files
-await initialize({ wasmPath: '/wasm' });
+await initialize({ wasmPath: "/wasm" });
 
 // Now you can decode textures
 const decoded = await decode_bc1(textureData, 512, 512);
@@ -206,37 +227,39 @@ npm install vite-plugin-static-copy --save-dev
 
 ```javascript
 // vite.config.js
-import { viteStaticCopy } from 'vite-plugin-static-copy';
+import { viteStaticCopy } from "vite-plugin-static-copy";
 
 export default defineConfig({
   plugins: [
     viteStaticCopy({
-      targets: [{
-        src: 'node_modules/texture2ddecoder-wasm/wasm/*',
-        dest: 'wasm'
-      }]
-    })
-  ]
+      targets: [
+        {
+          src: "node_modules/texture2ddecoder-wasm/wasm/*",
+          dest: "wasm",
+        },
+      ],
+    }),
+  ],
 });
 ```
 
 ```typescript
 // Then use normally
-await initialize({ wasmPath: '/wasm' });
+await initialize({ wasmPath: "/wasm" });
 ```
 
 ### Vite + React
 
 ```tsx
 // src/App.tsx
-import { useEffect, useState } from 'react';
-import { initialize } from 'texture2ddecoder-wasm';
+import { useEffect, useState } from "react";
+import { initialize } from "texture2ddecoder-wasm";
 
 function App() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    initialize({ wasmPath: '/wasm' }).then(() => setReady(true));
+    initialize({ wasmPath: "/wasm" }).then(() => setReady(true));
   }, []);
 
   return ready ? <TextureViewer /> : <Loading />;
@@ -248,13 +271,13 @@ function App() {
 ```vue
 <!-- src/App.vue -->
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { initialize } from 'texture2ddecoder-wasm';
+import { ref, onMounted } from "vue";
+import { initialize } from "texture2ddecoder-wasm";
 
 const ready = ref(false);
 
 onMounted(async () => {
-  await initialize({ wasmPath: '/wasm' });
+  await initialize({ wasmPath: "/wasm" });
   ready.value = true;
 });
 </script>
@@ -273,77 +296,80 @@ onMounted(async () => {
 
 ```javascript
 // webpack.config.js
-const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
+const path = require("path");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 module.exports = {
-  entry: './src/index.ts',
-  
+  entry: "./src/index.ts",
+
   output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: '[name].[contenthash].js',
-    clean: true
+    path: path.resolve(__dirname, "dist"),
+    filename: "[name].[contenthash].js",
+    clean: true,
   },
-  
+
   experiments: {
     asyncWebAssembly: true,
-    topLevelAwait: true // Optional, for cleaner async code
+    topLevelAwait: true, // Optional, for cleaner async code
   },
-  
+
   module: {
     rules: [
       {
         test: /\.tsx?$/,
-        use: 'ts-loader',
-        exclude: /node_modules/
+        use: "ts-loader",
+        exclude: /node_modules/,
       },
       {
         test: /\.wasm$/,
-        type: 'asset/resource',
+        type: "asset/resource",
         generator: {
-          filename: 'wasm/[name][ext]'
-        }
-      }
-    ]
+          filename: "wasm/[name][ext]",
+        },
+      },
+    ],
   },
-  
+
   resolve: {
-    extensions: ['.tsx', '.ts', '.js'],
+    extensions: [".tsx", ".ts", ".js"],
     fallback: {
       // Browser polyfills for Node.js modules (if needed)
       path: false,
       fs: false,
-      crypto: false
-    }
+      crypto: false,
+    },
   },
-  
+
   plugins: [
     new HtmlWebpackPlugin({
-      template: './src/index.html'
+      template: "./src/index.html",
     }),
     new CopyWebpackPlugin({
       patterns: [
         {
-          from: path.resolve(__dirname, 'node_modules/texture2ddecoder-wasm/wasm'),
-          to: path.resolve(__dirname, 'dist/wasm'),
-          noErrorOnMissing: false
-        }
-      ]
-    })
+          from: path.resolve(
+            __dirname,
+            "node_modules/texture2ddecoder-wasm/wasm"
+          ),
+          to: path.resolve(__dirname, "dist/wasm"),
+          noErrorOnMissing: false,
+        },
+      ],
+    }),
   ],
-  
+
   devServer: {
     static: {
-      directory: path.join(__dirname, 'dist')
+      directory: path.join(__dirname, "dist"),
     },
     compress: true,
     port: 3000,
     // Ensure proper MIME types
     headers: {
-      'Content-Type': 'application/wasm'
-    }
-  }
+      "Content-Type": "application/wasm",
+    },
+  },
 };
 ```
 
@@ -378,33 +404,33 @@ const nextConfig = {
     config.experiments = {
       ...config.experiments,
       asyncWebAssembly: true,
-      layers: true
+      layers: true,
     };
 
     // Handle WASM files
     config.module.rules.push({
       test: /\.wasm$/,
-      type: 'asset/resource',
+      type: "asset/resource",
       generator: {
-        filename: 'static/wasm/[name].[hash][ext]'
-      }
+        filename: "static/wasm/[name].[hash][ext]",
+      },
     });
 
     // For server-side, keep Node.js built-ins external
     if (isServer) {
       config.externals = config.externals || [];
       if (Array.isArray(config.externals)) {
-        config.externals.push('path', 'fs', 'crypto');
+        config.externals.push("path", "fs", "crypto");
       }
     }
 
     return config;
   },
-  
+
   // Disable static page generation errors for dynamic imports
   experimental: {
-    esmExternals: 'loose'
-  }
+    esmExternals: "loose",
+  },
 };
 
 module.exports = nextConfig;
@@ -418,10 +444,10 @@ cp node_modules/texture2ddecoder-wasm/wasm/* public/wasm/
 
 ```typescript
 // app/texture-viewer/page.tsx
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { initialize, decode_bc1 } from 'texture2ddecoder-wasm';
+import { useEffect, useState } from "react";
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 export default function TextureViewer() {
   const [isReady, setIsReady] = useState(false);
@@ -429,16 +455,16 @@ export default function TextureViewer() {
 
   useEffect(() => {
     // Only run in browser
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
-    initialize({ wasmPath: '/wasm' })
+    initialize({ wasmPath: "/wasm" })
       .then(() => setIsReady(true))
-      .catch(err => setError(err.message));
+      .catch((err) => setError(err.message));
   }, []);
 
   if (error) return <div>Error: {error}</div>;
   if (!isReady) return <div>Loading WASM...</div>;
-  
+
   return <div>Ready to decode textures!</div>;
 }
 ```
@@ -447,15 +473,14 @@ export default function TextureViewer() {
 
 ```typescript
 // pages/index.tsx
-import { useEffect, useState } from 'react';
-import type { NextPage } from 'next';
-import dynamic from 'next/dynamic';
+import { useEffect, useState } from "react";
+import type { NextPage } from "next";
+import dynamic from "next/dynamic";
 
 // Disable SSR for this component
-const TextureDecoder = dynamic(
-  () => import('../components/TextureDecoder'),
-  { ssr: false }
-);
+const TextureDecoder = dynamic(() => import("../components/TextureDecoder"), {
+  ssr: false,
+});
 
 const Home: NextPage = () => {
   return (
@@ -471,14 +496,14 @@ export default Home;
 
 ```typescript
 // components/TextureDecoder.tsx
-import { useEffect, useState } from 'react';
-import { initialize } from 'texture2ddecoder-wasm';
+import { useEffect, useState } from "react";
+import { initialize } from "texture2ddecoder-wasm";
 
 export default function TextureDecoder() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    initialize({ wasmPath: '/wasm' }).then(() => setReady(true));
+    initialize({ wasmPath: "/wasm" }).then(() => setReady(true));
   }, []);
 
   return ready ? <div>Ready!</div> : <div>Loading...</div>;
@@ -502,14 +527,14 @@ npm install react-app-rewired copy-webpack-plugin --save-dev
 
 ```javascript
 // config-overrides.js
-const path = require('path');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
+const path = require("path");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 module.exports = function override(config, env) {
   // Add WASM support
   config.experiments = {
     ...config.experiments,
-    asyncWebAssembly: true
+    asyncWebAssembly: true,
   };
 
   // Copy WASM files
@@ -517,10 +542,16 @@ module.exports = function override(config, env) {
     new CopyWebpackPlugin({
       patterns: [
         {
-          from: path.resolve(__dirname, 'node_modules/texture2ddecoder-wasm/wasm'),
-          to: path.resolve(__dirname, env === 'production' ? 'build/wasm' : 'public/wasm')
-        }
-      ]
+          from: path.resolve(
+            __dirname,
+            "node_modules/texture2ddecoder-wasm/wasm"
+          ),
+          to: path.resolve(
+            __dirname,
+            env === "production" ? "build/wasm" : "public/wasm"
+          ),
+        },
+      ],
     })
   );
 
@@ -566,55 +597,51 @@ Add a postinstall script:
 
 ```javascript
 // rollup.config.js
-import typescript from '@rollup/plugin-typescript';
-import resolve from '@rollup/plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
-import copy from 'rollup-plugin-copy';
+import typescript from "@rollup/plugin-typescript";
+import resolve from "@rollup/plugin-node-resolve";
+import commonjs from "@rollup/plugin-commonjs";
+import copy from "rollup-plugin-copy";
 
 export default {
-  input: 'src/index.ts',
-  
+  input: "src/index.ts",
+
   output: [
     {
-      file: 'dist/index.cjs',
-      format: 'cjs',
+      file: "dist/index.cjs",
+      format: "cjs",
       sourcemap: true,
-      exports: 'named'
+      exports: "named",
     },
     {
-      file: 'dist/index.mjs',
-      format: 'es',
-      sourcemap: true
-    }
+      file: "dist/index.mjs",
+      format: "es",
+      sourcemap: true,
+    },
   ],
-  
-  external: [
-    'path', 
-    'fs', 
-    'crypto'
-  ],
-  
+
+  external: ["path", "fs", "crypto"],
+
   plugins: [
     resolve({
       browser: false,
       preferBuiltins: true,
-      extensions: ['.js', '.ts']
+      extensions: [".js", ".ts"],
     }),
     commonjs(),
     typescript({
-      tsconfig: './tsconfig.json',
-      sourceMap: true
+      tsconfig: "./tsconfig.json",
+      sourceMap: true,
     }),
     copy({
       targets: [
         {
-          src: 'node_modules/texture2ddecoder-wasm/wasm/*',
-          dest: 'dist/wasm'
-        }
+          src: "node_modules/texture2ddecoder-wasm/wasm/*",
+          dest: "dist/wasm",
+        },
       ],
-      hook: 'writeBundle'
-    })
-  ]
+      hook: "writeBundle",
+    }),
+  ],
 };
 ```
 
@@ -656,47 +683,52 @@ npm install parcel-reporter-static-files-copy --save-dev
 
 ```javascript
 // build.js
-const esbuild = require('esbuild');
-const { copy } = require('esbuild-plugin-copy');
-const fs = require('fs');
-const path = require('path');
+const esbuild = require("esbuild");
+const { copy } = require("esbuild-plugin-copy");
+const fs = require("fs");
+const path = require("path");
 
-esbuild.build({
-  entryPoints: ['src/index.ts'],
-  bundle: true,
-  outfile: 'dist/bundle.js',
-  format: 'esm',
-  platform: 'browser',
-  target: 'es2020',
-  sourcemap: true,
-  
-  external: ['path', 'fs', 'crypto'],
-  
-  plugins: [
-    {
-      name: 'copy-wasm',
-      setup(build) {
-        build.onEnd(() => {
-          const wasmSrc = path.join(__dirname, 'node_modules/texture2ddecoder-wasm/wasm');
-          const wasmDest = path.join(__dirname, 'dist/wasm');
-          
-          if (!fs.existsSync(wasmDest)) {
-            fs.mkdirSync(wasmDest, { recursive: true });
-          }
-          
-          fs.readdirSync(wasmSrc).forEach(file => {
-            fs.copyFileSync(
-              path.join(wasmSrc, file),
-              path.join(wasmDest, file)
+esbuild
+  .build({
+    entryPoints: ["src/index.ts"],
+    bundle: true,
+    outfile: "dist/bundle.js",
+    format: "esm",
+    platform: "browser",
+    target: "es2020",
+    sourcemap: true,
+
+    external: ["path", "fs", "crypto"],
+
+    plugins: [
+      {
+        name: "copy-wasm",
+        setup(build) {
+          build.onEnd(() => {
+            const wasmSrc = path.join(
+              __dirname,
+              "node_modules/texture2ddecoder-wasm/wasm"
             );
+            const wasmDest = path.join(__dirname, "dist/wasm");
+
+            if (!fs.existsSync(wasmDest)) {
+              fs.mkdirSync(wasmDest, { recursive: true });
+            }
+
+            fs.readdirSync(wasmSrc).forEach((file) => {
+              fs.copyFileSync(
+                path.join(wasmSrc, file),
+                path.join(wasmDest, file)
+              );
+            });
+
+            console.log("✓ WASM files copied");
           });
-          
-          console.log('✓ WASM files copied');
-        });
-      }
-    }
-  ]
-}).catch(() => process.exit(1));
+        },
+      },
+    ],
+  })
+  .catch(() => process.exit(1));
 ```
 
 ---
@@ -710,25 +742,25 @@ cp -r node_modules/texture2ddecoder-wasm/wasm static/
 
 ```javascript
 // svelte.config.js
-import adapter from '@sveltejs/adapter-auto';
+import adapter from "@sveltejs/adapter-auto";
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
   kit: {
     adapter: adapter(),
-    
+
     vite: {
       optimizeDeps: {
-        exclude: ['texture2ddecoder-wasm']
+        exclude: ["texture2ddecoder-wasm"],
       },
-      
+
       server: {
         fs: {
-          allow: ['..']
-        }
-      }
-    }
-  }
+          allow: [".."],
+        },
+      },
+    },
+  },
 };
 
 export default config;
@@ -739,10 +771,10 @@ export default config;
 <script lang="ts">
   import { onMount } from 'svelte';
   import { initialize, decode_bc1, type Uint8Array } from 'texture2ddecoder-wasm';
-  
+
   let isReady = false;
   let error: string | null = null;
-  
+
   onMount(async () => {
     try {
       await initialize('/wasm');
@@ -813,18 +845,18 @@ cp node_modules/texture2ddecoder-wasm/wasm/* src/assets/wasm/
 
 ```typescript
 // src/app/services/texture-decoder.service.ts
-import { Injectable } from '@angular/core';
-import { initialize } from 'texture2ddecoder-wasm';
+import { Injectable } from "@angular/core";
+import { initialize } from "texture2ddecoder-wasm";
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: "root",
 })
 export class TextureDecoderService {
   private initialized = false;
 
   async ensureInitialized(): Promise<void> {
     if (!this.initialized) {
-      await initialize('/wasm');
+      await initialize("/wasm");
       this.initialized = true;
     }
   }
@@ -833,11 +865,11 @@ export class TextureDecoderService {
 
 ```typescript
 // src/app/components/texture-viewer.component.ts
-import { Component, OnInit } from '@angular/core';
-import { TextureDecoderService } from '../services/texture-decoder.service';
+import { Component, OnInit } from "@angular/core";
+import { TextureDecoderService } from "../services/texture-decoder.service";
 
 @Component({
-  selector: 'app-texture-viewer',
+  selector: "app-texture-viewer",
   template: `
     <div *ngIf="isReady; else loading">
       <p>Texture decoder ready!</p>
@@ -845,7 +877,7 @@ import { TextureDecoderService } from '../services/texture-decoder.service';
     <ng-template #loading>
       <p>Loading...</p>
     </ng-template>
-  `
+  `,
 })
 export class TextureViewerComponent implements OnInit {
   isReady = false;
@@ -881,12 +913,12 @@ cp -r node_modules/texture2ddecoder-wasm/wasm public/
     <div id="app">
       <div id="status">Loading...</div>
     </div>
-    
+
     <script>
       import { initialize, decode_bc1 } from 'texture2ddecoder-wasm';
-      
+
       const statusEl = document.getElementById('status');
-      
+
       try {
         await initialize('/wasm');
         statusEl.textContent = 'Texture decoder ready!';
@@ -912,15 +944,15 @@ cp -r node_modules/texture2ddecoder-wasm/wasm public/
 export default defineNuxtConfig({
   vite: {
     optimizeDeps: {
-      exclude: ['texture2ddecoder-wasm']
-    }
+      exclude: ["texture2ddecoder-wasm"],
+    },
   },
-  
+
   nitro: {
     externals: {
-      inline: ['texture2ddecoder-wasm']
-    }
-  }
+      inline: ["texture2ddecoder-wasm"],
+    },
+  },
 });
 ```
 
@@ -932,11 +964,11 @@ const error = ref<string | null>(null);
 
 onMounted(async () => {
   try {
-    const { initialize } = await import('texture2ddecoder-wasm');
-    await initialize('/wasm');
+    const { initialize } = await import("texture2ddecoder-wasm");
+    await initialize("/wasm");
     isReady.value = true;
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Unknown error';
+    error.value = err instanceof Error ? err.message : "Unknown error";
   }
 });
 </script>
@@ -961,27 +993,21 @@ cp -r node_modules/texture2ddecoder-wasm/wasm public/
 
 ```typescript
 // app/routes/index.tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 export default function Index() {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     // Dynamic import to avoid SSR issues
-    import('texture2ddecoder-wasm').then(async ({ initialize }) => {
-      await initialize('/wasm');
+    import("texture2ddecoder-wasm").then(async ({ initialize }) => {
+      await initialize("/wasm");
       setIsReady(true);
     });
   }, []);
 
   return (
-    <div>
-      {isReady ? (
-        <h1>Texture decoder ready!</h1>
-      ) : (
-        <h1>Loading...</h1>
-      )}
-    </div>
+    <div>{isReady ? <h1>Texture decoder ready!</h1> : <h1>Loading...</h1>}</div>
   );
 }
 ```
@@ -995,6 +1021,7 @@ export default function Index() {
 **Cause:** Package not installed or not in node_modules
 
 **Solution:**
+
 ```bash
 npm install texture2ddecoder-wasm
 # or
@@ -1006,7 +1033,9 @@ yarn add texture2ddecoder-wasm
 **Cause:** WASM files not copied to public directory or wrong path
 
 **Solution:**
+
 1. Verify WASM files exist:
+
 ```bash
 ls public/wasm/
 # Should show: texture2ddecoder.js, texture2ddecoder.wasm
@@ -1015,8 +1044,9 @@ ls public/wasm/
 2. Check browser console for the actual path being requested
 
 3. Verify path in initialize call matches served location:
+
 ```typescript
-await initialize({ wasmPath: '/wasm' }); // Must match public directory structure
+await initialize({ wasmPath: "/wasm" }); // Must match public directory structure
 ```
 
 ### Issue: "MIME type mismatch for WASM file"
@@ -1026,17 +1056,21 @@ await initialize({ wasmPath: '/wasm' }); // Must match public directory structur
 **Solution:**
 
 **Express:**
+
 ```javascript
-app.use(express.static('public', {
-  setHeaders: (res, path) => {
-    if (path.endsWith('.wasm')) {
-      res.set('Content-Type', 'application/wasm');
-    }
-  }
-}));
+app.use(
+  express.static("public", {
+    setHeaders: (res, path) => {
+      if (path.endsWith(".wasm")) {
+        res.set("Content-Type", "application/wasm");
+      }
+    },
+  })
+);
 ```
 
 **Nginx:**
+
 ```nginx
 location ~ \.wasm$ {
     types { application/wasm wasm; }
@@ -1044,6 +1078,7 @@ location ~ \.wasm$ {
 ```
 
 **Apache (.htaccess):**
+
 ```apache
 AddType application/wasm .wasm
 ```
@@ -1057,11 +1092,14 @@ AddType application/wasm .wasm
 Add `wasm-unsafe-eval` to your CSP:
 
 ```html
-<meta http-equiv="Content-Security-Policy" 
-      content="script-src 'self' 'wasm-unsafe-eval'; default-src 'self'">
+<meta
+  http-equiv="Content-Security-Policy"
+  content="script-src 'self' 'wasm-unsafe-eval'; default-src 'self'"
+/>
 ```
 
 Or in server headers:
+
 ```javascript
 Content-Security-Policy: script-src 'self' 'wasm-unsafe-eval'
 ```
@@ -1076,7 +1114,7 @@ Ensure you're using the correct Node.js import and not bundling for browser:
 
 ```typescript
 // Node.js - this should work without bundler config
-import { initialize, decode_bc1 } from 'texture2ddecoder-wasm';
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 await initialize(); // No path needed in Node.js
 ```
@@ -1093,8 +1131,8 @@ await initialize(); // No path needed in Node.js
 ```typescript
 // Lazy load only when needed
 const loadDecoder = async () => {
-  const decoder = await import('texture2ddecoder-wasm');
-  await decoder.initialize({ wasmPath: '/wasm' });
+  const decoder = await import("texture2ddecoder-wasm");
+  await decoder.initialize({ wasmPath: "/wasm" });
   return decoder;
 };
 
@@ -1153,8 +1191,8 @@ Only load WASM when actually needed:
 // Don't initialize on app start
 // Initialize when user loads texture viewer
 const handleViewTexture = async () => {
-  const decoder = await import('texture2ddecoder-wasm');
-  await decoder.initialize({ wasmPath: '/wasm' });
+  const decoder = await import("texture2ddecoder-wasm");
+  await decoder.initialize({ wasmPath: "/wasm" });
   // Now decode...
 };
 ```
@@ -1165,13 +1203,13 @@ Initialize once and reuse:
 
 ```typescript
 // src/utils/texture-decoder.ts
-import { initialize } from 'texture2ddecoder-wasm';
+import { initialize } from "texture2ddecoder-wasm";
 
 let initialized = false;
 
 export async function ensureDecoder() {
   if (!initialized) {
-    await initialize('/wasm');
+    await initialize("/wasm");
     initialized = true;
   }
 }
@@ -1182,8 +1220,8 @@ export async function ensureDecoder() {
 Preload WASM files while app is loading:
 
 ```html
-<link rel="preload" href="/wasm/texture2ddecoder.wasm" as="fetch" crossorigin>
-<link rel="preload" href="/wasm/texture2ddecoder.js" as="script">
+<link rel="preload" href="/wasm/texture2ddecoder.wasm" as="fetch" crossorigin />
+<link rel="preload" href="/wasm/texture2ddecoder.js" as="script" />
 ```
 
 ### 4. Caching
@@ -1192,10 +1230,13 @@ Configure proper cache headers for WASM files:
 
 ```javascript
 // Cache WASM files for 1 year
-app.use('/wasm', express.static('public/wasm', {
-  maxAge: '1y',
-  immutable: true
-}));
+app.use(
+  "/wasm",
+  express.static("public/wasm", {
+    maxAge: "1y",
+    immutable: true,
+  })
+);
 ```
 
 ---
@@ -1211,4 +1252,3 @@ app.use('/wasm', express.static('public/wasm', {
 ## Contributing
 
 Found an issue with these configurations or want to add a new bundler? Please [open an issue](https://github.com/fatal10110/texture2ddecoder-wasm/issues) or submit a pull request!
-

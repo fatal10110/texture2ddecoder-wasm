@@ -104,7 +104,7 @@ import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 // Initialize with CDN
 await initialize({
-  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm",
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
 });
 
 // Load and decode texture
@@ -114,6 +114,7 @@ const decoded = await decode_bc1(data, 512, 512);
 ```
 
 **Benefits:**
+
 - ✅ No manual file copying needed
 - ✅ Fastest setup time
 - ✅ Cached by CDN globally
@@ -137,6 +138,7 @@ const decoded = await decode_bc1(data, 512, 512);
 ```
 
 **Benefits:**
+
 - ✅ Faster loading (same domain)
 - ✅ Works offline
 - ✅ No external dependencies
@@ -150,7 +152,7 @@ import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 // Development: Use CDN
 await initialize({
-  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm",
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
 });
 
 // Production: Use local files (copy with: npx texture2ddecoder-copy-wasm public/wasm)
@@ -165,7 +167,7 @@ import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 // Development: Use CDN
 await initialize({
-  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm",
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
 });
 
 // Production: Use local files (copy with: npx texture2ddecoder-copy-wasm public/wasm)
@@ -179,7 +181,7 @@ import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 // Development: Use CDN
 await initialize({
-  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm",
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
 });
 
 // Production: Use local files (copy with: npx texture2ddecoder-copy-wasm public/wasm)
@@ -205,12 +207,12 @@ You can use the library directly from jsDelivr CDN without any installation:
       import {
         initialize,
         decode_bc1,
-      } from "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/dist/index.mjs";
+      } from "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs";
 
       // Initialize with CDN path for WASM files
       await initialize({
         wasmPath:
-          "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm",
+          "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
       });
 
       document.getElementById("status").textContent = "✓ Ready to decode!";
@@ -229,7 +231,7 @@ You can use the library directly from jsDelivr CDN without any installation:
 - ✅ Cached by jsDelivr globally
 - ✅ Perfect for quick prototypes
 
-**Production tip:** Pin to a specific version (e.g., `@1.2.0`) instead of `@latest` for stability.
+**Production tip:** Pin to a specific version (e.g., `@1.2.1`) instead of `@latest` for stability.
 
 **Complete working example:** See [examples/cdn-example.html](examples/cdn-example.html) for a full interactive demo.
 
@@ -246,7 +248,7 @@ await initialize({ wasmPath: "/wasm" });
 
 // Browser with CDN - provide full CDN URL
 await initialize({
-  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm",
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
 });
 
 // Browser with custom locateFile for advanced use cases
@@ -385,7 +387,7 @@ await initialize({ wasmPath: "/wasm" });
 
 // With CDN
 await initialize({
-  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm",
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
 });
 
 // With custom locateFile for advanced scenarios
