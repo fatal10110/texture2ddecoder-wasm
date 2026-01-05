@@ -1,12 +1,13 @@
 {
   "name": "texture2ddecoder-wasm",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "WebAssembly bindings for Texture2DDecoder - decode various texture formats (BC1-7, ETC, PVRTC, ASTC, etc.) with Unity asset decoder",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "require": "./dist/index.js",
+      "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     }
   },
