@@ -1,0 +1,50 @@
+{
+  "name": "your-project",
+  "version": "1.0.0",
+  "scripts": {
+    "// Option 1: Manual copy script": "",
+    "copy-wasm": "npx texture2ddecoder-copy-wasm public/wasm",
+    "prebuild": "npm run copy-wasm",
+    "prestart": "npm run copy-wasm",
+    
+    "// Option 2: Automatic postinstall (runs after npm install)": "",
+    "postinstall": "npx texture2ddecoder-copy-wasm public/wasm",
+    
+    "// Option 3: Custom destination for different frameworks": "",
+    "copy-wasm:vite": "npx texture2ddecoder-copy-wasm public/wasm",
+    "copy-wasm:next": "npx texture2ddecoder-copy-wasm public/wasm",
+    "copy-wasm:svelte": "npx texture2ddecoder-copy-wasm static/wasm",
+    "copy-wasm:angular": "npx texture2ddecoder-copy-wasm src/assets/wasm",
+    
+    "// Your build scripts": "",
+    "dev": "vite",
+    "build": "vite build",
+    "start": "vite preview"
+  },
+  "dependencies": {
+    "texture2ddecoder-wasm": "^1.2.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
+
+/*
+ * NOTES:
+ * 
+ * 1. postinstall approach:
+ *    - Pros: Automatic, runs after npm install
+ *    - Cons: Runs on every install, may slow down CI/CD
+ * 
+ * 2. prebuild/prestart approach:
+ *    - Pros: Only runs when needed
+ *    - Cons: Must remember to run build/start scripts
+ * 
+ * 3. Manual script approach:
+ *    - Pros: Full control
+ *    - Cons: Must remember to run manually
+ * 
+ * RECOMMENDATION:
+ * Use prebuild + prestart for best balance of automation and control
+ */
+

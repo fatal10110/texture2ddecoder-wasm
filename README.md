@@ -11,6 +11,7 @@ Built on top of [Perfare](https://github.com/Perfare)'s [Texture2DDecoder](https
 ## Features
 
 - **Zero native dependencies** - Pure WebAssembly, works on any platform
+- **Browser and Node.js compatible** - Works in both browser and Node.js environments
 - **Comprehensive format support** - Decode BC1-7, ETC1/2, PVRTC, ASTC, ATC, EAC, and Crunch formats
 - **TypeScript support** - Full type definitions included
 - **Unity Asset support** - Decode textures from Unity game assets
@@ -61,9 +62,14 @@ or
 yarn add texture2ddecoder-wasm
 ```
 
+> 🚀 **New to this library?** Check out the [Quick Start Guide](QUICK_START.md) for the fastest way to get running!  
+> 📖 **Need bundler setup?** See the [Complete Bundler Guide](BUNDLER_GUIDE.md) for detailed configurations.
+
 ## Usage
 
-### Basic Example
+> 💡 **See the [examples/](examples/) directory for complete working configurations for popular frameworks!**
+
+### Node.js Usage
 
 ```typescript
 import { decode_astc } from "texture2ddecoder-wasm";
@@ -81,19 +87,173 @@ const blockHeight = 4;
 const decoded = await decode_astc(data, width, height, blockWidth, blockHeight);
 
 if (decoded) {
-  // decoded is a Buffer containing BGRA pixel data
+  // decoded is a Uint8Array containing BGRA pixel data
   // Use with image libraries like sharp, jimp, etc.
   console.log("Decoded successfully!");
 }
 ```
+
+### Browser Usage with Modern Bundlers (Webpack, Vite, etc.)
+
+For modern frameworks (React, Vue, Svelte, Next.js, etc.), you can use CDN for quick setup or local files for production:
+
+#### Quick Start - Using CDN (Recommended for Development)
+
+```typescript
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
+
+// Initialize with CDN
+await initialize({
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm",
+});
+
+// Load and decode texture
+const response = await fetch("texture.bin");
+const data = new Uint8Array(await response.arrayBuffer());
+const decoded = await decode_bc1(data, 512, 512);
+```
+
+**Benefits:**
+- ✅ No manual file copying needed
+- ✅ Fastest setup time
+- ✅ Cached by CDN globally
+- ✅ Perfect for prototyping and development
+
+#### Production Setup - Using Local Files
+
+For production, copy WASM files to your public directory:
+
+```bash
+npx texture2ddecoder-copy-wasm public/wasm
+```
+
+```typescript
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
+
+// Initialize with local path
+await initialize({ wasmPath: "/wasm" });
+
+const decoded = await decode_bc1(data, 512, 512);
+```
+
+**Benefits:**
+- ✅ Faster loading (same domain)
+- ✅ Works offline
+- ✅ No external dependencies
+
+**Framework-Specific Examples:**
+
+**Vite + React:**
+
+```typescript
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
+
+// Development: Use CDN
+await initialize({
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm",
+});
+
+// Production: Use local files (copy with: npx texture2ddecoder-copy-wasm public/wasm)
+await initialize({ wasmPath: "/wasm" });
+```
+
+**Next.js:**
+
+```typescript
+// In a 'use client' component
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
+
+// Development: Use CDN
+await initialize({
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm",
+});
+
+// Production: Use local files (copy with: npx texture2ddecoder-copy-wasm public/wasm)
+await initialize({ wasmPath: "/wasm" });
+```
+
+**Webpack 5:**
+
+```typescript
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
+
+// Development: Use CDN
+await initialize({
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm",
+});
+
+// Production: Use local files (copy with: npx texture2ddecoder-copy-wasm public/wasm)
+await initialize({ wasmPath: "/wasm" });
+```
+
+### CDN Usage (jsDelivr)
+
+You can use the library directly from jsDelivr CDN without any installation:
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Texture Decoder - CDN Example</title>
+  </head>
+  <body>
+    <h1>Decode Textures from CDN</h1>
+    <div id="status">Loading...</div>
+
+    <script type="module">
+      // Import from jsDelivr CDN
+      import {
+        initialize,
+        decode_bc1,
+      } from "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/dist/index.mjs";
+
+      // Initialize with CDN path for WASM files
+      await initialize({
+        wasmPath:
+          "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm",
+      });
+
+      document.getElementById("status").textContent = "✓ Ready to decode!";
+
+      // Now you can use any decode function
+      // const decoded = await decode_bc1(textureData, width, height);
+    </script>
+  </body>
+</html>
+```
+
+**Benefits:**
+
+- ✅ Zero build setup
+- ✅ No npm install needed
+- ✅ Cached by jsDelivr globally
+- ✅ Perfect for quick prototypes
+
+**Production tip:** Pin to a specific version (e.g., `@1.2.0`) instead of `@latest` for stability.
+
+**Complete working example:** See [examples/cdn-example.html](examples/cdn-example.html) for a full interactive demo.
 
 ### Manual Initialization
 
 ```typescript
 import { initialize, decode_bc3 } from "texture2ddecoder-wasm";
 
-// Initialize manually for better control
+// Node.js - no parameter needed (auto-detects module location)
 await initialize();
+
+// Browser - provide path to WASM files
+await initialize({ wasmPath: "/wasm" });
+
+// Browser with CDN - provide full CDN URL
+await initialize({
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm",
+});
+
+// Browser with custom locateFile for advanced use cases
+await initialize({
+  wasmPath: "/wasm",
+  locateFile: (path) => `/custom-path/${path}`,
+});
 
 // Now decode functions will use the already-initialized module
 const result = await decode_bc3(data, width, height);
@@ -101,108 +261,148 @@ const result = await decode_bc3(data, width, height);
 
 ## API Reference
 
-All decode functions return a `Promise<Buffer | null>`. The returned Buffer contains BGRA pixel data (4 bytes per pixel).
+All decode functions accept `Uint8Array | ArrayBuffer` as input and return a `Promise<Uint8Array | null>`. The returned Uint8Array contains BGRA pixel data (4 bytes per pixel).
+
+**Note:** In Node.js, you can still pass `Buffer` objects (which extend `Uint8Array`) and receive `Uint8Array` results that are compatible with Buffer operations.
 
 ### BC Decoders
 
-#### `decode_bc1(data: Buffer, width: number, height: number): Promise<Buffer | null>`
+#### `decode_bc1(data: Uint8Array | ArrayBuffer, width: number, height: number): Promise<Uint8Array | null>`
 
 Decodes BC1 (DXT1) compressed texture to BGRA.
 
-#### `decode_bc3(data: Buffer, width: number, height: number): Promise<Buffer | null>`
+#### `decode_bc3(data: Uint8Array | ArrayBuffer, width: number, height: number): Promise<Uint8Array | null>`
 
 Decodes BC3 (DXT5) compressed texture to BGRA.
 
-#### `decode_bc4(data: Buffer, width: number, height: number): Promise<Buffer | null>`
+#### `decode_bc4(data: Uint8Array | ArrayBuffer, width: number, height: number): Promise<Uint8Array | null>`
 
 Decodes BC4 compressed texture to BGRA.
 
-#### `decode_bc5(data: Buffer, width: number, height: number): Promise<Buffer | null>`
+#### `decode_bc5(data: Uint8Array | ArrayBuffer, width: number, height: number): Promise<Uint8Array | null>`
 
 Decodes BC5 compressed texture to BGRA.
 
-#### `decode_bc6(data: Buffer, width: number, height: number): Promise<Buffer | null>`
+#### `decode_bc6(data: Uint8Array | ArrayBuffer, width: number, height: number): Promise<Uint8Array | null>`
 
 Decodes BC6 compressed texture to BGRA.
 
-#### `decode_bc7(data: Buffer, width: number, height: number): Promise<Buffer | null>`
+#### `decode_bc7(data: Uint8Array | ArrayBuffer, width: number, height: number): Promise<Uint8Array | null>`
 
 Decodes BC7 compressed texture to BGRA.
 
 ### ETC Decoders
 
-#### `decode_etc1(data: Buffer, width: number, height: number): Promise<Buffer | null>`
+#### `decode_etc1(data: Uint8Array | ArrayBuffer, width: number, height: number): Promise<Uint8Array | null>`
 
 Decodes ETC1 compressed texture to BGRA.
 
-#### `decode_etc2(data: Buffer, width: number, height: number): Promise<Buffer | null>`
+#### `decode_etc2(data: Uint8Array | ArrayBuffer, width: number, height: number): Promise<Uint8Array | null>`
 
 Decodes ETC2 compressed texture to BGRA.
 
-#### `decode_etc2a1(data: Buffer, width: number, height: number): Promise<Buffer | null>`
+#### `decode_etc2a1(data: Uint8Array | ArrayBuffer, width: number, height: number): Promise<Uint8Array | null>`
 
 Decodes ETC2 with 1-bit alpha compressed texture to BGRA.
 
-#### `decode_etc2a8(data: Buffer, width: number, height: number): Promise<Buffer | null>`
+#### `decode_etc2a8(data: Uint8Array | ArrayBuffer, width: number, height: number): Promise<Uint8Array | null>`
 
 Decodes ETC2 with 8-bit alpha compressed texture to BGRA.
 
 ### EAC Decoders
 
-#### `decode_eacr(data: Buffer, width: number, height: number): Promise<Buffer | null>`
+#### `decode_eacr(data: Uint8Array | ArrayBuffer, width: number, height: number): Promise<Uint8Array | null>`
 
 Decodes EAC R11 compressed texture to BGRA.
 
-#### `decode_eacr_signed(data: Buffer, width: number, height: number): Promise<Buffer | null>`
+#### `decode_eacr_signed(data: Uint8Array | ArrayBuffer, width: number, height: number): Promise<Uint8Array | null>`
 
 Decodes EAC R11 signed compressed texture to BGRA.
 
-#### `decode_eacrg(data: Buffer, width: number, height: number): Promise<Buffer | null>`
+#### `decode_eacrg(data: Uint8Array | ArrayBuffer, width: number, height: number): Promise<Uint8Array | null>`
 
 Decodes EAC RG11 compressed texture to BGRA.
 
-#### `decode_eacrg_signed(data: Buffer, width: number, height: number): Promise<Buffer | null>`
+#### `decode_eacrg_signed(data: Uint8Array | ArrayBuffer, width: number, height: number): Promise<Uint8Array | null>`
 
 Decodes EAC RG11 signed compressed texture to BGRA.
 
 ### Other Format Decoders
 
-#### `decode_pvrtc(data: Buffer, width: number, height: number, is2bpp: boolean = false): Promise<Buffer | null>`
+#### `decode_pvrtc(data: Uint8Array | ArrayBuffer, width: number, height: number, is2bpp: boolean = false): Promise<Uint8Array | null>`
 
 Decodes PVRTC compressed texture to BGRA.
 
 - `is2bpp`: Set to `true` for 2 bits-per-pixel mode, `false` for 4 bits-per-pixel (default)
 
-#### `decode_astc(data: Buffer, width: number, height: number, blockWidth: number, blockHeight: number): Promise<Buffer | null>`
+#### `decode_astc(data: Uint8Array | ArrayBuffer, width: number, height: number, blockWidth: number, blockHeight: number): Promise<Uint8Array | null>`
 
 Decodes ASTC compressed texture to BGRA.
 
 - `blockWidth`: Block width (typically 4, 5, 6, 8, 10, or 12)
 - `blockHeight`: Block height (typically 4, 5, 6, 8, 10, or 12)
 
-#### `decode_atc_rgb4(data: Buffer, width: number, height: number): Promise<Buffer | null>`
+#### `decode_atc_rgb4(data: Uint8Array | ArrayBuffer, width: number, height: number): Promise<Uint8Array | null>`
 
 Decodes ATC RGB4 compressed texture to BGRA.
 
-#### `decode_atc_rgba8(data: Buffer, width: number, height: number): Promise<Buffer | null>`
+#### `decode_atc_rgba8(data: Uint8Array | ArrayBuffer, width: number, height: number): Promise<Uint8Array | null>`
 
 Decodes ATC RGBA8 compressed texture to BGRA.
 
 ### Crunch Decoders
 
-#### `unpack_crunch(data: Buffer): Promise<Buffer | null>`
+#### `unpack_crunch(data: Uint8Array | ArrayBuffer): Promise<Uint8Array | null>`
 
 Unpacks Crunch compressed data.
 
-#### `unpack_unity_crunch(data: Buffer): Promise<Buffer | null>`
+#### `unpack_unity_crunch(data: Uint8Array | ArrayBuffer): Promise<Uint8Array | null>`
 
 Unpacks Unity Crunch compressed data.
 
 ### Initialization
 
-#### `initialize(): Promise<void>`
+#### `initialize(options?: { wasmPath?: string; locateFile?: (path: string, prefix: string) => string }): Promise<void>`
 
-Manually initialize the WebAssembly module. This is called automatically on first use of any decode function, but can be called manually for better control over initialization timing.
+Manually initialize the WebAssembly module. This is called automatically on first use of any decode function in Node.js, but must be called explicitly in browser environments.
+
+**Parameters:**
+
+- `options.wasmPath` - (Browser required) Path or URL to the directory containing WASM files
+- `options.locateFile` - (Optional) Custom function to locate WASM binary files for advanced use cases
+
+**Node.js Example:**
+
+```typescript
+await initialize(); // Auto-detects and loads from dist/wasm/
+```
+
+**Browser Examples:**
+
+```typescript
+// Basic usage - local path
+await initialize({ wasmPath: "/wasm" });
+
+// With CDN
+await initialize({
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm",
+});
+
+// With custom locateFile for advanced scenarios
+await initialize({
+  wasmPath: "/wasm",
+  locateFile: (path) => `https://cdn.example.com/custom/${path}`,
+});
+```
+
+**Framework Integration:**
+This approach works seamlessly with:
+
+- ✅ React / Next.js
+- ✅ Vue / Nuxt
+- ✅ Svelte / SvelteKit
+- ✅ Webpack 5 / Vite / Rollup
+- ✅ Server-Side Rendering (SSR) - Call `initialize()` in client-side code only
 
 ## Building from Source
 
@@ -253,6 +453,7 @@ The WebAssembly build uses Docker with the official Emscripten SDK image, which 
 - Works on Windows, macOS, and Linux
 
 The build script ([scripts/build-wasm.sh](scripts/build-wasm.sh)) automatically:
+
 1. Checks if Docker is installed
 2. Pulls the latest Emscripten SDK image
 3. Compiles the C++ texture decoders to WebAssembly
@@ -302,4 +503,24 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 ## Platform Support
 
 - **Node.js**: ≥14.0.0
+- **Browsers**: Modern browsers with WebAssembly support (Chrome, Firefox, Safari, Edge)
 - **Operating Systems**: Windows, macOS, Linux (WebAssembly is platform-independent)
+
+### Browser Compatibility
+
+The package works in all modern browsers that support:
+
+- WebAssembly
+- ES6 Modules (or use a bundler like Webpack/Vite)
+- Typed Arrays (Uint8Array)
+
+Tested and working in:
+
+- Chrome/Edge 57+
+- Firefox 52+
+- Safari 11+
+- Opera 44+
+
+## Examples
+
+See [browser-example.html](browser-example.html) for a complete browser usage example.

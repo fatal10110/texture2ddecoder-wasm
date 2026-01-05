@@ -97,12 +97,12 @@ describe('Texture2DDecoder WASM', () => {
   });
 
   describe('Output format', () => {
-    it('should return Buffer objects', async () => {
+    it('should return Uint8Array objects', async () => {
       const data = Buffer.alloc(16);
       data.fill(0xFF);
 
       const result = await decode_bc1(data, 4, 4);
-      assert.ok(result instanceof Buffer);
+      assert.ok(result instanceof Uint8Array);
     });
 
     it('should produce BGRA format (4 bytes per pixel)', async () => {
@@ -125,14 +125,14 @@ describe('Texture2DDecoder WASM', () => {
       const data = Buffer.alloc(0);
       const result = await decode_bc1(data, 4, 4);
       // Should either return null or handle gracefully
-      assert.ok(result === null || Buffer.isBuffer(result));
+      assert.ok(result === null || result instanceof Uint8Array);
     });
 
     it('should handle oversized dimensions', async () => {
       const data = Buffer.alloc(16);
       // Requesting a huge texture with small data should fail gracefully
       const result = await decode_bc1(data, 10000, 10000);
-      assert.ok(result === null || Buffer.isBuffer(result));
+      assert.ok(result === null || result instanceof Uint8Array);
     });
   });
 });
