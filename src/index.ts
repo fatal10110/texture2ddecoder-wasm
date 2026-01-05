@@ -2,8 +2,12 @@
 let globalWasmModule: any = null;
 
 // Detect environment
-const isBrowser = typeof window !== "undefined" && typeof window.document !== "undefined";
-const isNode = typeof process !== "undefined" && process.versions != null && process.versions.node != null;
+const isBrowser =
+  typeof window !== "undefined" && typeof window.document !== "undefined";
+const isNode =
+  typeof process !== "undefined" &&
+  process.versions != null &&
+  process.versions.node != null;
 
 /**
  * Load WASM module factory function (ffmpeg.wasm style - using dynamic import)
@@ -12,49 +16,58 @@ async function loadWasmModuleFactory(wasmPath?: string): Promise<any> {
   if (isNode) {
     // Node.js: Use require with relative path from dist
     const path = require("path");
-    const modulePath = path.join(__dirname, "..", "wasm", "texture2ddecoder.js");
+    const modulePath = path.join(
+      __dirname,
+      "..",
+      "wasm",
+      "texture2ddecoder.js"
+    );
     const createModule = require(modulePath);
 
-    if (typeof createModule !== 'function') {
-      throw new Error('Invalid WASM module: createModule is not a function');
+    if (typeof createModule !== "function") {
+      throw new Error("Invalid WASM module: createModule is not a function");
     }
 
     return createModule;
   } else if (isBrowser) {
     // Browser: Use dynamic import (ffmpeg.wasm approach)
     if (wasmPath) {
-      const basePath = wasmPath.endsWith('.js')
-        ? wasmPath.replace(/\.js$/, '')
-        : wasmPath.endsWith('/')
-          ? `${wasmPath}texture2ddecoder`
-          : `${wasmPath}/texture2ddecoder`;
+      const basePath = wasmPath.endsWith(".js")
+        ? wasmPath.replace(/\.js$/, "")
+        : wasmPath.endsWith("/")
+        ? `${wasmPath}texture2ddecoder`
+        : `${wasmPath}/texture2ddecoder`;
 
       const moduleUrl = `${basePath}.js`;
 
       try {
-        // Dynamic import of the WASM module
+        // Dynamic import of the WASM module (ES6 format)
         const module = await import(/* @vite-ignore */ moduleUrl);
-        const createModule = module.default || module;
+        const createModule = module.default;
 
-        if (typeof createModule !== 'function') {
-          throw new Error('Invalid WASM module: createModule is not a function');
+        if (typeof createModule !== "function") {
+          throw new Error(
+            "Invalid WASM module: createModule is not a function"
+          );
         }
 
         return createModule;
       } catch (error) {
         throw new Error(
           `Failed to load WASM module from ${moduleUrl}\n` +
-          `Error: ${error instanceof Error ? error.message : String(error)}\n` +
-          'Make sure WASM files are copied to the correct location.\n' +
-          'Run: npx texture2ddecoder-copy-wasm public/wasm'
+            `Error: ${
+              error instanceof Error ? error.message : String(error)
+            }\n` +
+            "Make sure WASM files are copied to the correct location.\n" +
+            "Run: npx texture2ddecoder-copy-wasm public/wasm"
         );
       }
     }
 
     throw new Error(
-      'Browser environment requires wasmPath parameter.\n' +
-      'Usage: await initialize({ wasmPath: \'/wasm\' })\n' +
-      'Or copy WASM files: npx texture2ddecoder-copy-wasm public/wasm'
+      "Browser environment requires wasmPath parameter.\n" +
+        "Usage: await initialize({ wasmPath: '/wasm' })\n" +
+        "Or copy WASM files: npx texture2ddecoder-copy-wasm public/wasm"
     );
   } else {
     throw new Error("Unsupported environment (not browser or Node.js)");
@@ -77,7 +90,7 @@ async function loadWasmModuleFactory(wasmPath?: string): Promise<any> {
  *
  * // Browser - with CDN:
  * await initialize({
- *   wasmPath: 'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm'
+ *   wasmPath: 'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm'
  * });
  *
  * // Browser - with custom locateFile for advanced use:
@@ -326,11 +339,7 @@ export async function decode_eacr_signed(
 ): Promise<Uint8Array | null> {
   await ensureInitialized();
   const uint8Data = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
-  const result = globalWasmModule.decode_eacr_signed(
-    uint8Data,
-    width,
-    height
-  );
+  const result = globalWasmModule.decode_eacr_signed(uint8Data, width, height);
   return wasmOutputToUint8Array(result);
 }
 
@@ -358,11 +367,7 @@ export async function decode_eacrg_signed(
 ): Promise<Uint8Array | null> {
   await ensureInitialized();
   const uint8Data = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
-  const result = globalWasmModule.decode_eacrg_signed(
-    uint8Data,
-    width,
-    height
-  );
+  const result = globalWasmModule.decode_eacrg_signed(uint8Data, width, height);
   return wasmOutputToUint8Array(result);
 }
 
@@ -376,11 +381,7 @@ export async function decode_atc_rgb4(
 ): Promise<Uint8Array | null> {
   await ensureInitialized();
   const uint8Data = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
-  const result = globalWasmModule.decode_atc_rgb4(
-    uint8Data,
-    width,
-    height
-  );
+  const result = globalWasmModule.decode_atc_rgb4(uint8Data, width, height);
   return wasmOutputToUint8Array(result);
 }
 
@@ -394,11 +395,7 @@ export async function decode_atc_rgba8(
 ): Promise<Uint8Array | null> {
   await ensureInitialized();
   const uint8Data = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
-  const result = globalWasmModule.decode_atc_rgba8(
-    uint8Data,
-    width,
-    height
-  );
+  const result = globalWasmModule.decode_atc_rgba8(uint8Data, width, height);
   return wasmOutputToUint8Array(result);
 }
 
@@ -430,7 +427,9 @@ export async function decode_astc(
  * Unpack Crunch compressed data
  * Uses typed array for binary-safe data transfer
  */
-export async function unpack_crunch(data: Uint8Array | ArrayBuffer): Promise<Uint8Array | null> {
+export async function unpack_crunch(
+  data: Uint8Array | ArrayBuffer
+): Promise<Uint8Array | null> {
   await ensureInitialized();
   const uint8Data = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
   // Pass as Uint8Array directly

@@ -13,12 +13,12 @@ npm install texture2ddecoder-wasm
 
 ```javascript
 // app.js
-import { decode_bc1 } from 'texture2ddecoder-wasm';
-import fs from 'fs';
+import { decode_bc1 } from "texture2ddecoder-wasm";
+import fs from "fs";
 
-const textureData = fs.readFileSync('texture.bin');
+const textureData = fs.readFileSync("texture.bin");
 const decoded = await decode_bc1(textureData, 512, 512);
-console.log('Decoded!', decoded);
+console.log("Decoded!", decoded);
 ```
 
 **That's it!** No configuration needed for Node.js. ✅
@@ -32,25 +32,31 @@ Want to try it instantly without any setup? Use jsDelivr CDN:
 ```html
 <!DOCTYPE html>
 <html>
-<body>
+  <body>
     <script type="module">
-        // Import from CDN
-        import { initialize, decode_bc1 } from
-            'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/dist/index.mjs';
+      // Import from CDN
+      import {
+        initialize,
+        decode_bc1,
+      } from "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs";
 
-        // Initialize with CDN path
-        await initialize({ wasmPath: 'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm' });
+      // Initialize with CDN path
+      await initialize({
+        wasmPath:
+          "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
+      });
 
-        console.log('Ready to decode!');
-        // Use decode functions here
+      console.log("Ready to decode!");
+      // Use decode functions here
     </script>
-</body>
+  </body>
 </html>
 ```
 
 **See:** [examples/cdn-example.html](examples/cdn-example.html) for a complete working demo!
 
 **Perfect for:**
+
 - 🎯 Quick prototypes
 - 🎨 Demos and testing
 - 📚 Learning and exploration
@@ -79,10 +85,10 @@ See [BUNDLER_GUIDE.md](BUNDLER_GUIDE.md) for more bundler configurations.
 ### Step 3: Initialize and Use
 
 ```javascript
-import { initialize, decode_bc1 } from 'texture2ddecoder-wasm';
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 // Initialize with path to WASM files
-await initialize({ wasmPath: '/wasm' });
+await initialize({ wasmPath: "/wasm" });
 
 // Now decode textures
 const decoded = await decode_bc1(textureData, 512, 512);
@@ -101,15 +107,14 @@ npx texture2ddecoder-copy-wasm public/wasm
 
 ```jsx
 // App.jsx
-import { useEffect, useState } from 'react';
-import { initialize } from 'texture2ddecoder-wasm';
+import { useEffect, useState } from "react";
+import { initialize } from "texture2ddecoder-wasm";
 
 function App() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    initialize({ wasmPath: '/wasm' })
-      .then(() => setReady(true));
+    initialize({ wasmPath: "/wasm" }).then(() => setReady(true));
   }, []);
 
   return ready ? <YourApp /> : <Loading />;
@@ -127,14 +132,14 @@ npx texture2ddecoder-copy-wasm public/wasm
 
 ```tsx
 // app/page.tsx
-'use client';
-import { useEffect } from 'react';
-import { initialize } from 'texture2ddecoder-wasm';
+"use client";
+import { useEffect } from "react";
+import { initialize } from "texture2ddecoder-wasm";
 
 export default function Page() {
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      initialize({ wasmPath: '/wasm' });
+    if (typeof window !== "undefined") {
+      initialize({ wasmPath: "/wasm" });
     }
   }, []);
 
@@ -153,15 +158,14 @@ npx texture2ddecoder-copy-wasm public/wasm
 
 ```jsx
 // src/App.js
-import { useEffect, useState } from 'react';
-import { initialize } from 'texture2ddecoder-wasm';
+import { useEffect, useState } from "react";
+import { initialize } from "texture2ddecoder-wasm";
 
 function App() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    initialize({ wasmPath: '/wasm' })
-      .then(() => setReady(true));
+    initialize({ wasmPath: "/wasm" }).then(() => setReady(true));
   }, []);
 
   if (!ready) return <div>Loading...</div>;
@@ -205,13 +209,13 @@ npx texture2ddecoder-copy-wasm static/wasm
 
 ```javascript
 // utils/decoder.js
-import { initialize } from 'texture2ddecoder-wasm';
+import { initialize } from "texture2ddecoder-wasm";
 
 let initialized = false;
 
 export async function ensureDecoder() {
   if (!initialized) {
-    await initialize({ wasmPath: '/wasm' });
+    await initialize({ wasmPath: "/wasm" });
     initialized = true;
   }
 }
@@ -219,8 +223,8 @@ export async function ensureDecoder() {
 
 ```javascript
 // anywhere in your app
-import { ensureDecoder } from './utils/decoder';
-import { decode_bc1 } from 'texture2ddecoder-wasm';
+import { ensureDecoder } from "./utils/decoder";
+import { decode_bc1 } from "texture2ddecoder-wasm";
 
 async function decodeTexture(data) {
   await ensureDecoder();
@@ -233,8 +237,8 @@ async function decodeTexture(data) {
 ```javascript
 // Load decoder only when needed
 button.onclick = async () => {
-  const decoder = await import('texture2ddecoder-wasm');
-  await decoder.initialize({ wasmPath: '/wasm' });
+  const decoder = await import("texture2ddecoder-wasm");
+  await decoder.initialize({ wasmPath: "/wasm" });
   const result = await decoder.decode_bc1(data, width, height);
 };
 ```
@@ -243,7 +247,7 @@ button.onclick = async () => {
 
 ```typescript
 // TextureDecoderService.ts
-import { initialize, decode_bc1 } from 'texture2ddecoder-wasm';
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 class TextureDecoderService {
   private static instance: TextureDecoderService;
@@ -260,7 +264,7 @@ class TextureDecoderService {
 
   async init() {
     if (!this.initialized) {
-      await initialize({ wasmPath: '/wasm' });
+      await initialize({ wasmPath: "/wasm" });
       this.initialized = true;
     }
   }
@@ -300,10 +304,10 @@ npx texture2ddecoder-copy-wasm public/wasm
 export default {
   server: {
     headers: {
-      'Content-Type': 'application/wasm'
-    }
-  }
-}
+      "Content-Type": "application/wasm",
+    },
+  },
+};
 ```
 
 ### "Module not found in Node.js"
@@ -315,7 +319,7 @@ export default {
 await initialize(); // ✅ Correct
 
 // Browser - specify path
-await initialize({ wasmPath: '/wasm' }); // ✅ Correct
+await initialize({ wasmPath: "/wasm" }); // ✅ Correct
 ```
 
 ### "Works in dev but not in production"
@@ -351,7 +355,12 @@ await initialize({ wasmPath: '/wasm' }); // ✅ Correct
 4. **Check environment** - Use different paths for dev vs production if needed
 5. **Preload WASM** - Add preload hints for faster loading:
    ```html
-   <link rel="preload" href="/wasm/texture2ddecoder.wasm" as="fetch" crossorigin>
+   <link
+     rel="preload"
+     href="/wasm/texture2ddecoder.wasm"
+     as="fetch"
+     crossorigin
+   />
    ```
 
 ---
@@ -361,4 +370,3 @@ await initialize({ wasmPath: '/wasm' }); // ✅ Correct
 The decoder is now ready to handle BC1-7, ETC, PVRTC, ASTC, and more texture formats at native speed with WebAssembly!
 
 **Happy decoding! 🚀**
-

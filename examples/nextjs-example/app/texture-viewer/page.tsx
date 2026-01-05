@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { initialize, decode_bc1 } from 'texture2ddecoder-wasm';
+import { useEffect, useState } from "react";
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 export default function TextureViewer() {
   const [isReady, setIsReady] = useState(false);
@@ -9,16 +9,18 @@ export default function TextureViewer() {
 
   useEffect(() => {
     // Only initialize in the browser
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     // Initialize with CDN (no setup required!)
-    initialize({ wasmPath: 'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.0/wasm' })
+    initialize({
+      wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
+    })
       .then(() => {
-        console.log('Texture decoder initialized from CDN');
+        console.log("Texture decoder initialized from CDN");
         setIsReady(true);
       })
       .catch((err) => {
-        console.error('Failed to initialize:', err);
+        console.error("Failed to initialize:", err);
         setError(err.message);
       });
   }, []);
@@ -44,9 +46,10 @@ export default function TextureViewer() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Texture Decoder</h1>
-      <p className="text-green-600 font-semibold">✓ Ready to decode textures!</p>
+      <p className="text-green-600 font-semibold">
+        ✓ Ready to decode textures!
+      </p>
       {/* Add your texture decoding UI here */}
     </div>
   );
 }
-
