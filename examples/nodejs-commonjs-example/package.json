@@ -1,0 +1,22 @@
+{
+  "name": "texture2ddecoder-nodejs-commonjs-example",
+  "version": "1.0.0",
+  "description": "Pure Node.js CommonJS example for texture2ddecoder-wasm",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "sharp": "^0.34.5",
+    "texture2ddecoder-wasm": "^1.2.2"
+  },
+  "keywords": [
+    "texture",
+    "decoder",
+    "nodejs",
+    "commonjs"
+  ],
+  "author": "",
+  "license": "MIT"
+}

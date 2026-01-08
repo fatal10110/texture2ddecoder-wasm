@@ -1,0 +1,25 @@
+{
+  "name": "texture2ddecoder-nodejs-esm-example",
+  "version": "1.0.0",
+  "description": "Node.js ESM example for texture2ddecoder-wasm",
+  "type": "module",
+  "main": "index.mjs",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "texture2ddecoder-wasm": "^1.2.2"
+  },
+  "optionalDependencies": {
+    "sharp": "^0.33.0"
+  },
+  "keywords": [
+    "texture",
+    "decoder",
+    "nodejs",
+    "esm",
+    "es6"
+  ],
+  "author": "",
+  "license": "MIT"
+}

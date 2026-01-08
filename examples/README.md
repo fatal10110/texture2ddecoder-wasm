@@ -4,24 +4,87 @@ This directory contains example configurations for popular bundlers and framewor
 
 ## Available Examples
 
-### CDN Usage (No Build Required!)
+### Node.js Examples
 
-- **File:** `cdn-example.html`
-- **Zero setup:** Just open in a browser!
-- **Perfect for:** Quick prototypes, demos, learning
+#### Pure Node.js (CommonJS)
+
+- **Directory:** `nodejs-commonjs-example/`
+- **Files:**
+  - `index.js` - Pure Node.js example using `require()`
+  - `package.json` - CommonJS configuration
+- **Perfect for:** Traditional Node.js projects, backend services
 
 **Try it:**
 
 ```bash
-# Just open the file in your browser
-open examples/cdn-example.html
-# or
-python -m http.server 8000  # Then visit http://localhost:8000/examples/cdn-example.html
+cd examples/nodejs-commonjs-example
+npm install
+npm start
 ```
+
+Features automatic WASM initialization and demonstrates BC1/BC3 decoding with file I/O.
+
+#### Node.js ESM
+
+- **Directory:** `nodejs-esm-example/`
+- **Files:**
+  - `index.mjs` - Modern Node.js example using `import/export`
+  - `package.json` - ESM configuration with `"type": "module"`
+- **Perfect for:** Modern Node.js projects, TypeScript projects
+
+**Try it:**
+
+```bash
+cd examples/nodejs-esm-example
+npm install
+npm start
+```
+
+Features BC1, BC3, ETC2, and ASTC decoding examples with modern ES6 syntax.
+
+### Browser Examples
+
+#### Vite + CDN (Recommended)
+
+- **Directory:** `vite-cdn-example/`
+- **Files:**
+  - `index.html` - Main HTML file
+  - `src/main.js` - Application logic with CDN imports
+  - `vite.config.js` - Vite configuration
+  - `public/compressed_etc2_rgba_400x400.bin` - Real ETC2 RGBA texture (400x400)
+- **Perfect for:** Modern development with fast HMR and CDN
+
+**Try it:**
+
+```bash
+cd examples/vite-cdn-example
+npm install
+npm run dev
+```
+
+Features Vite dev server, CDN loading, real texture decoding with canvas display, and optimized production builds.
+
+#### CDN Usage (No Build Required!)
+
+- **File:** `cdn-example.html`
+- **Zero setup:** No npm install needed!
+- **Perfect for:** Quick prototypes, minimal setup
+
+**Try it:**
+
+```bash
+# Serve with HTTP server (required for file loading)
+cd examples
+python -m http.server 8000
+
+# Then visit: http://localhost:8000/cdn-example.html
+```
+
+**⚠️ Important:** Must be served via HTTP server (not `file://`) to avoid CORS errors when loading the texture file.
 
 Uses jsDelivr CDN to load the library without any installation or build tools.
 
-### Vite + React
+#### Vite + React
 
 - **Directory:** `vite-react-example/`
 - **Files:**
@@ -37,7 +100,7 @@ npm install texture2ddecoder-wasm
 
 **Note:** This example uses CDN - no WASM file copying needed!
 
-### Next.js (App Router)
+#### Next.js (App Router)
 
 - **Directory:** `nextjs-example/`
 - **Files:**
@@ -128,3 +191,5 @@ Popular frameworks we'd love examples for:
 - Remix
 - Astro
 - Nuxt 3
+- Deno
+- Bun

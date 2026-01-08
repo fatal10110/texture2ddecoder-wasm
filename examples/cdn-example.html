@@ -83,6 +83,11 @@
       <strong>📦 Loading from jsDelivr CDN</strong><br />
       No npm install required! This example loads the library directly from
       jsDelivr.
+      <br /><br />
+      <strong>⚠️ Important:</strong> This file must be served via HTTP server (not opened directly as <code>file://</code>).
+      <br />
+      Run: <code>python -m http.server 8000</code> in the examples directory, then visit
+      <code>http://localhost:8000/cdn-example.html</code>
     </div>
 
     <div id="status" class="status loading">
@@ -96,9 +101,12 @@
       <button onclick="testDecoder('bc3')">Test BC3 (DXT5)</button>
       <button onclick="testDecoder('etc1')">Test ETC1</button>
       <button onclick="testDecoder('astc')">Test ASTC</button>
+      <button onclick="loadRealTexture()" style="background: #28a745;">
+        Load Real ETC2 Image
+      </button>
 
       <div id="result"></div>
-      <canvas id="canvas" width="512" height="512"></canvas>
+      <canvas id="canvas" width="400" height="400"></canvas>
     </div>
 
     <div class="info" style="margin-top: 30px">
@@ -183,6 +191,7 @@ const decoded = await decode_bc1(data, width, height);</code></pre>
         decode_bc3,
         decode_etc1,
         decode_astc,
+        decode_etc2a8,
       } from "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs";
 
       const statusDiv = document.getElementById("status");
@@ -216,6 +225,66 @@ const decoded = await decode_bc1(data, width, height);</code></pre>
           console.error("Initialization error:", error);
         }
       }
+
+      // Load and decode real ETC2 RGBA texture file
+      window.loadRealTexture = async function () {
+        if (!isReady) return;
+
+        resultDiv.innerHTML = '<p style="color: #856404;">⏳ Loading texture file...</p>';
+
+        try {
+          // Load the real ETC2 RGBA compressed image (compressed_etc2_rgba_400x400.bin)
+          const response = await fetch("compressed_etc2_rgba_400x400.bin");
+          if (!response.ok) {
+            throw new Error(`Failed to load compressed_etc2_rgba_400x400.bin: ${response.status} ${response.statusText}`);
+          }
+
+          const arrayBuffer = await response.arrayBuffer();
+          const compressedData = new Uint8Array(arrayBuffer);
+
+          resultDiv.innerHTML = '<p style="color: #856404;">⏳ Decoding ETC2 RGBA texture...</p>';
+
+          // Decode the 400x400 ETC2 RGBA texture
+          const width = 400;
+          const height = 400;
+          const startTime = performance.now();
+
+          const decoded = await decode_etc2a8(compressedData, width, height);
+          const decodeTime = (performance.now() - startTime).toFixed(2);
+
+          if (decoded) {
+            // Draw decoded data to canvas
+            const imageData = ctx.createImageData(width, height);
+
+            // Convert BGRA to RGBA for canvas
+            for (let i = 0; i < decoded.length; i += 4) {
+              imageData.data[i] = decoded[i + 2]; // R from B
+              imageData.data[i + 1] = decoded[i + 1]; // G stays
+              imageData.data[i + 2] = decoded[i]; // B from R
+              imageData.data[i + 3] = decoded[i + 3]; // A stays
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+
+            resultDiv.innerHTML = `
+              <p style="color: #155724; font-weight: bold;">✅ Real ETC2 RGBA Image Decoded!</p>
+              <p>Format: <strong>ETC2 RGBA (8-bit alpha)</strong></p>
+              <p>Original format: <strong>PNG compressed as ETC2</strong></p>
+              <p>Compressed size: <strong>${compressedData.length.toLocaleString()} bytes</strong></p>
+              <p>Decoded size: <strong>${decoded.length.toLocaleString()} bytes (BGRA)</strong></p>
+              <p>Decode time: <strong>${decodeTime}ms</strong></p>
+              <p>Resolution: <strong>${width}x${height}</strong></p>
+              <p style="color: #0c5460; margin-top: 10px;">📸 The decoded image is displayed in the canvas above!</p>
+            `;
+          } else {
+            resultDiv.innerHTML =
+              '<p style="color: #721c24;">❌ Decode failed (returned null)</p>';
+          }
+        } catch (error) {
+          resultDiv.innerHTML = `<p style="color: #721c24;">❌ Error: ${error.message}</p>`;
+          console.error("Decode error:", error);
+        }
+      };
 
       // Test decoder with sample data
       window.testDecoder = async function (format) {

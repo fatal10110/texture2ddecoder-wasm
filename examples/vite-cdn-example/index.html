@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>texture2ddecoder-wasm - Vite CDN Example</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <h1>🎨 texture2ddecoder-wasm - Vite CDN Example</h1>
+
+      <div class="info">
+        <strong>📦 Loading from jsDelivr CDN via Vite</strong><br />
+        This example uses Vite dev server with the library loaded from CDN.
+      </div>
+
+      <div id="status" class="status loading">
+        ⏳ Initializing WebAssembly module from CDN...
+      </div>
+
+      <div id="controls" style="display: none">
+        <h2>Test Decoder</h2>
+        <p>Select a compressed texture format to test:</p>
+        <button id="btn-bc1">Test BC1 (DXT1)</button>
+        <button id="btn-bc3">Test BC3 (DXT5)</button>
+        <button id="btn-etc1">Test ETC1</button>
+        <button id="btn-astc">Test ASTC</button>
+        <button id="btn-real" class="btn-primary">
+          Load Real ETC2 Image
+        </button>
+
+        <div id="result"></div>
+        <canvas id="canvas" width="400" height="400"></canvas>
+      </div>
+
+      <div class="info" style="margin-top: 30px">
+        <h3>💡 How This Works</h3>
+        <pre><code>// Import from jsDelivr CDN
+import { initialize, decode_bc1 } from
+  'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs';
+
+// Point to WASM files on CDN
+await initialize({
+  wasmPath: 'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm'
+});
+
+// Now decode!
+const decoded = await decode_bc1(data, width, height);</code></pre>
+
+        <h3>🚀 Benefits of Vite + CDN</h3>
+        <ul>
+          <li><strong>Fast HMR:</strong> Instant hot module replacement during development</li>
+          <li><strong>No bundling:</strong> WASM files loaded from CDN</li>
+          <li><strong>Modern build:</strong> Optimized production builds</li>
+          <li><strong>Simple setup:</strong> Minimal configuration needed</li>
+        </ul>
+
+        <h3>📌 CDN URLs</h3>
+        <ul>
+          <li>
+            Latest:
+            <code>https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm/dist/index.mjs</code>
+          </li>
+          <li>
+            Specific version:
+            <code>https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs</code>
+          </li>
+          <li>
+            WASM files:
+            <code>https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm/</code>
+          </li>
+        </ul>
+
+        <h3>🔗 Links</h3>
+        <ul>
+          <li>
+            <a
+              href="https://www.jsdelivr.com/package/npm/texture2ddecoder-wasm"
+              target="_blank"
+              >jsDelivr Package Page</a
+            >
+          </li>
+          <li>
+            <a
+              href="https://www.npmjs.com/package/texture2ddecoder-wasm"
+              target="_blank"
+              >npm Package</a
+            >
+          </li>
+          <li>
+            <a
+              href="https://github.com/fatal10110/texture2ddecoder-wasm"
+              target="_blank"
+              >GitHub Repository</a
+            >
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
