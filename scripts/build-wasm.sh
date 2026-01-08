@@ -64,6 +64,7 @@ docker run --rm \
             -s DISABLE_EXCEPTION_CATCHING=0 \
             -s ALLOW_TABLE_GROWTH=1 \
             -s EXPORTED_RUNTIME_METHODS=["ccall","cwrap"] \
+            -s INCOMING_MODULE_JS_API=["locateFile"] \
             --bind \
             -std=c++17 \
             -o /project/wasm/texture2ddecoder.js 2>&1 | grep -v "warning:"
