@@ -11,11 +11,13 @@ export default {
       format: 'cjs',
       sourcemap: true,
       exports: 'named',
+      inlineDynamicImports: true,
     },
     {
       file: 'dist/index.mjs',
       format: 'es',
       sourcemap: true,
+      inlineDynamicImports: true,
     },
   ],
   external: [
@@ -26,6 +28,8 @@ export default {
     'crypto',
     'url',
     'module',
+    // WASM module (separate file, not bundled)
+    /^\.\.\/wasm\//,
   ],
   plugins: [
     resolve({
@@ -42,19 +46,21 @@ export default {
     }),
     terser({
       compress: {
-        drop_console: false, // Keep console logs for debugging
+        drop_console: false,
         drop_debugger: true,
-        pure_funcs: [], // Don't remove any functions
+        pure_funcs: [],
+        passes: 1, // Single pass to avoid hanging
       },
       format: {
-        comments: false, // Remove all comments
-        preserve_annotations: true, // Keep @__PURE__ annotations
+        comments: false,
+        preserve_annotations: true,
       },
       mangle: {
-        keep_classnames: true, // Keep class names for better debugging
-        keep_fnames: true, // Keep function names for stack traces
+        keep_classnames: true,
+        keep_fnames: true,
       },
       sourceMap: true,
+      maxWorkers: 1, // Avoid worker issues with dynamic imports
     }),
   ],
 }
