@@ -1,1 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>texture2ddecoder-wasm - CDN Example</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      .status {
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 8px;
+        font-weight: 500;
+      }
+      .loading {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+      }
+      .success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .info {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 8px;
+      }
+      pre {
+        background: #f5f5f5;
+        padding: 15px;
+        border-radius: 5px;
+        overflow-x: auto;
+      }
+      code {
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+        font-size: 14px;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        margin: 5px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      button:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+      }
+      #canvas {
+        border: 1px solid #ddd;
+        margin-top: 20px;
+        max-width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🎨 texture2ddecoder-wasm - CDN Example</h1>
 
+    <div class="info">
+      <strong>📦 Loading from jsDelivr CDN</strong><br />
+      No npm install required! This example loads the library directly from
+      jsDelivr.
+      <br /><br />
+      <strong>⚠️ Important:</strong> This file must be served via HTTP server (not opened directly as <code>file://</code>).
+      <br />
+      Run: <code>python -m http.server 8000</code> in the examples directory, then visit
+      <code>http://localhost:8000/cdn-example.html</code>
+    </div>
+
+    <div id="status" class="status loading">
+      ⏳ Initializing WebAssembly module from CDN...
+    </div>
+
+    <div id="controls" style="display: none">
+      <h2>Test Decoder</h2>
+      <p>Select a compressed texture format to test:</p>
+      <button onclick="testDecoder('bc1')">Test BC1 (DXT1)</button>
+      <button onclick="testDecoder('bc3')">Test BC3 (DXT5)</button>
+      <button onclick="testDecoder('etc1')">Test ETC1</button>
+      <button onclick="testDecoder('astc')">Test ASTC</button>
+      <button onclick="loadRealTexture()" style="background: #28a745;">
+        Load Real ETC2 Image
+      </button>
+
+      <div id="result"></div>
+      <canvas id="canvas" width="400" height="400"></canvas>
+    </div>
+
+    <div class="info" style="margin-top: 30px">
+      <h3>💡 How This Works</h3>
+      <pre><code>// Import from jsDelivr CDN
+import { initialize, decode_bc1 } from
+  'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs';
+
+// Point to WASM files on CDN
+await initialize({
+  wasmPath: 'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm'
+});
+
+// Now decode!
+const decoded = await decode_bc1(data, width, height);</code></pre>
+
+      <h3>🚀 Benefits</h3>
+      <ul>
+        <li><strong>Zero setup:</strong> No build tools or npm required</li>
+        <li><strong>Fast loading:</strong> Cached globally by jsDelivr CDN</li>
+        <li>
+          <strong>Version pinning:</strong> Use specific versions for stability
+        </li>
+        <li>
+          <strong>Perfect for:</strong> Demos, prototypes, and quick tests
+        </li>
+      </ul>
+
+      <h3>📌 CDN URLs</h3>
+      <ul>
+        <li>
+          Latest:
+          <code
+            >https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm/dist/index.mjs</code
+          >
+        </li>
+        <li>
+          Specific version:
+          <code
+            >https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs</code
+          >
+        </li>
+        <li>
+          WASM files:
+          <code
+            >https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm/</code
+          >
+        </li>
+      </ul>
+
+      <h3>🔗 Links</h3>
+      <ul>
+        <li>
+          <a
+            href="https://www.jsdelivr.com/package/npm/texture2ddecoder-wasm"
+            target="_blank"
+            >jsDelivr Package Page</a
+          >
+        </li>
+        <li>
+          <a
+            href="https://www.npmjs.com/package/texture2ddecoder-wasm"
+            target="_blank"
+            >npm Package</a
+          >
+        </li>
+        <li>
+          <a
+            href="https://github.com/fatal10110/texture2ddecoder-wasm"
+            target="_blank"
+            >GitHub Repository</a
+          >
+        </li>
+      </ul>
+    </div>
+
+    <script type="module">
+      // Import from jsDelivr CDN
+      import {
+        initialize,
+        decode_bc1,
+        decode_bc3,
+        decode_etc1,
+        decode_astc,
+        decode_etc2a8,
+      } from "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs";
+
+      const statusDiv = document.getElementById("status");
+      const controlsDiv = document.getElementById("controls");
+      const resultDiv = document.getElementById("result");
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+
+      let isReady = false;
+
+      // Initialize the WASM module
+      async function init() {
+        try {
+          // Point to WASM files on jsDelivr CDN
+          await initialize({
+            wasmPath:
+              "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
+          });
+
+          statusDiv.className = "status success";
+          statusDiv.innerHTML =
+            "✅ Ready! WebAssembly module loaded from CDN successfully.";
+
+          controlsDiv.style.display = "block";
+          isReady = true;
+
+          console.log("texture2ddecoder-wasm initialized successfully!");
+        } catch (error) {
+          statusDiv.className = "status error";
+          statusDiv.innerHTML = `❌ Error: ${error.message}`;
+          console.error("Initialization error:", error);
+        }
+      }
+
+      // Load and decode real ETC2 RGBA texture file
+      window.loadRealTexture = async function () {
+        if (!isReady) return;
+
+        resultDiv.innerHTML = '<p style="color: #856404;">⏳ Loading texture file...</p>';
+
+        try {
+          // Load the real ETC2 RGBA compressed image (compressed_etc2_rgba_400x400.bin)
+          const response = await fetch("compressed_etc2_rgba_400x400.bin");
+          if (!response.ok) {
+            throw new Error(`Failed to load compressed_etc2_rgba_400x400.bin: ${response.status} ${response.statusText}`);
+          }
+
+          const arrayBuffer = await response.arrayBuffer();
+          const compressedData = new Uint8Array(arrayBuffer);
+
+          resultDiv.innerHTML = '<p style="color: #856404;">⏳ Decoding ETC2 RGBA texture...</p>';
+
+          // Decode the 400x400 ETC2 RGBA texture
+          const width = 400;
+          const height = 400;
+          const startTime = performance.now();
+
+          const decoded = await decode_etc2a8(compressedData, width, height);
+          const decodeTime = (performance.now() - startTime).toFixed(2);
+
+          if (decoded) {
+            // Draw decoded data to canvas
+            const imageData = ctx.createImageData(width, height);
+
+            // Convert BGRA to RGBA for canvas
+            for (let i = 0; i < decoded.length; i += 4) {
+              imageData.data[i] = decoded[i + 2]; // R from B
+              imageData.data[i + 1] = decoded[i + 1]; // G stays
+              imageData.data[i + 2] = decoded[i]; // B from R
+              imageData.data[i + 3] = decoded[i + 3]; // A stays
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+
+            resultDiv.innerHTML = `
+              <p style="color: #155724; font-weight: bold;">✅ Real ETC2 RGBA Image Decoded!</p>
+              <p>Format: <strong>ETC2 RGBA (8-bit alpha)</strong></p>
+              <p>Original format: <strong>PNG compressed as ETC2</strong></p>
+              <p>Compressed size: <strong>${compressedData.length.toLocaleString()} bytes</strong></p>
+              <p>Decoded size: <strong>${decoded.length.toLocaleString()} bytes (BGRA)</strong></p>
+              <p>Decode time: <strong>${decodeTime}ms</strong></p>
+              <p>Resolution: <strong>${width}x${height}</strong></p>
+              <p style="color: #0c5460; margin-top: 10px;">📸 The decoded image is displayed in the canvas above!</p>
+            `;
+          } else {
+            resultDiv.innerHTML =
+              '<p style="color: #721c24;">❌ Decode failed (returned null)</p>';
+          }
+        } catch (error) {
+          resultDiv.innerHTML = `<p style="color: #721c24;">❌ Error: ${error.message}</p>`;
+          console.error("Decode error:", error);
+        }
+      };
+
+      // Test decoder with sample data
+      window.testDecoder = async function (format) {
+        if (!isReady) return;
+
+        resultDiv.innerHTML = '<p style="color: #856404;">⏳ Decoding...</p>';
+
+        try {
+          // Create sample compressed data (normally you'd load real texture data)
+          const width = 512;
+          const height = 512;
+          const sampleData = new Uint8Array((width * height) / 2); // Approximate size
+
+          // Fill with sample pattern
+          for (let i = 0; i < sampleData.length; i++) {
+            sampleData[i] = i % 256;
+          }
+
+          let decoded;
+          let startTime = performance.now();
+
+          switch (format) {
+            case "bc1":
+              decoded = await decode_bc1(sampleData, width, height);
+              break;
+            case "bc3":
+              decoded = await decode_bc3(sampleData, width, height);
+              break;
+            case "etc1":
+              decoded = await decode_etc1(sampleData, width, height);
+              break;
+            case "astc":
+              decoded = await decode_astc(sampleData, width, height, 4, 4);
+              break;
+          }
+
+          const decodeTime = (performance.now() - startTime).toFixed(2);
+
+          if (decoded) {
+            // Draw decoded data to canvas
+            const imageData = ctx.createImageData(width, height);
+
+            // Convert BGRA to RGBA for canvas
+            for (let i = 0; i < decoded.length; i += 4) {
+              imageData.data[i] = decoded[i + 2]; // R
+              imageData.data[i + 1] = decoded[i + 1]; // G
+              imageData.data[i + 2] = decoded[i]; // B
+              imageData.data[i + 3] = decoded[i + 3]; // A
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+
+            resultDiv.innerHTML = `
+                        <p style="color: #155724; font-weight: bold;">✅ Decode successful!</p>
+                        <p>Format: <strong>${format.toUpperCase()}</strong></p>
+                        <p>Output size: <strong>${decoded.length.toLocaleString()} bytes</strong></p>
+                        <p>Decode time: <strong>${decodeTime}ms</strong></p>
+                        <p>Resolution: <strong>${width}x${height}</strong></p>
+                    `;
+          } else {
+            resultDiv.innerHTML =
+              '<p style="color: #721c24;">❌ Decode failed (returned null)</p>';
+          }
+        } catch (error) {
+          resultDiv.innerHTML = `<p style="color: #721c24;">❌ Error: ${error.message}</p>`;
+          console.error("Decode error:", error);
+        }
+      };
+
+      // Initialize on page load
+      init();
+    </script>
+  </body>
+</html>
