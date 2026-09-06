@@ -4,9 +4,22 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D14.0.0-brightgreen.svg)](https://nodejs.org/)
 
-A WebAssembly-based JavaScript/TypeScript library for decoding compressed texture formats. This project was inspired by [K0lb3's texture2ddecoder](https://github.com/K0lb3/texture2ddecoder) Python wrapper and brings the same powerful texture decoding capabilities to Node.js and web environments through WebAssembly.
+**Zero-native-deps WebAssembly decoder for BC / ETC / ASTC / PVRTC / Crunch** (Unity assets included). Runs in the browser and Node.js — no native toolchain.
 
-Built on top of [Perfare](https://github.com/Perfare)'s [Texture2DDecoder](https://github.com/Perfare/AssetStudio/tree/master/Texture2DDecoder) from AssetStudio, with cross-platform WebAssembly bindings for JavaScript/TypeScript environments.
+```bash
+npm install texture2ddecoder-wasm
+```
+
+```typescript
+import { decode_astc } from "texture2ddecoder-wasm";
+
+const decoded = await decode_astc(data, 512, 512, 4, 4);
+// decoded: Uint8Array of BGRA pixels, or null on failure
+```
+
+**Live demo:** [fatal10110.github.io/texture2ddecoder-wasm](https://fatal10110.github.io/texture2ddecoder-wasm/)
+
+Same codecs as [Perfare's Texture2DDecoder](https://github.com/Perfare/AssetStudio/tree/master/Texture2DDecoder) (AssetStudio) and the formats covered by [K0lb3/texture2ddecoder](https://github.com/K0lb3/texture2ddecoder) (Python + native) — this package ships them as WASM so you can decode in **browser + Node** without native deps.
 
 ## Features
 
