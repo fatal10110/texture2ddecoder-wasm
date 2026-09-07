@@ -10,14 +10,22 @@
 npm install texture2ddecoder-wasm
 ```
 
-```typescript
-import { decode_astc } from "texture2ddecoder-wasm";
+Try a complete Node.js example: save this as `decode.mjs` and run `node decode.mjs`.
 
-const decoded = await decode_astc(data, 512, 512, 4, 4);
-// decoded: Uint8Array of BGRA pixels, or null on failure
+```javascript
+import { decode_bc1 } from "texture2ddecoder-wasm";
+
+// One BC1 block representing a solid red 4 x 4 texture; no input file needed.
+const data = new Uint8Array([0, 248, 0, 0, 0, 0, 0, 0]);
+const decoded = await decode_bc1(data, 4, 4);
+if (!decoded) throw new Error("Texture decoding failed");
+console.log(decoded.length); // 64 bytes: 4 x 4 pixels x 4 channels
+console.log([...decoded.slice(0, 4)]); // [0, 0, 255, 255] — BGRA, not RGBA
 ```
 
 **Live demo:** [fatal10110.github.io/texture2ddecoder-wasm](https://fatal10110.github.io/texture2ddecoder-wasm/)
+
+For real assets, supply compressed texture payloads and the matching dimensions/format. Browser initialization and WASM asset paths are covered in the [Quick Start Guide](QUICK_START.md).
 
 Same codecs as [Perfare's Texture2DDecoder](https://github.com/Perfare/AssetStudio/tree/master/Texture2DDecoder) (AssetStudio) and the formats covered by [K0lb3/texture2ddecoder](https://github.com/K0lb3/texture2ddecoder) (Python + native) — this package ships them as WASM so you can decode in **browser + Node** without native deps.
 
@@ -28,7 +36,7 @@ Same codecs as [Perfare's Texture2DDecoder](https://github.com/Perfare/AssetStud
 - **Comprehensive format support** - Decode BC1-7, ETC1/2, PVRTC, ASTC, ATC, EAC, and Crunch formats
 - **TypeScript support** - Full type definitions included
 - **Unity Asset support** - Decode textures from Unity game assets
-- **Fast performance** - Native-speed decoding via WebAssembly
+- **WebAssembly codecs** - Runs the compiled Texture2DDecoder codecs in JavaScript environments
 
 ## Supported Formats
 
