@@ -1,0 +1,42 @@
+{
+  "name": "unity-asset-reader",
+  "version": "0.0.0",
+  "description": "Browser-first Unity AssetBundle parser: isomorphic, synchronous, zero platform dependencies.",
+  "license": "MIT",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "dist/**/*",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "scripts": {
+    "pretest": "npm run build",
+    "build": "rollup -c rollup.config.mjs",
+    "test": "tsx --test 'tests/**/*.test.ts'"
+  },
+  "keywords": [
+    "unity",
+    "assetbundle",
+    "unity3d",
+    "parser",
+    "browser"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fatal10110/texture2ddecoder-wasm.git",
+    "directory": "packages/core"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
