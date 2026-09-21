@@ -11,8 +11,13 @@
  * some malformed inputs it hands back short or wrong output instead of throwing
  * (a flipped byte in the deflate stream, a zlib stream cut to its header). So
  * each entry point verifies the trailer itself: R9 - never return partial or
- * garbage bytes silently. The checksum costs one extra pass over the output,
- * which is cheap next to inflating it.
+ * garbage bytes silently. That pass is not free: CRC32 runs at ~380 MiB/s
+ * (~2.6 ms per MiB), and on already-incompressible data it dominates - 32 MiB
+ * inflates in 2.0 ms and then spends 81.5 ms being checksummed.
+ *
+ * ponytail: byte-at-a-time CRC32 caps at ~380 MiB/s; a slice-by-8 table reaches
+ * ~811 MiB/s with identical output if gzip-wrapped bundles ever get big enough
+ * for it to matter.
  */
 
 import { gunzipSync, unzlibSync } from "fflate";

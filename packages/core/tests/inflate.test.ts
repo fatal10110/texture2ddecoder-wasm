@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { brotliCompressSync, deflateSync, gzipSync } from "node:zlib";
 
-import { gunzipSync as fflateGunzipSync } from "fflate";
+import { gunzipSync as fflateGunzipSync, unzlibSync as fflateUnzlibSync } from "fflate";
 
 import { golden, loadFixture, sha256 } from "../../../fixtures/helpers.js";
 import { CorruptError, UnsupportedError } from "../src/errors.js";
@@ -117,6 +117,10 @@ test("unzlib rejects truncated streams, including the one fflate empties", () =>
   const full = zlibbed(pseudoRandom(8192));
   // Cut to six bytes fflate returns zero bytes rather than throwing; the
   // Adler-32 check is what turns that into a CorruptError (R9).
+  assert.doesNotThrow(
+    () => fflateUnzlibSync(full.subarray(0, 6)),
+    "vector no longer exercises the Adler-32 path",
+  );
   for (const cut of [6, Math.floor(full.length / 2), full.length - 1]) {
     assert.throws(() => unzlib(full.subarray(0, cut)), CorruptError, `cut at ${cut}`);
   }
@@ -125,6 +129,7 @@ test("unzlib rejects truncated streams, including the one fflate empties", () =>
 test("unzlib rejects a corrupted deflate payload instead of returning garbage", () => {
   const full = zlibbed(pseudoRandom(4096));
   const bad = flipByte(full, Math.floor(full.length / 2));
+  assert.doesNotThrow(() => fflateUnzlibSync(bad), "vector no longer exercises the Adler-32 path");
   assert.throws(() => unzlib(bad), (error: unknown) => {
     assert.ok(error instanceof CorruptError);
     assert.match(error.message, /Adler-32 0x[0-9a-f]{8} does not match the trailer's/);
