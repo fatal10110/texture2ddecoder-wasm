@@ -1,0 +1,160 @@
+{
+  "_oracle": "UnityPy 1.25.3",
+  "_generator": "scripts/make-goldens.py",
+  "fixtures": {
+    "gzip-lz4.bundle.gz": {
+      "signature": "UnityFS",
+      "formatVersion": 6,
+      "unityVersion": "5.x.x",
+      "unityRevision": "2022.3.0f1",
+      "files": {
+        "CAB-lz4": {
+          "sha256": "9fb7c6d14d56c91c8414b1abe50cb2ee03009d8f77cef89cd84da06c4a1e8904",
+          "size": 4096
+        },
+        "CAB-lz4.resS": {
+          "sha256": "333cfe24c138fc573f54c1cc6486990a55319395c2786e4636250f8e4d4bcc03",
+          "size": 1536
+        }
+      },
+      "objects": {},
+      "oracleNote": "gunzipped with stdlib before handing the stream to UnityPy"
+    },
+    "lz4-blocksinfo-at-end.bundle": {
+      "signature": "UnityFS",
+      "formatVersion": 6,
+      "unityVersion": "5.x.x",
+      "unityRevision": "2022.3.0f1",
+      "files": {
+        "CAB-lz4-blocksinfo-at-end": {
+          "sha256": "116b0c9f5b0097c433d33dd5087ef3f8aa4f5c88465fdc0af8e6b41d3a595680",
+          "size": 4096
+        },
+        "CAB-lz4-blocksinfo-at-end.resS": {
+          "sha256": "94108a4c8b103af4a79b5d319c562d802b00b87e7070ca377409bde4252afda0",
+          "size": 1536
+        }
+      },
+      "objects": {}
+    },
+    "lz4-padding.bundle": {
+      "signature": "UnityFS",
+      "formatVersion": 6,
+      "unityVersion": "5.x.x",
+      "unityRevision": "2022.3.0f1",
+      "files": {
+        "CAB-lz4-padding": {
+          "sha256": "e5c249fbf5fe5ce00267e1c7fe4317307c5ebc3192edc82e21b9178430d0fd11",
+          "size": 4096
+        },
+        "CAB-lz4-padding.resS": {
+          "sha256": "b4bca53ddfbb92065f2458d6151fc9660fe4d66b0e68639335b7ccf5a0354a97",
+          "size": 1536
+        }
+      },
+      "objects": {}
+    },
+    "lz4-v7-align.bundle": {
+      "signature": "UnityFS",
+      "formatVersion": 7,
+      "unityVersion": "5.x.x",
+      "unityRevision": "2022.3.0f1",
+      "files": {
+        "CAB-lz4-v7-align": {
+          "sha256": "749bd5a1dd3ba3838a4dcea4f9505161fba3105477c334af0f44e2468ee20e55",
+          "size": 4096
+        },
+        "CAB-lz4-v7-align.resS": {
+          "sha256": "c209e8d7cd897c9f06c5f64cb626f1ec5854a54dab6e34a5be19ae6477cd8117",
+          "size": 1536
+        }
+      },
+      "objects": {}
+    },
+    "lz4.bundle": {
+      "signature": "UnityFS",
+      "formatVersion": 6,
+      "unityVersion": "5.x.x",
+      "unityRevision": "2022.3.0f1",
+      "files": {
+        "CAB-lz4": {
+          "sha256": "9fb7c6d14d56c91c8414b1abe50cb2ee03009d8f77cef89cd84da06c4a1e8904",
+          "size": 4096
+        },
+        "CAB-lz4.resS": {
+          "sha256": "333cfe24c138fc573f54c1cc6486990a55319395c2786e4636250f8e4d4bcc03",
+          "size": 1536
+        }
+      },
+      "objects": {}
+    },
+    "lzma.bundle": {
+      "signature": "UnityFS",
+      "formatVersion": 6,
+      "unityVersion": "5.x.x",
+      "unityRevision": "2022.3.0f1",
+      "files": {
+        "CAB-lzma": {
+          "sha256": "038cab20106d89b7b85e42adbddc6b031c9fa0ff1e22c2e958fd04e61bdeca66",
+          "size": 4096
+        },
+        "CAB-lzma.resS": {
+          "sha256": "93d315e6bedebd15043e8f57c513e2281766a1c6d7c710b13bdbc5b51f3063e9",
+          "size": 1536
+        }
+      },
+      "objects": {}
+    },
+    "uncompressed.bundle": {
+      "signature": "UnityFS",
+      "formatVersion": 6,
+      "unityVersion": "5.x.x",
+      "unityRevision": "2022.3.0f1",
+      "files": {
+        "CAB-uncompressed": {
+          "sha256": "ed520e006816221f666ae88cfc3a7a5836c01666986b52fccf5f4c459284a1b8",
+          "size": 4096
+        },
+        "CAB-uncompressed.resS": {
+          "sha256": "cf525a689a13d54b4a4140e67c1e83cc8cf4b9966f862294bbb646dd53609b45",
+          "size": 1536
+        }
+      },
+      "objects": {}
+    },
+    "unityraw.bundle": {
+      "signature": "UnityRaw",
+      "formatVersion": 3,
+      "unityVersion": "5.x.x",
+      "unityRevision": "2022.3.0f1",
+      "files": {
+        "CAB-unityraw": {
+          "sha256": "48705548a2b14b805c6c22c6311df5d3b5dac879d0acfd3d5e791acde2b3bcd0",
+          "size": 4096
+        },
+        "CAB-unityraw.resS": {
+          "sha256": "828ea7e1d61c9a02c330bc2a09bc0229fdb227393c3b45bf305e4fcb97395cc4",
+          "size": 1536
+        }
+      },
+      "objects": {}
+    },
+    "unityweb-lzma.bundle": {
+      "signature": "UnityWeb",
+      "formatVersion": 3,
+      "unityVersion": "5.x.x",
+      "unityRevision": "2022.3.0f1",
+      "files": {
+        "CAB-unityweb-lzma": {
+          "sha256": "2f3ea5b466759a9cd00205c0d388d08d442c7cb59c51e318ff9c4c532c8a2697",
+          "size": 4096
+        },
+        "CAB-unityweb-lzma.resS": {
+          "sha256": "192370d9b450e391e05a92bc9110dfefb3f554a84eee933d30fe27d3767993d6",
+          "size": 1536
+        }
+      },
+      "objects": {}
+    }
+  }
+}

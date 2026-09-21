@@ -6,7 +6,7 @@
   ],
   "scripts": {
     "build": "npm run build -w unity-asset-reader -w unity-asset-reader-texture -w unity-asset-reader-node && npm run build:rollup -w texture2ddecoder-wasm",
-    "test": "npm test -w unity-asset-reader -w unity-asset-reader-texture -w unity-asset-reader-node && node scripts/test-decoder.mjs && tsx --test scripts/tests/*.test.mjs",
+    "test": "npm test -w unity-asset-reader -w unity-asset-reader-texture -w unity-asset-reader-node && node scripts/test-decoder.mjs && tsx --test scripts/tests/*.test.mjs scripts/tests/*.test.ts",
     "verify": "npm run build && npm test && npm run check:browser && npm run check:no-csharp",
     "build:wasm": "npm run build:wasm -w texture2ddecoder-wasm",
     "build:rollup": "npm run build:rollup -w texture2ddecoder-wasm",
