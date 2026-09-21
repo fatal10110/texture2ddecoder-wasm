@@ -19,24 +19,33 @@ export type FileType =
   | "UnityArchive"
   | "UnityWebData"
   | "gzip"
+  | "brotli"
   | "zip"
   | "serialized"
   | "resource";
 
-/** The subset of {@link FileType} that this library can open. */
-export type SupportedFileType = Exclude<FileType, "UnityArchive" | "zip" | "resource">;
-
-/** Why each unsupported type is unsupported; becomes the error's hint (R9). */
-const UNSUPPORTED: Record<Exclude<FileType, SupportedFileType>, string> = {
+/**
+ * Every type this library cannot open, and why - the single source of truth for
+ * what {@link detectContainer} rejects, so a new {@link FileType} cannot become
+ * silently supported. The value becomes the error's hint (R9).
+ */
+const UNSUPPORTED = {
   UnityArchive: "no upstream implementation to port",
+  brotli: "no brotli decoder",
   zip: "extract the archive first",
   resource: "raw asset bytes, not a container",
-};
+} as const satisfies Partial<Record<FileType, string>>;
+
+/** The subset of {@link FileType} that this library can open. */
+export type SupportedFileType = Exclude<FileType, keyof typeof UNSUPPORTED>;
 
 /** Upstream reads a NUL-terminated signature of at most 20 bytes. */
 const SIGNATURE_MAX_LENGTH = 20;
 
 const GZIP_MAGIC = [0x1f, 0x8b];
+/** ASCII "brotli", which upstream looks for at a fixed offset, not at byte 0. */
+const BROTLI_MAGIC = [0x62, 0x72, 0x6f, 0x74, 0x6c, 0x69];
+const BROTLI_MAGIC_OFFSET = 0x20;
 const ZIP_MAGIC = [0x50, 0x4b, 0x03, 0x04];
 /** Second disk of a spanned zip; upstream treats it as a zip too. */
 const ZIP_SPANNED_MAGIC = [0x50, 0x4b, 0x07, 0x08];
@@ -46,8 +55,10 @@ const SERIALIZED_MIN_LENGTH = 20;
 /** Format version 22+ moved size and offset to 64-bit fields, growing the header. */
 const SERIALIZED_LARGE_MIN_LENGTH = 48;
 
-function startsWith(data: Uint8Array, magic: readonly number[]): boolean {
-  return data.length >= magic.length && magic.every((byte, i) => data[i] === byte);
+function hasMagic(data: Uint8Array, magic: readonly number[], offset = 0): boolean {
+  return (
+    data.length >= offset + magic.length && magic.every((byte, i) => data[offset + i] === byte)
+  );
 }
 
 function readSignature(data: Uint8Array): string {
@@ -115,11 +126,12 @@ export function detectFileType(data: Uint8Array): FileType {
       return "UnityWebData";
   }
 
-  if (startsWith(data, GZIP_MAGIC)) return "gzip";
-  // Upstream also sniffs brotli (magic at 0x20) here. The plan ships no brotli
-  // decoder (§7), so such a file falls through to `resource`.
+  if (hasMagic(data, GZIP_MAGIC)) return "gzip";
+  // Detected but never decoded: the plan ships no brotli decoder (§1, §7). It is
+  // sniffed so the refusal can name brotli instead of mislabelling it a resource.
+  if (hasMagic(data, BROTLI_MAGIC, BROTLI_MAGIC_OFFSET)) return "brotli";
   if (isSerializedFile(data)) return "serialized";
-  if (startsWith(data, ZIP_MAGIC) || startsWith(data, ZIP_SPANNED_MAGIC)) return "zip";
+  if (hasMagic(data, ZIP_MAGIC) || hasMagic(data, ZIP_SPANNED_MAGIC)) return "zip";
 
   return "resource";
 }
@@ -134,12 +146,10 @@ export function detectFileType(data: Uint8Array): FileType {
  */
 export function detectContainer(data: Uint8Array): SupportedFileType {
   const type = detectFileType(data);
-  switch (type) {
-    case "UnityArchive":
-    case "zip":
-    case "resource":
-      throw new UnsupportedError("container", type, UNSUPPORTED[type]);
-    default:
-      return type;
-  }
+  if (isUnsupported(type)) throw new UnsupportedError("container", type, UNSUPPORTED[type]);
+  return type;
+}
+
+function isUnsupported(type: FileType): type is keyof typeof UNSUPPORTED {
+  return type in UNSUPPORTED;
 }

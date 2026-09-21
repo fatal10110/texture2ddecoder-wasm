@@ -49,6 +49,13 @@ function bytes(...values: number[]): Uint8Array {
   return new Uint8Array(values);
 }
 
+/** Upstream looks for ASCII "brotli" at offset 0x20, not at the start. */
+function brotliFile(): Uint8Array {
+  const data = new Uint8Array(0x20 + 6);
+  data.set([..."brotli"].map((ch) => ch.charCodeAt(0)), 0x20);
+  return data;
+}
+
 // --- the detection table over every committed fixture -----------------------
 
 for (const name of fixtureNames()) {
@@ -76,6 +83,7 @@ const TABLE: [string, Uint8Array, FileType][] = [
   ["a zip archive", bytes(0x50, 0x4b, 0x03, 0x04, 0x14, 0x00, 0x00, 0x00), "zip"],
   ["a spanned zip archive", bytes(0x50, 0x4b, 0x07, 0x08, 0x00, 0x00), "zip"],
   ["a gzip stream", bytes(0x1f, 0x8b, 0x08, 0x00), "gzip"],
+  ["a brotli stream", brotliFile(), "brotli"],
   ["a raw SerializedFile", serializedFile({ version: 17 }), "serialized"],
   ["a 64-bit SerializedFile (22+)", serializedFile({ version: 22 }), "serialized"],
   ["a resource file", bytes(...new Array<number>(64).fill(0xaa)), "resource"],
@@ -125,6 +133,14 @@ test("a 22+ header too small to hold its 64-bit fields is not serialized", () =>
   assert.equal(detectFileType(serializedFile({ version: 22, length: 48 })), "serialized");
 });
 
+test("format version 21 still reads its sizes from the 32-bit fields", () => {
+  // Pins the `>= 22` gate itself: 47 bytes is under the floor version 22+ needs,
+  // so this can only pass through the 32-bit path. A gate at 21 or lower turns
+  // the most common version on the low side (2019/2020) into a resource file.
+  const v21 = serializedFile({ version: 21, length: 47, dataOffset: 47 });
+  assert.equal(detectFileType(v21), "serialized");
+});
+
 test("the smallest accepted 32-bit header is 20 bytes", () => {
   const header = (length: number) => serializedFile({ version: 17, length, dataOffset: length });
   assert.equal(detectFileType(header(20)), "serialized");
@@ -154,6 +170,7 @@ test("garbage is reported as resource rather than guessed at", () => {
 test("detectContainer throws UnsupportedError naming the detected type", () => {
   for (const [expected, data] of [
     ["UnityArchive", signed("UnityArchive")],
+    ["brotli", brotliFile()],
     ["zip", bytes(0x50, 0x4b, 0x03, 0x04)],
     ["resource", new Uint8Array(64)],
     ["resource", new Uint8Array(0)],
