@@ -22,11 +22,18 @@ const ArchiveFlags = {
   CompressionTypeMask: 0x3f,
   /** Blocks info sits at the end of the file instead of after the header. */
   BlocksInfoAtTheEnd: 0x80,
-  /** 2019.4+: the data blocks start on a 16-byte boundary. */
+  /**
+   * 2020.3.34 / 2021.3.2 / 2022.1.1 and later: the data blocks start on a
+   * 16-byte boundary. Older editors wrote the same bit to mean "uses
+   * AssetBundle encryption" - see #74, which owns the version split.
+   */
   BlockInfoNeedPaddingAtStart: 0x200,
   /**
-   * AssetBundle encryption. Unity moved the bit from 0x400 to 0x1000, and
+   * AssetBundle encryption: Unity moved the bit from 0x400 to 0x1000, and
    * UnityCN builds reuse 0x400 for their own scheme, so both are refused.
+   * The composite is UnityPy's (`UsesAssetBundleEncryption = 0x1400`, old 0x400
+   * / new 0x1000); AssetStudio's own enum stops at `UnityCNEncryption = 0x400`.
+   * It does not cover the pre-2020 0x200 spelling, which is #74's second half.
    */
   EncryptionMask: 0x1400,
 } as const;
@@ -183,10 +190,12 @@ function readBlocksInfoAndDirectory(
   reader: BinaryReader,
   header: BundleHeader,
 ): { blocks: StorageBlock[]; nodes: DirectoryNode[] } {
-  // Format version 7 (Unity 2020.1+): the header is padded to 16 bytes. UnityPy
-  // additionally aligns a version-6 header written by 2019.4.15+; AssetStudio
-  // is the source of truth here, and no fixture shows that case, so the gate
-  // stays on the format version.
+  // Format version 7 (Unity 2020.1+): the header is padded to 16 bytes.
+  //
+  // Known gap (#74): Unity backported the alignment fix to 2019.4.15 while the
+  // format version stayed at 6, so such a header is padded and this gate misses
+  // it - the blocks info is then read ~14 bytes early and the decode fails.
+  // AssetStudio has the same gap; UnityPy gates on unityRevision as well.
   if (header.version >= 7) reader.align(16);
 
   const start = reader.position;
@@ -236,9 +245,14 @@ function readBlocksInfoAndDirectory(
     });
   }
 
-  // 2019.4+: with this flag the data blocks start on a 16-byte boundary. Before
-  // 2020 the same bit meant "uses AssetBundle encryption"; such a bundle is
-  // already refused above, so aligning unconditionally matches upstream.
+  // With this flag the data blocks start on a 16-byte boundary. Aligning
+  // whenever it is set is what AssetStudio does.
+  //
+  // Known gap (#74): before 2020.3.34 / 2021.3.2 / 2022.1.1 the same bit meant
+  // "uses AssetBundle encryption". The encryption refusal above covers 0x400
+  // and 0x1000 only, so such a bundle is aligned and handed to the codecs
+  // instead of being refused; telling the two apart needs the unityRevision
+  // parse that #74 adds.
   if ((header.flags & ArchiveFlags.BlockInfoNeedPaddingAtStart) !== 0) reader.align(16);
 
   return { blocks, nodes };
