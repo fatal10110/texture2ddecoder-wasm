@@ -42,7 +42,7 @@ docker run --rm \
     emscripten/emsdk:latest \
     bash -c '
         echo "Compiling C++ to WebAssembly..."
-        emcc \
+        em++ \
             /project-src/Texture2DDecoder/bcn.cpp \
             /project-src/Texture2DDecoder/pvrtc.cpp \
             /project-src/Texture2DDecoder/etc.cpp \
