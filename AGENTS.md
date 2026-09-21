@@ -1,6 +1,6 @@
 # AGENTS.md
 
-npm-workspaces monorepo (repo will be renamed to `unity-asset-reader`): a shared parser core, feature packages on top, and the existing texture decoder as a standalone package. Layout is the **target** of plan D8/§2; M0 creates it, until then the decoder still sits at the repo root.
+npm-workspaces monorepo (repo will be renamed to `unity-asset-reader`): a shared parser core, feature packages on top, and the existing texture decoder as a standalone package. The decoder lives in `packages/texture2ddecoder-wasm/`; the reader packages are scaffolded by M0 (#7).
 
 | Package | Path | State | What |
 |---|---|---|---|
