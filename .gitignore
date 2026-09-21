@@ -8,8 +8,8 @@ build/
 .docker/
 
 # Build outputs
-packages/texture2ddecoder-wasm/wasm/*.js
-packages/texture2ddecoder-wasm/wasm/*.wasm
+**/wasm/*.js
+**/wasm/*.wasm
 *.tsbuildinfo
 
 # Test outputs
