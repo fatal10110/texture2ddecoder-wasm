@@ -192,6 +192,21 @@ export class BinaryReader {
   }
 
   /**
+   * Reads `count` bytes as UTF-8 text, without a terminator or a length prefix
+   * (upstream `Encoding.UTF8.GetString(reader.ReadBytes(count))`).
+   *
+   * Used by the containers that store a path as an explicit length followed by
+   * that many bytes, such as `WebFile`.
+   *
+   * @param count how many bytes of text to take
+   * @throws {RangeError} when `count` is negative or not an integer below 2^53
+   * @throws {CorruptError} when fewer than `count` bytes remain
+   */
+  readString(count: number): string {
+    return decodeUtf8(this.readBytes(count));
+  }
+
+  /**
    * Skips padding up to the next multiple of `alignment` (upstream
    * `AlignStream`, default 4).
    *

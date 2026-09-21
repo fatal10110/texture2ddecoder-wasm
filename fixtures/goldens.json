@@ -172,6 +172,20 @@
         }
       },
       "objects": {}
+    },
+    "webdata.data": {
+      "signature": "UnityWebData1.0",
+      "files": {
+        "CAB-webdata": {
+          "sha256": "5fec86bb4200331c32f99144135e4434f54100011728f3a3ec14e382f1ae5bef",
+          "size": 4096
+        },
+        "CAB-webdata.resS": {
+          "sha256": "dd0d791d613f2222e9cec9bd1c6ac29cd0dc4ed25f4594149281e9bab28e7d1c",
+          "size": 1536
+        }
+      },
+      "objects": {}
     }
   }
 }

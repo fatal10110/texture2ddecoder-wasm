@@ -25,7 +25,8 @@ test("every golden has a fixture file behind it", () => {
 test("fixtures carry the signature their golden claims", () => {
   for (const name of names) {
     const raw = name.endsWith(".gz") ? gunzipFixture(name) : loadFixture(name);
-    const magic = Buffer.from(raw.subarray(0, 12)).toString("latin1");
+    // 20 bytes is upstream's signature cap; "UnityWebData1.0" needs 15 of them.
+    const magic = Buffer.from(raw.subarray(0, 20)).toString("latin1");
     assert.ok(
       magic.startsWith(golden(name).signature),
       `${name}: starts with ${JSON.stringify(magic)}, golden says ${golden(name).signature}`,

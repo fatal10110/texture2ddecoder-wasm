@@ -73,14 +73,15 @@ def read_fixture(path: pathlib.Path) -> dict:
         if table:
             objects[name] = table
 
-    golden = {
-        "signature": bundle.signature,
-        "formatVersion": int(bundle.version),
-        "unityVersion": bundle.version_player,
-        "unityRevision": bundle.version_engine,
-        "files": dict(sorted(files.items())),
-        "objects": objects,
-    }
+    golden = {"signature": bundle.signature}
+    # A WebFile has none of the bundle version fields - it carries its version
+    # inside the signature ("UnityWebData1.0") and nothing else.
+    if hasattr(bundle, "version"):
+        golden["formatVersion"] = int(bundle.version)
+        golden["unityVersion"] = bundle.version_player
+        golden["unityRevision"] = bundle.version_engine
+    golden["files"] = dict(sorted(files.items()))
+    golden["objects"] = objects
     if note:
         golden["oracleNote"] = note
     return golden

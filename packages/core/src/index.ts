@@ -4,6 +4,8 @@ export { NodeFlags, readBundle } from "./bundle/BundleFile.js";
 export type { BundleFile, BundleHeader, StreamFile } from "./bundle/BundleFile.js";
 export { detectContainer, detectFileType } from "./bundle/detect.js";
 export type { FileType, SupportedFileType } from "./bundle/detect.js";
+export { readWebFile } from "./bundle/WebFile.js";
+export type { WebFile } from "./bundle/WebFile.js";
 export { gunzip, unzlib } from "./codec/inflate.js";
 export { decompressLz4 } from "./codec/lz4.js";
 export { lzmaDecompress } from "./codec/lzma.js";

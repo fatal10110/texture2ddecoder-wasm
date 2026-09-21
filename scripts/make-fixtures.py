@@ -25,6 +25,7 @@ import sys
 
 from UnityPy.enums.BundleFile import ArchiveFlags
 from UnityPy.files.BundleFile import BundleFile
+from UnityPy.files.WebFile import WebFile
 from UnityPy.streams import EndianBinaryReader
 
 import UnityPy
@@ -96,6 +97,19 @@ def build(
     return bundle.save(packer=packer)
 
 
+def build_webdata(stem: str) -> bytes:
+    """A UnityWebData1.0 container - what a Unity WebGL build ships as .data.
+
+    Not a bundle: a flat offset/length/path table followed by the file bytes,
+    with no compression of its own. Written uncompressed; the gzip/brotli
+    wrappers Unity can put around it are the caller's to remove (#15, #19).
+    """
+    web = WebFile.__new__(WebFile)
+    web.packer = "none"
+    web.files = {name: EndianBinaryReader(data) for name, (data, _) in nodes(stem).items()}
+    return web.save()
+
+
 def verify(name: str, raw: bytes, stem: str) -> None:
     """A fixture is only valid if the independent reader agrees it is one."""
     data = gzip.decompress(raw) if raw[:2] == b"\x1f\x8b" else raw
@@ -131,6 +145,13 @@ def main() -> None:
         verify(name, raw, name)
         (OUT / f"{name}.bundle").write_bytes(raw)
         written.append((f"{name}.bundle", len(raw)))
+
+    # The one non-bundle container: same node payloads, different layout.
+    web_stem = "webdata"
+    web = build_webdata(web_stem)
+    verify(f"{web_stem}.data", web, web_stem)
+    (OUT / f"{web_stem}.data").write_bytes(web)
+    written.append((f"{web_stem}.data", len(web)))
 
     # gzip-wrapped copy: same inner bundle, so it must unpack to the same files.
     gz_stem = "lz4"
