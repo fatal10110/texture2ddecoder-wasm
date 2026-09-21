@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { assertMatchesGolden, loadFixture, type StreamFile } from "../../../fixtures/helpers.js";
-import { CorruptError, UnsupportedError } from "../src/errors.js";
+import { readBundle } from "../src/bundle/BundleFile.js";
 import { lzmaDecompress } from "../src/codec/lzma.js";
+import { CorruptError, UnsupportedError } from "../src/errors.js";
 
 const hex = (text: string): Uint8Array =>
   Uint8Array.from(text.match(/../g) ?? [], (pair) => parseInt(pair, 16));
@@ -47,129 +48,47 @@ test("does not read or write outside the buffers it was given", () => {
 });
 
 // --- The two Unity stream shapes, on committed fixtures --------------------
-//
-// BundleFile (#17) is not written yet, so these tests walk just enough of each
-// container to reach its LZMA streams. Both parsers go away when `load()` lands
-// and this file keeps only the codec-level tests above.
 
-class Cursor {
-  private pos = 0;
-  private readonly view: DataView;
-
-  constructor(private readonly data: Uint8Array) {
-    this.view = new DataView(data.buffer, data.byteOffset, data.byteLength);
-  }
-
-  seek(pos: number): void {
-    this.pos = pos;
-  }
-
-  /** Null-terminated ASCII, as Unity writes signatures and version strings. */
-  stringToNull(): string {
-    let out = "";
-    while (this.data[this.pos] !== 0) out += String.fromCharCode(this.data[this.pos++] as number);
-    this.pos++;
-    return out;
-  }
-
-  u16(): number {
-    const value = this.view.getUint16(this.pos);
-    this.pos += 2;
-    return value;
-  }
-
-  u32(): number {
-    const value = this.view.getUint32(this.pos);
-    this.pos += 4;
-    return value;
-  }
-
-  i64(): number {
-    const value = this.view.getBigInt64(this.pos);
-    this.pos += 8;
-    return Number(value);
-  }
-
-  bytes(count: number): Uint8Array {
-    const out = this.data.subarray(this.pos, this.pos + count);
-    this.pos += count;
-    return out;
-  }
-}
-
-/** `props ++ bitstream` as a UnityFS block stores it: no size in the stream. */
-const unpackBlock = (block: Uint8Array, uncompressedSize: number): Uint8Array =>
-  lzmaDecompress(block.subarray(0, 5), block.subarray(5), uncompressedSize);
-
-test("decodes the LZMA blocks-info and data blocks of a UnityFS bundle", () => {
-  const cursor = new Cursor(loadFixture("lzma.bundle"));
-  assert.equal(cursor.stringToNull(), "UnityFS");
-  cursor.u32(); // format version
-  cursor.stringToNull(); // unityVersion
-  cursor.stringToNull(); // unityRevision
-  cursor.i64(); // archive size
-  const compressedInfoSize = cursor.u32();
-  const uncompressedInfoSize = cursor.u32();
-  const flags = cursor.u32();
-  assert.equal(flags & 0x3f, 1, "fixture should use LZMA for its blocks info");
-
-  // Shape 1, first use: the blocks info itself is an LZMA block.
-  const blocksInfo = new Cursor(
-    unpackBlock(cursor.bytes(compressedInfoSize), uncompressedInfoSize),
-  );
-  blocksInfo.bytes(16); // uncompressed data hash
-
-  const blockCount = blocksInfo.u32();
-  const blocks = Array.from({ length: blockCount }, () => ({
-    uncompressedSize: blocksInfo.u32(),
-    compressedSize: blocksInfo.u32(),
-    flags: blocksInfo.u16(),
-  }));
-  assert.ok(
-    blocks.every((block) => (block.flags & 0x3f) === 1),
-    "fixture should use LZMA for its data blocks",
-  );
-
-  // Shape 1, second use: every data block, concatenated into the blocks stream.
-  const blob = new Uint8Array(blocks.reduce((sum, block) => sum + block.uncompressedSize, 0));
-  let written = 0;
-  for (const block of blocks) {
-    blob.set(unpackBlock(cursor.bytes(block.compressedSize), block.uncompressedSize), written);
-    written += block.uncompressedSize;
-  }
-
-  const nodeCount = blocksInfo.u32();
-  const files: StreamFile[] = Array.from({ length: nodeCount }, () => {
-    const offset = blocksInfo.i64();
-    const size = blocksInfo.i64();
-    blocksInfo.u32(); // node flags
-    return { path: blocksInfo.stringToNull(), data: blob.subarray(offset, offset + size) };
-  });
-
-  assertMatchesGolden("lzma.bundle", files);
+test("unpacks a UnityFS bundle whose blocks info and blocks are both LZMA", () => {
+  // Shape 1, end to end: `readBundle` decompresses the blocks info and every
+  // storage block through this codec. BundleFile.test.ts covers the same
+  // fixture from the parser's side; this asserts it from the codec's.
+  assertMatchesGolden("lzma.bundle", readBundle(loadFixture("lzma.bundle")).files);
 });
 
 test("decodes the LZMA level of a legacy UnityWeb bundle", () => {
-  const cursor = new Cursor(loadFixture("unityweb-lzma.bundle"));
-  assert.equal(cursor.stringToNull(), "UnityWeb");
-  const formatVersion = cursor.u32();
-  cursor.stringToNull(); // unityVersion
-  cursor.stringToNull(); // unityRevision
-  cursor.u32(); // minimum streamed bytes
-  const headerSize = cursor.u32();
-  cursor.u32(); // levels to download before streaming
-  const levelCount = cursor.u32();
-  const levels = Array.from({ length: levelCount }, () => ({
-    compressedSize: cursor.u32(),
-    uncompressedSize: cursor.u32(),
-  }));
-  assert.equal(formatVersion, 3);
+  // Shape 2: the stream carries its own 13-byte header, so the u64 size is read
+  // out of it instead of coming from the container. The legacy container parser
+  // is #18's, so this walks the v3 header by hand - just far enough to reach
+  // the one LZMA stream - and checks the unpacked nodes against the golden.
+  const bundle = loadFixture("unityweb-lzma.bundle");
+  const view = new DataView(bundle.buffer, bundle.byteOffset, bundle.byteLength);
+  let pos = 0;
+  const stringToNull = (): string => {
+    let out = "";
+    while (bundle[pos] !== 0) out += String.fromCharCode(bundle[pos++] as number);
+    pos++;
+    return out;
+  };
+  const u32 = (): number => {
+    const value = view.getUint32(pos);
+    pos += 4;
+    return value;
+  };
 
-  // Shape 2: the level's stream carries its own 13-byte header, so the u64 size
-  // is read out of it rather than taken from the level record.
-  cursor.seek(headerSize);
-  const level = levels[levelCount - 1]!;
-  const stream = cursor.bytes(level.compressedSize);
+  assert.equal(stringToNull(), "UnityWeb");
+  assert.equal(u32(), 3, "fixture should be a format v3 legacy bundle");
+  stringToNull(); // unityVersion
+  stringToNull(); // unityRevision
+  u32(); // minimum streamed bytes
+  const headerSize = u32();
+  u32(); // levels to download before streaming
+  const levelCount = u32();
+  // Upstream keeps only the last level; every level but the last is a prefix of it.
+  let level = { compressedSize: 0, uncompressedSize: 0 };
+  for (let i = 0; i < levelCount; i++) level = { compressedSize: u32(), uncompressedSize: u32() };
+
+  const stream = bundle.subarray(headerSize, headerSize + level.compressedSize);
   const declaredSize = new DataView(
     stream.buffer,
     stream.byteOffset,
@@ -179,14 +98,21 @@ test("decodes the LZMA level of a legacy UnityWeb bundle", () => {
 
   const blob = lzmaDecompress(stream.subarray(0, 5), stream.subarray(13), Number(declaredSize));
 
-  const blocksStream = new Cursor(blob);
-  const nodeCount = blocksStream.u32();
-  const files: StreamFile[] = Array.from({ length: nodeCount }, () => {
-    const path = blocksStream.stringToNull();
-    const offset = blocksStream.u32();
-    const size = blocksStream.u32();
-    return { path, data: blob.subarray(offset, offset + size) };
-  });
+  // The decompressed level is the directory: a node count, then path/offset/size.
+  const blobView = new DataView(blob.buffer, blob.byteOffset, blob.byteLength);
+  pos = 0;
+  const files: StreamFile[] = [];
+  const nodeCount = blobView.getUint32(0);
+  pos = 4;
+  for (let i = 0; i < nodeCount; i++) {
+    let path = "";
+    while (blob[pos] !== 0) path += String.fromCharCode(blob[pos++] as number);
+    pos++;
+    const offset = blobView.getUint32(pos);
+    const size = blobView.getUint32(pos + 4);
+    pos += 8;
+    files.push({ path, data: blob.subarray(offset, offset + size) });
+  }
 
   assertMatchesGolden("unityweb-lzma.bundle", files);
 });

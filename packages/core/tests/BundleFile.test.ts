@@ -17,6 +17,7 @@ const UNITYFS_FIXTURES = [
   "lz4-blocksinfo-at-end.bundle",
   "lz4-padding.bundle",
   "lz4-v7-align.bundle",
+  "lzma.bundle",
 ];
 
 // --- fixtures against the oracle goldens ------------------------------------
@@ -57,16 +58,6 @@ test("returns views into the block buffer rather than copies (R7)", () => {
 });
 
 // --- what is not implemented here -------------------------------------------
-
-test("refuses an LZMA-compressed bundle until the LZMA codec lands (#14)", () => {
-  assert.throws(
-    () => readBundle(loadFixture("lzma.bundle")),
-    (error: unknown) =>
-      error instanceof UnsupportedError &&
-      error.kind === "compression type" &&
-      error.found === "LZMA",
-  );
-});
 
 for (const name of ["unityweb-lzma.bundle", "unityraw.bundle"]) {
   test(`refuses ${name}: the legacy containers land with #18`, () => {
