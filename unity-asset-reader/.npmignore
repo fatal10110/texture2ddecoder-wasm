@@ -1,7 +1,0 @@
-src/
-node/
-tests/
-tsconfig*.json
-rollup.config.mjs
-*.tsbuildinfo
-.tsbuildinfo*
