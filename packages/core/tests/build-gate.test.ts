@@ -22,6 +22,22 @@ test("a TypeScript diagnostic fails the build instead of warning", () => {
   assert.deepStrictEqual(seen, []);
 });
 
+test("a TypeScript diagnostic inside a dependency is dropped, not fatal", () => {
+  // `lzma1` ships its `.ts` sources as its `types` entry, so the strict flags
+  // of whichever package imports it are applied to its code too. Those are not
+  // ours to fix, and printing them on every build helps nobody.
+  const { warn, seen } = collect();
+  failOnTypeErrors(
+    {
+      plugin: "typescript",
+      message: "TS2532: Object is possibly 'undefined'.",
+      loc: { file: "/repo/node_modules/lzma1/src/decoder.ts", line: 215, column: 14 },
+    },
+    warn,
+  );
+  assert.deepStrictEqual(seen, []);
+});
+
 test("an unresolved import fails the build instead of warning", () => {
   const { warn, seen } = collect();
   assert.throws(

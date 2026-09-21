@@ -1,6 +1,7 @@
 // Ported from AssetStudio/BundleFile.cs (MIT, © Perfare / RazTools / Razviar)
 
 import { decompressLz4 } from "../codec/lz4.js";
+import { lzmaDecompress } from "../codec/lzma.js";
 import { CorruptError, UnsupportedError } from "../errors.js";
 import { BinaryReader } from "../io/BinaryReader.js";
 
@@ -345,19 +346,11 @@ function decode(type: number, src: Uint8Array, uncompressedSize: number): Uint8A
       // disagreement is caught by the length check in the caller.
       return src;
 
-    case CompressionType.Lzma: {
+    case CompressionType.Lzma:
       // UnityFS keeps LZMA's 5 property bytes in front of the raw stream and
-      // the output size in the header, so the decoder is handed all three:
-      //   lzmaDecompress(src.subarray(0, 5), src.subarray(5), uncompressedSize)
-      // #14 owns codec/lzma.ts; until it lands the path refuses rather than
-      // returning nothing (R9). The legacy stream shape, which carries its own
-      // size, belongs to #18.
-      throw new UnsupportedError(
-        "compression type",
-        COMPRESSION_NAMES[CompressionType.Lzma]!,
-        "the LZMA decoder is not wired up yet",
-      );
-    }
+      // the output size in the header, so the decoder is handed all three. The
+      // legacy stream shape, which carries its own size, belongs to #18.
+      return lzmaDecompress(src.subarray(0, 5), src.subarray(5), uncompressedSize);
 
     // LZ4HC only changes how the compressor searches; the blocks decode
     // identically, so there is no separate path (plan §1).
