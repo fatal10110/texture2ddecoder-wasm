@@ -42,6 +42,15 @@ const ArchiveFlags = {
 /** Low six bits of a storage block's flag word: which codec compressed it. */
 const BLOCK_COMPRESSION_TYPE_MASK = 0x3f;
 
+/** Hash of the uncompressed data that legacy format version 4 and up write. */
+const LEGACY_HASH_SIZE = 16;
+
+/** LZMA property bytes: the packed `lc`/`lp`/`pb` byte, then a u32 dictionary size. */
+const LZMA_PROPS_SIZE = 5;
+
+/** Legacy LZMA prefix: the property bytes plus a little-endian u64 output size. */
+const LEGACY_LZMA_HEADER_SIZE = LZMA_PROPS_SIZE + 8;
+
 /** Flags Unity stores on a directory node. */
 export const NodeFlags = {
   /** The node is a SerializedFile; without it the node is a resource blob. */
@@ -76,21 +85,30 @@ const MAX_BLOCKS_BYTES = 0x7fffffff;
 
 /** The bundle header, as it is written on disk. */
 export interface BundleHeader {
-  /** Container signature; `"UnityFS"` for everything this module parses. */
+  /** Container signature: `"UnityFS"`, `"UnityWeb"` or `"UnityRaw"`. */
   signature: string;
-  /** Bundle format version (not a Unity version): 6 and 7 in the wild. */
+  /** Bundle format version (not a Unity version): 3, 6 and 7 in the wild. */
   version: number;
   /** Unity's own `unityVersion` string, usually the useless `"5.x.x"`. */
   unityVersion: string;
   /** Build revision, e.g. `"2022.3.0f1"` - the version worth reading. */
   unityRevision: string;
-  /** Total size of the bundle as the header records it. */
+  /**
+   * Total size of the bundle as the header records it.
+   *
+   * A pre-version-6 `UnityWeb`/`UnityRaw` header has no such field; upstream
+   * stores that layout's header size here instead, which is the offset the
+   * level data starts at, and so does this reader.
+   */
   size: number;
-  /** Bytes of blocks info on disk. */
+  /** Bytes of blocks info on disk; 0 in the legacy layout, which has none. */
   compressedBlocksInfoSize: number;
-  /** Bytes of blocks info after decompression. */
+  /** Bytes of blocks info after decompression; 0 in the legacy layout. */
   uncompressedBlocksInfoSize: number;
-  /** Raw archive flags; see {@link ArchiveFlags} for the bits that matter. */
+  /**
+   * Raw archive flags; see {@link ArchiveFlags} for the bits that matter. The
+   * legacy layout has no flags word, so it reports 0 like upstream does.
+   */
   flags: number;
 }
 
@@ -127,11 +145,17 @@ interface DirectoryNode {
   path: string;
 }
 
+/** The four fields every container spells the same way, before they diverge. */
+type HeaderStart = Pick<
+  BundleHeader,
+  "signature" | "version" | "unityVersion" | "unityRevision"
+>;
+
 /**
  * Parse a Unity bundle into its files.
  *
- * Only the `UnityFS` container is implemented here; the legacy `UnityWeb` /
- * `UnityRaw` layouts and `UnityArchive` are refused by signature.
+ * Covers the `UnityFS` archive layout and the legacy `UnityWeb` / `UnityRaw`
+ * one. `UnityArchive` is refused: there is no upstream implementation to port.
  *
  * @param data whole bundle bytes; kept by reference, never copied (R7)
  * @returns the header and every unpacked file, in directory order
@@ -144,30 +168,52 @@ export function readBundle(data: Uint8Array): BundleFile {
   // Unity writes bundle headers big-endian; only SerializedFile flips (M2).
   const reader = new BinaryReader(data, "big");
 
-  const signature = reader.readStringToNull(SIGNATURE_MAX_LENGTH);
-  const version = reader.readUInt32();
-  const unityVersion = reader.readStringToNull();
-  const unityRevision = reader.readStringToNull();
+  const base: HeaderStart = {
+    signature: reader.readStringToNull(SIGNATURE_MAX_LENGTH),
+    version: reader.readUInt32(),
+    unityVersion: reader.readStringToNull(),
+    unityRevision: reader.readStringToNull(),
+  };
 
-  // UnityWeb/UnityRaw (and their version-6 spelling, which reuses the UnityFS
-  // layout) plus WebFile land with #18; UnityArchive has no upstream
-  // implementation to port at all. The kind is the one detect.ts uses for a
-  // file it cannot open, so a caller branching on the error does not have to
-  // care which entry point sniffed the bytes (R9).
-  if (signature !== "UnityFS") {
-    throw new UnsupportedError("container", signature || "(none)", "only UnityFS is read");
+  // Confirmed while porting (#18): upstream has nothing to port for
+  // UnityArchive. AssetStudio's switch is `case "UnityArchive": break; //TODO`
+  // and UnityPy raises NotImplementedError, so neither reads a single field of
+  // it. The kind matches the one detect.ts uses, so a caller branching on the
+  // error does not have to care which entry point sniffed the bytes (R9).
+  if (base.signature === "UnityArchive") {
+    throw new UnsupportedError("container", base.signature, "no upstream implementation to port");
   }
 
+  const legacy = base.signature === "UnityWeb" || base.signature === "UnityRaw";
+  if (!legacy && base.signature !== "UnityFS") {
+    throw new UnsupportedError("container", base.signature || "(none)", "not a Unity bundle");
+  }
+
+  // Format version 6 is where UnityWeb/UnityRaw switched to the archive layout;
+  // upstream reaches it with `goto case "UnityFS"`. Older versions keep the
+  // level-based layout the web player streamed.
+  return legacy && base.version !== 6
+    ? readLegacyBundle(reader, base)
+    : readArchiveBundle(reader, base, legacy);
+}
+
+/** The `UnityFS` layout: a flags word, a blocks info, then storage blocks. */
+function readArchiveBundle(
+  reader: BinaryReader,
+  base: HeaderStart,
+  legacy: boolean,
+): BundleFile {
   const header: BundleHeader = {
-    signature,
-    version,
-    unityVersion,
-    unityRevision,
+    ...base,
     size: toSize(reader.readInt64(), "bundle size"),
     compressedBlocksInfoSize: reader.readUInt32(),
     uncompressedBlocksInfoSize: reader.readUInt32(),
     flags: reader.readUInt32(),
   };
+
+  // A format version 6 UnityWeb/UnityRaw header carries one more byte here than
+  // a UnityFS one does; upstream reads and discards it, as does UnityPy.
+  if (legacy) reader.readUInt8();
 
   // Encrypted archives would otherwise decompress into garbage, which R9 puts
   // above "try anyway". Decryption is game-specific work (plan M6).
@@ -183,6 +229,101 @@ export function readBundle(data: Uint8Array): BundleFile {
   const { blocks, nodes } = readBlocksInfoAndDirectory(reader, header);
   const blocksData = readBlocks(reader, blocks);
   return { header, files: readFiles(nodes, blocksData) };
+}
+
+/**
+ * The pre-version-6 `UnityWeb` / `UnityRaw` layout (upstream
+ * `ReadHeaderAndBlocksInfo` + `ReadBlocksAndDirectory`).
+ *
+ * Nothing here is shared with the archive layout: there is no flags word and no
+ * codec field, the directory sits inside the payload rather than in its own
+ * blocks info, and its nodes are written path-first with 32-bit offsets.
+ */
+function readLegacyBundle(reader: BinaryReader, base: HeaderStart): BundleFile {
+  // Format version 4 added a hash of the uncompressed data and its CRC; both
+  // are read and ignored upstream.
+  if (base.version >= 4) {
+    reader.readBytes(LEGACY_HASH_SIZE);
+    reader.readUInt32();
+  }
+  reader.readUInt32(); // minimumStreamedBytes
+  // Upstream keeps this in the same `size` field as UnityFS's total size, but
+  // it is the header size: the offset the level data starts at.
+  const headerSize = reader.readUInt32();
+  reader.readUInt32(); // numberOfLevelsToDownloadBeforeStreaming
+
+  // One level per LOD the web player could stream. Each level is a prefix of
+  // the next, so upstream keeps the last one and ignores the rest.
+  let compressedSize: number | undefined;
+  for (let i = count(reader.readInt32(), "level"); i > 0; i--) {
+    compressedSize = reader.readUInt32();
+    reader.readUInt32(); // uncompressedSize; the LZMA stream carries its own
+  }
+  if (compressedSize === undefined) {
+    throw new CorruptError("legacy bundle declares no levels, so it holds no files");
+  }
+  if (base.version >= 2) reader.readUInt32(); // completeFileSize
+  if (base.version >= 3) reader.readUInt32(); // fileInfoHeaderSize
+
+  const header: BundleHeader = {
+    ...base,
+    size: headerSize,
+    // This layout has no blocks info and no flags word: the one level holds the
+    // directory and the file data together. Upstream leaves the three fields at
+    // zero rather than inventing values for them, and so does this.
+    compressedBlocksInfoSize: 0,
+    uncompressedBlocksInfoSize: 0,
+    flags: 0,
+  };
+
+  reader.position = headerSize;
+  const stored = reader.readBytes(compressedSize);
+  // UnityRaw stores the level verbatim and UnityWeb compresses it with LZMA.
+  // The signature is the whole codec selection; there is no field to read.
+  const blocksData = base.signature === "UnityWeb" ? decompressLegacyLzma(stored) : stored;
+
+  const info = new BinaryReader(blocksData, "big");
+  const nodes: DirectoryNode[] = [];
+  for (let i = count(info.readInt32(), "directory node"); i > 0; i--) {
+    // Path first, then two 32-bit fields, and no flags at all - the archive
+    // layout writes 64-bit offsets and flags, and puts the path last.
+    nodes.push({
+      path: info.readStringToNull(),
+      offset: info.readUInt32(),
+      size: info.readUInt32(),
+      flags: 0,
+    });
+  }
+  return { header, files: readFiles(nodes, blocksData) };
+}
+
+/**
+ * Decompress one legacy level, whose LZMA stream is the plain `.lzma` shape:
+ * 5 property bytes, a little-endian u64 output size, then the bit stream
+ * (upstream `SevenZipHelper.StreamDecompress`).
+ *
+ * The size comes out of the stream, not out of the level record - upstream
+ * ignores the level's `uncompressedSize` here, and a disagreement between the
+ * two is not evidence that either the stream or the record is wrong.
+ *
+ * @throws {CorruptError} when the prefix is missing, its size is not a byte
+ *   count below 2^53, or the stream does not expand to exactly that size
+ * @throws {UnsupportedError} when the level is larger than one buffer can hold
+ */
+function decompressLegacyLzma(stream: Uint8Array): Uint8Array {
+  const head = new BinaryReader(stream, "little");
+  const props = head.readBytes(LZMA_PROPS_SIZE);
+  const size = toSize(head.readUInt64(), "legacy LZMA uncompressed size");
+  // Same ceiling as the archive path: upstream spills a level this big into a
+  // temp file, which core cannot do (D3), so it is out of reach rather than bad.
+  if (size > MAX_BLOCKS_BYTES) {
+    throw new UnsupportedError(
+      "bundle size",
+      size,
+      `above the ${MAX_BLOCKS_BYTES} byte buffer limit`,
+    );
+  }
+  return lzmaDecompress(props, stream.subarray(LEGACY_LZMA_HEADER_SIZE), size);
 }
 
 /**
@@ -349,8 +490,12 @@ function decode(type: number, src: Uint8Array, uncompressedSize: number): Uint8A
     case CompressionType.Lzma:
       // UnityFS keeps LZMA's 5 property bytes in front of the raw stream and
       // the output size in the header, so the decoder is handed all three. The
-      // legacy stream shape, which carries its own size, belongs to #18.
-      return lzmaDecompress(src.subarray(0, 5), src.subarray(5), uncompressedSize);
+      // legacy shape carries its own size - see {@link decompressLegacyLzma}.
+      return lzmaDecompress(
+        src.subarray(0, LZMA_PROPS_SIZE),
+        src.subarray(LZMA_PROPS_SIZE),
+        uncompressedSize,
+      );
 
     // LZ4HC only changes how the compressor searches; the blocks decode
     // identically, so there is no separate path (plan §1).

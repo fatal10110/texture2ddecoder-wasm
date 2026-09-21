@@ -116,6 +116,9 @@ FIXTURES = [
     ("lz4-v7-align", dict(packer=(DIR_INFO | LZ4, LZ4), version=7, align=True)),
     ("unityweb-lzma", dict(packer="none", signature="UnityWeb", version=3)),
     ("unityraw", dict(packer="none", signature="UnityRaw", version=3)),
+    # Format version 2 drops the fileInfoHeaderSize field version 3 added, so
+    # the legacy header's version gates are exercised, not just one shape.
+    ("unityraw-v2", dict(packer="none", signature="UnityRaw", version=2)),
 ]
 
 

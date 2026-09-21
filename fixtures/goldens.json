@@ -122,6 +122,23 @@
       },
       "objects": {}
     },
+    "unityraw-v2.bundle": {
+      "signature": "UnityRaw",
+      "formatVersion": 2,
+      "unityVersion": "5.x.x",
+      "unityRevision": "2022.3.0f1",
+      "files": {
+        "CAB-unityraw-v2": {
+          "sha256": "a995ab04e21c6d78116db38e40b69549321fea2cc80576ea0324df64e3b444bc",
+          "size": 4096
+        },
+        "CAB-unityraw-v2.resS": {
+          "sha256": "48312c41c4a2fc16691a10658aab28640657f2b2f0f8dc4fcb06902446c42620",
+          "size": 1536
+        }
+      },
+      "objects": {}
+    },
     "unityraw.bundle": {
       "signature": "UnityRaw",
       "formatVersion": 3,

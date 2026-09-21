@@ -20,6 +20,9 @@ const UNITYFS_FIXTURES = [
   "lzma.bundle",
 ];
 
+/** The pre-version-6 layout: one LZMA fixture, two stored ones (v3 and v2). */
+const LEGACY_FIXTURES = ["unityweb-lzma.bundle", "unityraw.bundle", "unityraw-v2.bundle"];
+
 // --- fixtures against the oracle goldens ------------------------------------
 
 for (const name of UNITYFS_FIXTURES) {
@@ -37,6 +40,34 @@ for (const name of UNITYFS_FIXTURES) {
     assert.equal(header.size, loadFixture(name).length);
   });
 }
+
+for (const name of LEGACY_FIXTURES) {
+  test(`unpacks ${name} byte-identically to the golden`, () => {
+    assertMatchesGolden(name, readBundle(loadFixture(name)).files);
+  });
+
+  test(`reads the header of ${name}`, () => {
+    const expected = golden(name);
+    const data = loadFixture(name);
+    const { header } = readBundle(data);
+    assert.equal(header.signature, expected.signature);
+    assert.equal(header.version, expected.formatVersion);
+    assert.equal(header.unityVersion, expected.unityVersion);
+    assert.equal(header.unityRevision, expected.unityRevision);
+    // This layout has no flags word and no blocks info, and `size` carries the
+    // header size rather than the file length - the data starts right after it.
+    assert.equal(header.flags, 0);
+    assert.equal(header.compressedBlocksInfoSize, 0);
+    assert.equal(header.uncompressedBlocksInfoSize, 0);
+    assert.ok(header.size > 0 && header.size < data.length, `header size ${header.size}`);
+  });
+}
+
+test("gives legacy nodes no flags, because the layout has no field for them", () => {
+  for (const file of readBundle(loadFixture("unityraw.bundle")).files) {
+    assert.equal(file.flags, 0);
+  }
+});
 
 test("unpacks a gzip-wrapped bundle once the wrapper is off", () => {
   // The gzip fixture holds the same bundle as lz4.bundle; unwrapping is the
@@ -56,17 +87,6 @@ test("returns views into the block buffer rather than copies (R7)", () => {
   const first = files[0]!;
   assert.ok(first.data.byteLength < first.data.buffer.byteLength);
 });
-
-// --- what is not implemented here -------------------------------------------
-
-for (const name of ["unityweb-lzma.bundle", "unityraw.bundle"]) {
-  test(`refuses ${name}: the legacy containers land with #18`, () => {
-    assert.throws(
-      () => readBundle(loadFixture(name)),
-      (error: unknown) => error instanceof UnsupportedError && error.kind === "container",
-    );
-  });
-}
 
 // --- a hand-written bundle, so the unhappy paths can be crafted exactly ------
 
@@ -108,6 +128,11 @@ class Writer {
     while (this.out.length % boundary !== 0) this.u8(0);
   }
 
+  /** Bytes written so far - the legacy header has to record its own length. */
+  get length(): number {
+    return this.out.length;
+  }
+
   build(): Uint8Array {
     return Uint8Array.from(this.out);
   }
@@ -129,6 +154,8 @@ interface Node {
 }
 
 interface BundleOptions {
+  /** `"UnityWeb"` / `"UnityRaw"` at version 6 use this layout too, plus a byte. */
+  signature?: string;
   version?: number;
   /** Archive flags; 0x40 (blocks and directory info combined) by default. */
   flags?: number;
@@ -155,6 +182,7 @@ const payload = (size: number, seed = 1): Uint8Array =>
  */
 function buildBundle(options: BundleOptions = {}): Uint8Array {
   const {
+    signature = "UnityFS",
     version = 6,
     flags = BLOCKS_AND_DIRECTORY_COMBINED,
     blocks = [{ data: payload(64) }],
@@ -179,7 +207,7 @@ function buildBundle(options: BundleOptions = {}): Uint8Array {
   const infoBytes = info.build();
 
   const out = new Writer();
-  out.cstr("UnityFS");
+  out.cstr(signature);
   out.u32(version);
   out.cstr("5.x.x");
   out.cstr("2022.3.0f1");
@@ -187,6 +215,8 @@ function buildBundle(options: BundleOptions = {}): Uint8Array {
   out.u32(options.compressedBlocksInfoSize ?? infoBytes.length);
   out.u32(options.uncompressedBlocksInfoSize ?? infoBytes.length);
   out.u32(flags);
+  // A UnityWeb/UnityRaw header at version 6 carries one more byte than UnityFS.
+  if (signature !== "UnityFS") out.u8(0);
   // Format version 7 (Unity 2020.1+) pads the header to 16 bytes.
   if (version >= 7) out.align(16);
   // Padding and alignment are counted from the start of the file, so the
@@ -260,6 +290,161 @@ test("stitches a file that spans two blocks", () => {
   ).files;
   assert.deepEqual(files[0]!.data, Uint8Array.from([...first, ...second]));
   assert.deepEqual(files[1]!.data, second);
+});
+
+// --- the legacy layout, hand-written ----------------------------------------
+
+const LEGACY_PATH = "CAB-legacy";
+
+interface LegacyOptions {
+  version?: number;
+  /** Levels written before the real one; upstream keeps only the last. */
+  extraLevels?: number;
+  /** Override, so the header can claim a level count it does not have. */
+  levelCount?: number;
+  nodes?: { path: string; offset: number; size: number }[];
+  nodeCount?: number;
+  payload?: Uint8Array;
+}
+
+/**
+ * Write a pre-version-6 `UnityRaw` bundle.
+ *
+ * `UnityWeb` is the same layout with the level LZMA-compressed, and this
+ * project ships no LZMA compressor (plan §7), so the crafted cases below are
+ * all `UnityRaw`; `unityweb-lzma.bundle` covers the compressed level.
+ */
+function buildLegacy(options: LegacyOptions = {}): Uint8Array {
+  const { version = 3, extraLevels = 0, payload: data = payload(64, 21) } = options;
+
+  // Node offsets are counted from the start of the level, which begins with the
+  // directory, so the first file sits right behind the one node record.
+  const directorySize = 4 + LEGACY_PATH.length + 1 + 8;
+  const nodes = options.nodes ?? [
+    { path: LEGACY_PATH, offset: directorySize, size: data.length },
+  ];
+
+  const blob = new Writer();
+  blob.u32(options.nodeCount ?? nodes.length);
+  for (const node of nodes) {
+    // Path first, then 32-bit offset and size - not the archive layout's order.
+    blob.cstr(node.path);
+    blob.u32(node.offset);
+    blob.u32(node.size);
+  }
+  blob.bytes(data);
+  const level = blob.build();
+
+  const out = new Writer();
+  out.cstr("UnityRaw");
+  out.u32(version);
+  out.cstr("5.x.x");
+  out.cstr("2022.3.0f1");
+  // Format version 4 added a hash of the uncompressed data and its CRC.
+  if (version >= 4) {
+    out.bytes(new Uint8Array(16));
+    out.u32(0);
+  }
+
+  const levels = extraLevels + 1;
+  const headerSize =
+    out.length + 16 + 8 * levels + (version >= 2 ? 4 : 0) + (version >= 3 ? 4 : 0);
+  out.u32(headerSize + level.length); // minimumStreamedBytes
+  out.u32(headerSize);
+  out.u32(1); // numberOfLevelsToDownloadBeforeStreaming
+  out.u32(options.levelCount ?? levels);
+  // Every level but the last is ignored, so these carry impossible sizes: if
+  // the reader picked one of them it would run off the end of the file.
+  for (let i = 0; i < extraLevels; i++) {
+    out.u32(0xdeadbeef);
+    out.u32(0xdeadbeef);
+  }
+  out.u32(level.length); // compressedSize
+  out.u32(level.length); // uncompressedSize
+  if (version >= 2) out.u32(headerSize + level.length); // completeFileSize
+  if (version >= 3) out.u32(directorySize); // fileInfoHeaderSize
+  out.bytes(level);
+  return out.build();
+}
+
+test("the hand-written legacy bundle round-trips, so the cases below are valid", () => {
+  const data = payload(64, 21);
+  const { header, files } = readBundle(buildLegacy({ payload: data }));
+  assert.equal(header.signature, "UnityRaw");
+  assert.equal(header.version, 3);
+  assert.equal(files.length, 1);
+  assert.equal(files[0]!.path, LEGACY_PATH);
+  assert.deepEqual(files[0]!.data, data);
+});
+
+test("reads the hash and CRC that legacy format version 4 adds", () => {
+  const data = payload(64, 23);
+  assert.deepEqual(readBundle(buildLegacy({ version: 4, payload: data })).files[0]!.data, data);
+});
+
+test("keeps the last streaming level and ignores the ones before it", () => {
+  const data = payload(64, 27);
+  assert.deepEqual(
+    readBundle(buildLegacy({ extraLevels: 2, payload: data })).files[0]!.data,
+    data,
+  );
+});
+
+test("reads a version 6 UnityWeb bundle through the archive layout", () => {
+  // Version 6 is where the legacy signatures adopted the UnityFS layout, with
+  // one extra byte after the flags word. Miss the byte and the blocks info is
+  // read one byte late, so this round-trip is the proof that it is consumed.
+  const data = payload(64, 29);
+  const { header, files } = readBundle(buildBundle({ signature: "UnityWeb", blocks: [{ data }] }));
+  assert.equal(header.signature, "UnityWeb");
+  assert.equal(header.version, 6);
+  assert.deepEqual(files[0]!.data, data);
+});
+
+test("refuses a legacy bundle that declares no levels", () => {
+  assert.throws(
+    () => readBundle(buildLegacy({ levelCount: 0 })),
+    (error: unknown) => error instanceof CorruptError && error.message.includes("no levels"),
+  );
+});
+
+test("reports a negative level count in a legacy header", () => {
+  assert.throws(
+    () => readBundle(buildLegacy({ levelCount: -1 })),
+    (error: unknown) => error instanceof CorruptError && error.message.includes("level count"),
+  );
+});
+
+test("reports a legacy node that runs past the end of its level", () => {
+  assert.throws(
+    () => readBundle(buildLegacy({ nodes: [{ path: "CAB-big", offset: 32, size: 4096 }] })),
+    (error: unknown) => error instanceof CorruptError && error.message.includes("CAB-big"),
+  );
+});
+
+test("reports a truncated legacy bundle as corrupt", () => {
+  const bundle = buildLegacy();
+  for (const cut of [8, 40, bundle.length - 1]) {
+    assert.throws(() => readBundle(bundle.subarray(0, cut)), CorruptError, `cut to ${cut} bytes`);
+  }
+});
+
+test("refuses UnityArchive, which upstream has no implementation for", () => {
+  // AssetStudio's switch is `case "UnityArchive": break; //TODO` and UnityPy
+  // raises NotImplementedError, so there is nothing to port: a bundle that says
+  // UnityArchive is refused by signature rather than guessed at.
+  const archive = new Writer();
+  archive.cstr("UnityArchive");
+  archive.u32(6);
+  archive.cstr("5.x.x");
+  archive.cstr("2022.3.0f1");
+  assert.throws(
+    () => readBundle(archive.build()),
+    (error: unknown) =>
+      error instanceof UnsupportedError &&
+      error.kind === "container" &&
+      error.found === "UnityArchive",
+  );
 });
 
 // --- typed errors -----------------------------------------------------------
