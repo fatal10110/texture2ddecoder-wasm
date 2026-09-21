@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Path filters live here, not in `on.paths`: a workflow skipped by `paths` never reports
+  # its checks, so required status checks would hang. A job skipped by `if` reports success.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      reader: ${{ steps.filter.outputs.reader }}
+      decoder: ${{ steps.filter.outputs.decoder }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: filter
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.sha }}
+        run: |
+          # Pushes to main always run everything.
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "reader=true" >> "$GITHUB_OUTPUT"
+            echo "decoder=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(git diff --name-only "$BASE...$HEAD")
+          if echo "$files" | grep -qE '^(packages/(core|texture|node)/|fixtures/|scripts/|\.github/|package(-lock)?\.json$|tsconfig[^/]*\.json$|rollup\.reader\.mjs$)'; then
+            echo "reader=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "reader=false" >> "$GITHUB_OUTPUT"
+          fi
+          if echo "$files" | grep -qE '^(packages/texture2ddecoder-wasm/|\.github/|package(-lock)?\.json$)'; then
+            echo "decoder=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "decoder=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Build every package (TS only), test, browser guard, no-C# guard. No submodules, no Docker.
+  reader:
+    name: reader (node ${{ matrix.node }})
+    needs: changes
+    if: needs.changes.outputs.reader == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+
+  # Rebuilds the WASM (Docker, needs the C++ submodule) and runs the decoder tests.
+  decoder:
+    name: decoder
+    needs: changes
+    if: needs.changes.outputs.decoder == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:wasm
+      - run: npm run build:rollup
+      - run: npm test -w texture2ddecoder-wasm
