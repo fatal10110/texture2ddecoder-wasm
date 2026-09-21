@@ -1,6 +1,6 @@
 ---
 name: review-implementation
-description: 'Strict review of a PR that implements a unity-asset-reader issue - verifies every task and acceptance criterion of the linked issue is really met, reruns build/tests/guards, checks the diff against the project rules (licensing, no C#, browser safety, sync parse path, bigint, scope), compares ported logic with upstream AssetStudio, and posts findings as inline PR comments. Use this whenever the user asks to review, check, audit or validate an implementation, a PR, a branch or "what implement-issue did" in this repo ("review PR 60", "did #12 get implemented correctly?", "check my branch before merge", "/review-implementation"). Prefer this over a generic code review for anything under unity-asset-reader/.'
+description: 'Strict review of a PR that implements a unity-asset-reader issue - verifies every task and acceptance criterion of the linked issue is really met, reruns build/tests/guards, checks the diff against the project rules (licensing, no C#, browser safety, sync parse path, bigint, scope), compares ported logic with upstream AssetStudio, and posts findings as inline PR comments. Use this whenever the user asks to review, check, audit or validate an implementation, a PR, a branch or "what implement-issue did" in this repo ("review PR 60", "did #12 get implemented correctly?", "check my branch before merge", "/review-implementation"). Prefer this over a generic code review for anything under packages/.'
 argument-hint: <pr-number | issue-number | empty for current branch>
 ---
 
@@ -28,14 +28,14 @@ Then read the same documents the implementer had to: the issue with its comments
 
 ```bash
 gh pr checkout <PR>
-cd unity-asset-reader && npm ci && npm run build && npm test && npm run check:browser
+npm ci && npm run verify
 ```
 
 ```bash
 git ls-files '*.cs' '*.csproj' '*.sln'
 ```
 
-Second command must print nothing. Root files touched → also run the root `npm run build:rollup`. Any failure is a blocker; record the exact failing output.
+Second command must print nothing (`verify` runs it too; rerun it by hand so the review does not trust the script). `packages/texture2ddecoder-wasm/` touched → also run `npm test -w texture2ddecoder-wasm` with `wasm/` built. Any failure is a blocker; record the exact failing output.
 
 ## 3. Check the issue was actually implemented
 
@@ -53,7 +53,7 @@ Read the tests critically. Typical ways a test passes without proving anything: 
 gh pr diff <PR>
 ```
 
-Walk the Hard rules table R1–R13 one ID at a time, then the design, style and test sections. Things that are easy to miss:
+Walk the Hard rules table R1–R14 one ID at a time, then the design, style and test sections. Things that are easy to miss:
 
 - **R1/R3 licensing:** ported files carry the attribution line; nothing resembles unity-js structure or naming; `NOTICE` updated when a new upstream is used.
 - **R4 browser safety:** `Buffer`, `process`, `node:` imports, also inside new dependencies. `check:browser` passing is necessary, not sufficient - it only bundles the entries that exist today.
@@ -63,7 +63,8 @@ Walk the Hard rules table R1–R13 one ID at a time, then the design, style and 
 - **R8:** `package.json` diff - any dependency not in plan §1.
 - **R9:** `return null` / empty result where the input is unsupported.
 - **Scope:** files or features the issue did not ask for; abstractions with a single implementation; options nobody requested. Say what to delete.
-- **R13:** changes outside `unity-asset-reader/` that the issue does not call for.
+- **R13:** changes under `packages/texture2ddecoder-wasm/` that the issue does not call for.
+- **R14:** core importing a workspace package, a feature package listing core as `dependency` instead of `peerDependency`, deep imports into another package's `src/`.
 
 ## 5. Compare with upstream
 
@@ -90,7 +91,7 @@ gh api repos/{owner}/{repo}/pulls/<PR>/reviews --method POST --input review.json
   "event": "COMMENT",
   "body": "## Review: changes needed\n\n<acceptance table>\n\n<findings without a line>",
   "comments": [
-    { "path": "unity-asset-reader/src/codec/lz4.ts", "line": 42, "side": "RIGHT",
+    { "path": "packages/core/src/codec/lz4.ts", "line": 42, "side": "RIGHT",
       "body": "**blocker · R9** Truncated input returns a short buffer instead of throwing. Throw `Error(\"write N bytes but expected M\")` like LZ4.cs does." }
   ]
 }
