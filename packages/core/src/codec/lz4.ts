@@ -27,6 +27,15 @@ const NIBBLE_MAX = 0xf;
  * the start of the output, or does not expand to `uncompressedSize`
  */
 export function decompressLz4(src: Uint8Array, uncompressedSize: number): Uint8Array {
+  // A size out of this range comes from a corrupt header, so it has to leave as
+  // a CorruptError rather than as the RangeError the allocation would throw:
+  // R9 is what lets a caller tell a broken file from a broken caller. The
+  // bundle-header guard for sizes above 2^53 still belongs to the header reader
+  // (D9/R6); this only keeps the codec from leaking a different error type.
+  if (!Number.isSafeInteger(uncompressedSize) || uncompressedSize < 0) {
+    throw new CorruptError(`LZ4 uncompressed size ${uncompressedSize} is not a byte count`);
+  }
+
   const dst = new Uint8Array(uncompressedSize);
   let srcPos = 0;
   let dstPos = 0;

@@ -28,7 +28,10 @@ test("decodes a literals-only block", () => {
   assert.deepEqual(decompressLz4(block(0x50, ascii("hello")), 5), Uint8Array.from(ascii("hello")));
 });
 
-test("decodes an empty block", () => {
+test("treats an empty block as zero bytes of output (a local choice)", () => {
+  // Neither the format nor upstream defines this: the canonical empty block is
+  // the single token byte 0x00, and python-lz4 rejects b"". Returning an empty
+  // buffer keeps a zero-length Unity block from needing a special case.
   assert.deepEqual(decompressLz4(new Uint8Array(0), 0), new Uint8Array(0));
 });
 
@@ -158,6 +161,20 @@ test("rejects a match that overflows the declared output size", () => {
     (error: unknown) =>
       error instanceof CorruptError && /match of 8 bytes at 8 overflows/.test(String(error)),
   );
+});
+
+test("rejects an uncompressedSize that is not a byte count, as CorruptError (R9)", () => {
+  // A corrupt header must not surface as the allocator's RangeError: callers
+  // branch on CorruptError to tell a broken file from a broken caller.
+  for (const size of [2 ** 53, -1, Infinity, NaN, 1.5]) {
+    assert.throws(
+      () => decompressLz4(block(0x50, ascii("hello")), size),
+      (error: unknown) =>
+        error instanceof CorruptError &&
+        error.message === `LZ4 uncompressed size ${size} is not a byte count`,
+      `size ${size} should be rejected as CorruptError`,
+    );
+  }
 });
 
 test("rejects a match offset reaching before the start of the output", () => {
