@@ -288,12 +288,23 @@ function readFiles(nodes: DirectoryNode[], blocksData: Uint8Array): StreamFile[]
 
 /**
  * Decompress one chunk - a blocks info or a storage block, which use the same
- * codecs and the same flag layout.
+ * codecs and the same flag layout - and hold every codec to its declared
+ * output size.
+ *
+ * That size is load-bearing: {@link readBlocks} advances its cursor by the
+ * declared size, not by what came back, so a codec that overshoots corrupts the
+ * blocks after it and one that undershoots leaves files silently zero-filled.
+ * Upstream checks the write count per codec; one check here covers every
+ * branch, including codecs wired up later whose decoder does not police its own
+ * output - the #13 spike found `lzma1` returns more than it was asked for on
+ * truncated input and throws nothing.
  *
  * @param type compression id from the low six bits of the flag word
  * @param src compressed bytes
  * @param uncompressedSize what the header says the chunk expands to
  * @param where what is being decompressed, for the error message
+ * @throws {CorruptError} when the codec does not produce exactly `uncompressedSize` bytes
+ * @throws {UnsupportedError} for a compression type this library does not implement
  */
 function decompress(
   type: number,
@@ -301,17 +312,21 @@ function decompress(
   uncompressedSize: number,
   where: string,
 ): Uint8Array {
+  const out = decode(type, src, uncompressedSize);
+  if (out.length !== uncompressedSize) {
+    throw new CorruptError(
+      `${where} wrote ${out.length} bytes but expected ${uncompressedSize} bytes`,
+    );
+  }
+  return out;
+}
+
+/** The codec dispatch itself; {@link decompress} owns the size invariant. */
+function decode(type: number, src: Uint8Array, uncompressedSize: number): Uint8Array {
   switch (type) {
     case CompressionType.None:
-      // Upstream copies the stored bytes and never checks the pair. A
-      // disagreement means every later block is read from the wrong offset, so
-      // it is reported instead of being unpacked into silent garbage (R9).
-      if (src.length !== uncompressedSize) {
-        throw new CorruptError(
-          `${where} is stored uncompressed but holds ${src.length} bytes ` +
-            `where the header says ${uncompressedSize}`,
-        );
-      }
+      // Upstream copies the stored bytes and never compares the two sizes; a
+      // disagreement is caught by the length check in the caller.
       return src;
 
     case CompressionType.Lzma: {

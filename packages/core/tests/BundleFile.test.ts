@@ -147,6 +147,7 @@ interface BundleOptions {
   blockCount?: number;
   nodeCount?: number;
   compressedBlocksInfoSize?: number;
+  uncompressedBlocksInfoSize?: number;
 }
 
 const BLOCKS_AND_DIRECTORY_COMBINED = 0x40;
@@ -193,7 +194,7 @@ function buildBundle(options: BundleOptions = {}): Uint8Array {
   out.cstr("2022.3.0f1");
   out.i64(0n); // total size; upstream reads it but never checks it
   out.u32(options.compressedBlocksInfoSize ?? infoBytes.length);
-  out.u32(infoBytes.length);
+  out.u32(options.uncompressedBlocksInfoSize ?? infoBytes.length);
   out.u32(flags);
   // Format version 7 (Unity 2020.1+) pads the header to 16 bytes.
   if (version >= 7) out.align(16);
@@ -310,11 +311,25 @@ test("reports a truncated bundle as corrupt", () => {
   }
 });
 
-test("reports an uncompressed block whose two sizes disagree", () => {
+test("reports a block that does not decompress to its declared size", () => {
+  // The cursor in readBlocks advances by the declared size, so a codec whose
+  // output does not match it would shift every later block or leave a file
+  // zero-filled. The uncompressed codec is the one that can be made to
+  // disagree from a crafted bundle; the check it trips is shared by all of them.
   assert.throws(
     () => readBundle(buildBundle({ blocks: [{ data: payload(64), uncompressedSize: 100 }] })),
     (error: unknown) =>
-      error instanceof CorruptError && /block 0 .* 64 bytes .* 100/.test(error.message),
+      error instanceof CorruptError &&
+      error.message === "block 0 wrote 64 bytes but expected 100 bytes",
+  );
+});
+
+test("reports a blocks info that does not decompress to its declared size", () => {
+  assert.throws(
+    () => readBundle(buildBundle({ uncompressedBlocksInfoSize: 999 })),
+    (error: unknown) =>
+      error instanceof CorruptError &&
+      /^blocks info wrote \d+ bytes but expected 999 bytes$/.test(error.message),
   );
 });
 
