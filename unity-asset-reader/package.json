@@ -25,12 +25,13 @@
   "files": [
     "dist/**/*",
     "!dist/.tsbuildinfo*",
+    "!dist/node/src/**",
     "NOTICE"
   ],
   "sideEffects": false,
   "scripts": {
     "build": "rollup -c rollup.config.mjs",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "tsx --test 'tests/**/*.test.ts'",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
