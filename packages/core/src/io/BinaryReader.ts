@@ -41,8 +41,13 @@ function decodeUtf8(bytes: Uint8Array): string {
  * that needs to keep them past the lifetime of the input must copy them.
  *
  * 64-bit integers are always `bigint` (D9). Offsets and sizes are `number`, and
- * anything that cannot be a `number` exactly - above 2^53 - throws rather than
- * silently losing precision.
+ * anything that cannot be a `number` exactly - 2^53 and above - throws rather
+ * than silently losing precision.
+ *
+ * Two error types, split by who is at fault: a `RangeError` means the argument
+ * is not a usable offset or size at all (negative, fractional, 2^53 and above),
+ * which no integer read can produce; a {@link CorruptError} means the number is
+ * fine but the bytes are not there.
  *
  * @example
  * const reader = new BinaryReader(bytes, "big");
@@ -77,21 +82,24 @@ export class BinaryReader {
   /**
    * Offset of the next byte to read.
    *
-   * @throws {CorruptError} when set to a non-integer, a value above 2^53 (D9),
-   * or outside `[0, length]`
+   * @throws {RangeError} when set to something that is not a usable offset at
+   * all: negative, fractional, or 2^53 and above, which a `number` cannot hold
+   * exactly (D9)
+   * @throws {CorruptError} when the offset is a fine number but points past the
+   * end of the data
    */
   get position(): number {
     return this.offset;
   }
 
   set position(value: number) {
-    if (!Number.isSafeInteger(value)) {
-      throw new CorruptError(
-        `offset ${value} is not an integer below 2^53; offsets and sizes are numbers (D9)`,
+    if (!Number.isSafeInteger(value) || value < 0) {
+      throw new RangeError(
+        `offset ${value} is not a whole number in 0..2^53; offsets and sizes are numbers (D9)`,
       );
     }
-    if (value < 0 || value > this.bytes.length) {
-      throw new CorruptError(`offset ${value} is outside 0..${this.bytes.length}`);
+    if (value > this.bytes.length) {
+      throw new CorruptError(`offset ${value} is past the end of ${this.bytes.length} bytes`);
     }
     this.offset = value;
   }

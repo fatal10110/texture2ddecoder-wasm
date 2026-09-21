@@ -74,13 +74,25 @@ test("single bytes ignore the endian setting", () => {
 });
 
 test("64-bit integers come back as bigint in both endians (D9)", () => {
-  const big = new BinaryReader(hex("00200000000000017fffffffffffffff"), "big");
+  // Each endian reads a negative i64 too, so the signed path cannot pass by
+  // accident on a value that is identical read signed or unsigned.
+  const big = new BinaryReader(
+    hex("0020000000000001" + "7fffffffffffffff" + "8000000000000000" + "fffffffffffffffe"),
+    "big",
+  );
   assert.equal(big.readUInt64(), 9007199254740993n);
   assert.equal(big.readInt64(), 9223372036854775807n);
+  assert.equal(big.readInt64(), -9223372036854775808n);
+  assert.equal(big.readInt64(), -2n);
 
-  const little = new BinaryReader(hex("0100000000002000ffffffffffffff7f"), "little");
+  const little = new BinaryReader(
+    hex("0100000000002000" + "ffffffffffffff7f" + "0000000000000080" + "feffffffffffffff"),
+    "little",
+  );
   assert.equal(little.readUInt64(), 9007199254740993n);
   assert.equal(little.readInt64(), 9223372036854775807n);
+  assert.equal(little.readInt64(), -9223372036854775808n);
+  assert.equal(little.readInt64(), -2n);
 });
 
 test("64-bit edge values survive exactly", () => {
@@ -243,24 +255,38 @@ test("an offset above 2^53 throws rather than losing precision (D9)", () => {
         reader.position = offset;
       },
       (error: unknown) =>
-        error instanceof CorruptError && /below 2\^53/.test((error as Error).message),
+        error instanceof RangeError && /0\.\.2\^53/.test((error as Error).message),
       `expected offset ${offset} to be rejected`,
     );
   }
   assert.equal(reader.position, 0, "a rejected offset leaves the cursor alone");
 });
 
-test("position rejects fractional and out-of-range offsets", () => {
+test("an offset that is not a usable number is the caller's mistake, not corrupt data", () => {
   const reader = new BinaryReader(new Uint8Array(16));
-  assert.throws(() => {
-    reader.position = 1.5;
-  }, CorruptError);
-  assert.throws(() => {
-    reader.position = -1;
-  }, CorruptError);
-  assert.throws(() => {
-    reader.position = 17;
-  }, CorruptError);
+  for (const offset of [1.5, -1, NaN]) {
+    assert.throws(
+      () => {
+        reader.position = offset;
+      },
+      RangeError,
+      `expected offset ${offset} to be rejected as a RangeError`,
+    );
+  }
+  assert.equal(reader.position, 0, "a rejected offset leaves the cursor alone");
+});
+
+test("an offset past the end is corrupt data, not a RangeError", () => {
+  const reader = new BinaryReader(new Uint8Array(16));
+  assert.throws(
+    () => {
+      reader.position = 17;
+    },
+    (error: unknown) =>
+      error instanceof CorruptError &&
+      !(error instanceof RangeError) &&
+      /offset 17 is past the end of 16 bytes/.test((error as Error).message),
+  );
   reader.position = 16;
   assert.equal(reader.position, 16, "seeking to the end itself is allowed");
 });
