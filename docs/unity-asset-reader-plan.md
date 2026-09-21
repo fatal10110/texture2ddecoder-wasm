@@ -68,7 +68,15 @@ examples/               cdn.html, vite/   (reader examples; use core + texture t
 
 What belongs in core: anything two packages need, and anything that reads Unity bytes into fields (so `classes/Texture2D.ts` and `classes/Sprite.ts` live in core; turning their bytes into pixels lives in `texture`). What does not: WASM, pixel conversion, `fs`, anything with a heavy or optional dependency. `texture2ddecoder-wasm` shares no code with core today; if a second WASM package appears (LZMA fallback, M6 — #69), its emscripten loader is extracted then, not before.
 
-Every reader package builds ESM + CJS + types through `rollup.reader.mjs`. `core` and `texture` use `resolve({ browser: true })` with **no** node builtins in `external`; only `node` may externalize them. Workspace siblings and `texture2ddecoder-wasm` are always `external`, never bundled in.
+Every reader package builds ESM + CJS + types through `rollup.reader.mjs`. `core` and `texture` use `resolve({ browser: true })` with **no** node builtins in `external`; only `node` may externalize them.
+
+**Externalization rule (#71, decided):** *everything a package declares in `dependencies` or `peerDependencies` is `external`; everything else is bundled.* One rule for workspace siblings and npm deps alike — `rollup.reader.mjs` reads the package's own manifest, so adding a dep to `package.json` is the only step. `dist/` keeps the bare `import`, npm resolves it at install time. Consequences, accepted:
+
+- A dep is never both inlined in `dist/` and installed beside it. No second copy, and a security fix in a decompressor that eats untrusted bytes (`fflate`, `lzma1` — #14, #15) reaches consumers through `npm update`, not through a republish of this package.
+- No per-dep NOTICE obligation: we distribute no copy of their code. The `fflate` stanza added by #68 is dropped.
+- Consumers dedupe and tree-shake the dep themselves.
+- A bare specifier in `dist/` means CDN use needs an import map or a CDN ESM endpoint (`/+esm`, esm.sh) — still zero bundler, so M3's `examples/cdn.html` criterion stands. `unity-asset-reader-texture` needs one regardless, since `texture2ddecoder-wasm` is external either way; this makes it one pattern to document instead of two. A separate bundled `dist/*.bundle.mjs` CDN build was rejected: it doubles the published output and keeps the NOTICE chore it was meant to avoid. Revisit only if a real CDN consumer cannot use an import map.
+- An import of an undeclared package is a build error, not a silent inline.
 
 ## 3. Public API (target)
 
@@ -185,6 +193,8 @@ C#→WASM, FBX, Mono.Cecil DLL reflection, YAML export, LZMA/LZ4 *compression*, 
 Issues live in this repo (`fatal10110/texture2ddecoder-wasm`, to be renamed — D8). No transfer needed.
 Milestone epics (each has its tasks as sub-issues): M0 #6 · M1 #10 · M2 #21 · M3 #28 · M4 #36 · M5 #42 · M6+ #46
 Labels: `epic`, `area:{bundle,serialized,texture,codec,node,infra}`, `backlog`.
+
+Revision 2026-09-21c (#71): §2 states the externalization rule for `rollup.reader.mjs` — declared `dependencies`/`peerDependencies` are external, everything else is bundled.
 
 Revision 2026-09-21b (monorepo, D7/D8 rewritten): new M0 issue #55 for the workspaces conversion + package move (#7 → scaffold reader packages, depends on #55; #8 → guards for core/texture + R14; #9 → root `verify` CI); #6–#9 re-scoped to `packages/*` and root `verify`; every implementation issue names its package; #28/#29–#35 split core/texture; #32 decoder is a regular dependency; #43 → `packages/node`; #44/#45 multi-package docs and lockstep publish; M6+ items (#47–#52) each name their own package. Milestones M0/M5 retitled. PR #54 (single-package scaffold) is superseded by the re-scoped #7.
 

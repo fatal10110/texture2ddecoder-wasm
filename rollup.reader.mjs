@@ -1,12 +1,36 @@
 import resolve from "@rollup/plugin-node-resolve";
 import typescript from "@rollup/plugin-typescript";
+import { readFileSync } from "node:fs";
 
 /**
- * Workspace packages that are never bundled into a reader package: the shared
- * core is a peer dependency (one instance per app, D7) and the decoder ships
- * its own WASM loader.
+ * Externals of a reader package, read from its own manifest: every declared
+ * `dependencies` and `peerDependencies` entry, and its subpaths.
+ *
+ * One rule for workspace siblings and npm deps alike (#71). `dist/` keeps the
+ * bare `import`, npm resolves it at install time, so a dep is never both
+ * inlined in the published output and installed next to it: no second copy, no
+ * bundled copy that a `npm audit fix` of a decompressor cannot reach, and no
+ * per-dep NOTICE obligation. Anything *not* declared is bundled - an import of
+ * an undeclared package is a build error (`UNRESOLVED_IMPORT`, or a resolved
+ * copy of a devDependency), which is what it should be.
+ *
+ * CDN consumers therefore need an import map or a CDN ESM endpoint
+ * (`/+esm`, esm.sh) - still zero bundler, and already required by
+ * `unity-asset-reader-texture`, whose `texture2ddecoder-wasm` import is
+ * external either way (D6, D7).
+ *
+ * @param {string} manifest path to the package's `package.json`
+ * @returns {RegExp[]} one `^name(/|$)` matcher per declared dependency
+ * @throws {Error} if the manifest is missing or not JSON
  */
-const WORKSPACE_EXTERNAL = [/^unity-asset-reader(\/|$)/, /^texture2ddecoder-wasm(\/|$)/];
+export function declaredDependencies(manifest = "./package.json") {
+  const pkg = JSON.parse(readFileSync(manifest, "utf8"));
+  const names = [
+    ...Object.keys(pkg.dependencies ?? {}),
+    ...Object.keys(pkg.peerDependencies ?? {}),
+  ];
+  return names.map((name) => new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(\\/|$)`));
+}
 
 /**
  * Build the rollup config for one reader package. Run from the package
@@ -17,7 +41,7 @@ const WORKSPACE_EXTERNAL = [/^unity-asset-reader(\/|$)/, /^texture2ddecoder-wasm
  * @param {boolean} [options.browser] Resolve the `browser` condition and refuse
  *   node builtins. True for `core` and `texture` (R4); false for `node`.
  * @param {(string | RegExp)[]} [options.external] Extra externals on top of the
- *   workspace packages, e.g. node builtins for `unity-asset-reader-node`.
+ *   declared dependencies, e.g. node builtins for `unity-asset-reader-node`.
  * @returns {import("rollup").RollupOptions} config for `rollup -c`
  * @throws {Error} during the build, on a TypeScript diagnostic or an unresolved
  *   import — see {@link failOnTypeErrors}.
@@ -29,7 +53,7 @@ export function readerConfig({ browser = true, external = [] } = {}) {
       { file: "dist/index.cjs", format: "cjs", exports: "named" },
       { file: "dist/index.mjs", format: "es" },
     ],
-    external: [...WORKSPACE_EXTERNAL, ...external],
+    external: [...declaredDependencies(), ...external],
     onwarn: failOnTypeErrors,
     plugins: [
       resolve({ browser, preferBuiltins: !browser }),
