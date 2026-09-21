@@ -18,7 +18,7 @@ Dependencies point one way: feature packages → core. Core and `texture2ddecode
 | Architecture, locked decisions D1–D9, layout, milestones, test strategy | [docs/unity-asset-reader-plan.md](docs/unity-asset-reader-plan.md) |
 | **Rules you will be reviewed against** (hard rules R1–R14, design, code style, tests, git/PR format) | [docs/unity-asset-reader-rules.md](docs/unity-asset-reader-rules.md) |
 | Dev setup, branch/commit conventions, root package standards | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| Root package API and usage | [README.md](README.md), [QUICK_START.md](QUICK_START.md), [BUNDLER_GUIDE.md](BUNDLER_GUIDE.md) |
+| Decoder package API and usage | [README.md](packages/texture2ddecoder-wasm/README.md), [QUICK_START.md](packages/texture2ddecoder-wasm/QUICK_START.md), [BUNDLER_GUIDE.md](packages/texture2ddecoder-wasm/BUNDLER_GUIDE.md) |
 | What to build | GitHub issues: `gh issue view <N>`. Epics: M0 #6 · M1 #10 · M2 #21 · M3 #28 · M4 #36 · M5 #42 · M6+ #46 |
 
 The plan wins over everything else. If an issue, the rules, or this file contradicts it, stop and say so instead of picking a side.
