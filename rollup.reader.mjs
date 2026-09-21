@@ -79,13 +79,21 @@ export function readerConfig({ browser = true, external = [] } = {}) {
  * the module side - an unlisted `node:*` import would otherwise survive into
  * the bundle of a browser-safe package (R4).
  *
+ * Type diagnostics inside `node_modules` are dropped instead: a dependency that
+ * ships `.ts` sources as its `types` entry (`lzma1` does) gets compiled under
+ * *our* strict settings, and its own `noUncheckedIndexedAccess` failures are
+ * neither ours to fix nor worth printing on every build. Only our own files
+ * gate the build, and every other warning class still reaches rollup.
+ *
  * @param {import("rollup").RollupLog} warning the warning rollup raised
  * @param {(warning: import("rollup").RollupLog) => void} warn rollup's default handler
  * @throws {Error} when the warning is a type error or an unresolved import
  */
 export function failOnTypeErrors(warning, warn) {
-  if (warning.plugin === "typescript" || warning.code === "UNRESOLVED_IMPORT") {
-    throw new Error(warning.message);
+  if (warning.plugin === "typescript") {
+    if (!warning.loc?.file?.includes("node_modules")) throw new Error(warning.message);
+    return;
   }
+  if (warning.code === "UNRESOLVED_IMPORT") throw new Error(warning.message);
   warn(warning);
 }
