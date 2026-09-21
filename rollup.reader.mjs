@@ -4,15 +4,22 @@ import { readFileSync } from "node:fs";
 
 /**
  * Externals of a reader package, read from its own manifest: every declared
- * `dependencies` and `peerDependencies` entry, and its subpaths.
+ * `dependencies`, `peerDependencies` and `optionalDependencies` entry - each
+ * of the three is installed by npm beside `dist/` - and their subpaths.
  *
  * One rule for workspace siblings and npm deps alike (#71). `dist/` keeps the
  * bare `import`, npm resolves it at install time, so a dep is never both
  * inlined in the published output and installed next to it: no second copy, no
  * bundled copy that a `npm audit fix` of a decompressor cannot reach, and no
- * per-dep NOTICE obligation. Anything *not* declared is bundled - an import of
- * an undeclared package is a build error (`UNRESOLVED_IMPORT`, or a resolved
- * copy of a devDependency), which is what it should be.
+ * per-dep NOTICE obligation.
+ *
+ * Anything *not* declared is bundled, and rollup mostly cannot warn about it:
+ * npm hoists root devDependencies and symlinks workspace siblings into the root
+ * `node_modules`, so an undeclared import of one resolves and is inlined
+ * silently. Only a package absent from `node_modules` fails the build
+ * (`UNRESOLVED_IMPORT`). `scripts/tests/rollup-reader.test.mjs` is the guard
+ * that makes an undeclared import fail `npm run verify`; `check:browser` covers
+ * the R14 half at the source level.
  *
  * CDN consumers therefore need an import map or a CDN ESM endpoint
  * (`/+esm`, esm.sh) - still zero bundler, and already required by
@@ -28,6 +35,7 @@ export function declaredDependencies(manifest = "./package.json") {
   const names = [
     ...Object.keys(pkg.dependencies ?? {}),
     ...Object.keys(pkg.peerDependencies ?? {}),
+    ...Object.keys(pkg.optionalDependencies ?? {}),
   ];
   return names.map((name) => new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(\\/|$)`));
 }

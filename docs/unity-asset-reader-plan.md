@@ -70,13 +70,13 @@ What belongs in core: anything two packages need, and anything that reads Unity 
 
 Every reader package builds ESM + CJS + types through `rollup.reader.mjs`. `core` and `texture` use `resolve({ browser: true })` with **no** node builtins in `external`; only `node` may externalize them.
 
-**Externalization rule (#71, decided):** *everything a package declares in `dependencies` or `peerDependencies` is `external`; everything else is bundled.* One rule for workspace siblings and npm deps alike — `rollup.reader.mjs` reads the package's own manifest, so adding a dep to `package.json` is the only step. `dist/` keeps the bare `import`, npm resolves it at install time. Consequences, accepted:
+**Externalization rule (#71, decided):** *everything a package declares in `dependencies`, `peerDependencies` or `optionalDependencies` is `external`; everything else is bundled, except the node builtins `packages/node` passes through `external` itself.* One rule for workspace siblings and npm deps alike — `rollup.reader.mjs` reads the package's own manifest, so adding a dep to `package.json` is the only step. `dist/` keeps the bare `import`, npm resolves it at install time. Consequences, accepted:
 
 - A dep is never both inlined in `dist/` and installed beside it. No second copy, and a security fix in a decompressor that eats untrusted bytes (`fflate`, `lzma1` — #14, #15) reaches consumers through `npm update`, not through a republish of this package.
 - No per-dep NOTICE obligation: we distribute no copy of their code. The `fflate` stanza added by #68 is dropped.
 - Consumers dedupe and tree-shake the dep themselves.
 - A bare specifier in `dist/` means CDN use needs an import map or a CDN ESM endpoint (`/+esm`, esm.sh) — still zero bundler, so M3's `examples/cdn.html` criterion stands. `unity-asset-reader-texture` needs one regardless, since `texture2ddecoder-wasm` is external either way; this makes it one pattern to document instead of two. A separate bundled `dist/*.bundle.mjs` CDN build was rejected: it doubles the published output and keeps the NOTICE chore it was meant to avoid. Revisit only if a real CDN consumer cannot use an import map.
-- An import of an undeclared package is a build error, not a silent inline.
+- An undeclared import is **not** caught by the build: npm hoists root devDependencies and symlinks workspace siblings into the root `node_modules`, so rollup resolves them and inlines them silently. Only a package absent from `node_modules` fails (`UNRESOLVED_IMPORT`). The guard is a test — `scripts/tests/rollup-reader.test.mjs` fails `npm run verify` when a reader package's `src/` imports something its `package.json` does not declare — with `check:browser` covering the R14 half at source level.
 
 ## 3. Public API (target)
 
