@@ -26,7 +26,7 @@ Runtime deps of `packages/core` unless the note names another package. Between w
 |---|---|---|
 | Block texture decode + Crunch | `texture2ddecoder-wasm` (workspace package) | regular `dependency` of `unity-asset-reader-texture` only; core never imports it. Outputs **BGRA** → swap to RGBA (M3). |
 | LZ4 / LZ4HC block | none — ~40 LOC in `packages/core/src/codec/lz4.ts` | port `AssetStudio/LZ4/LZ4.cs`. LZ4HC decodes identically; no separate path or fixture. |
-| LZMA | `lzma1` (pure TS) — see M1 spike | Two stream shapes, see M1. Fallback: `LzmaDec.c` through existing emscripten recipe. |
+| LZMA | `lzma1` (pure TS) — **decided**, see M1 spike #13 | Two stream shapes, see M1. Correct on both; ~10 MB/s, under the original 20 MB/s bar. Kept anyway: it is sync, zero-dep and browser-safe, so core stays WASM-free. WASM fallback deferred to M6 (#69), to be built only if real bundles make this hurt. |
 | gzip/zlib | `fflate` | 8KB, sync (native `DecompressionStream` is async → violates D4) |
 | LZHAM, brotli | — | skipped; throw `UnsupportedError` |
 | zstd (M6 only) | `fzstd` | **not stock Unity** — only game-specific forks emit it. Lands with game variants (#50). |
@@ -66,7 +66,7 @@ packages/
 examples/               cdn.html, vite/   (reader examples; use core + texture together)
 ```
 
-What belongs in core: anything two packages need, and anything that reads Unity bytes into fields (so `classes/Texture2D.ts` and `classes/Sprite.ts` live in core; turning their bytes into pixels lives in `texture`). What does not: WASM, pixel conversion, `fs`, anything with a heavy or optional dependency. `texture2ddecoder-wasm` shares no code with core today; if a second WASM package appears (LZMA fallback, M6), its emscripten loader is extracted then, not before.
+What belongs in core: anything two packages need, and anything that reads Unity bytes into fields (so `classes/Texture2D.ts` and `classes/Sprite.ts` live in core; turning their bytes into pixels lives in `texture`). What does not: WASM, pixel conversion, `fs`, anything with a heavy or optional dependency. `texture2ddecoder-wasm` shares no code with core today; if a second WASM package appears (LZMA fallback, M6 — #69), its emscripten loader is extracted then, not before.
 
 Every reader package builds ESM + CJS + types through `rollup.reader.mjs`. `core` and `texture` use `resolve({ browser: true })` with **no** node builtins in `external`; only `node` may externalize them. Workspace siblings and `texture2ddecoder-wasm` are always `external`, never bundled in.
 
@@ -107,10 +107,12 @@ Each milestone = shippable npm prerelease. "Port" lists the AssetStudio files th
 - Port: `EndianBinaryReader.cs`, `FileReader.cs` (detection only), `BundleFile.cs` (UnityFS, UnityWeb, UnityRaw; flags, blocksInfo at end, v7 alignment, 2019.4+ padding), `WebFile.cs`, `LZ4.cs`.
 - `UnityArchive` signature: detect, throw `UnsupportedError`. Upstream has no implementation to port (confirm in `BundleFile.cs` while porting).
 - Compression types: none, LZMA, LZ4, LZ4HC. LZHAM and anything else → `UnsupportedError(type)`.
-- LZMA (**spike first, 2h**, #13) must cover **both** stream shapes:
+- LZMA (spike #13, **done**) covers **both** stream shapes:
   - UnityFS block: 5 prop bytes + raw data, uncompressed size from block info → synthesize the 13-byte `.lzma` header.
   - Legacy UnityWeb/UnityRaw: 5 prop bytes + u64 size already in the stream.
-  - Pass bar: correct output on both **and ≥ 20 MB/s** on a single ~50 MB block (LZMA bundles are usually one giant block). Miss either → emscripten `LzmaDec.c`.
+  - **Outcome: `lzma1`.** Correct on both shapes (sha256-exact against the #20 goldens), sync, `Uint8Array` in/out, no node builtins. Measured ~10 MB/s on a 50 MB block in both Node 22 and Chromium, against a native-liblzma reference of 44.5 MB/s.
+  - The original bar was ≥ 20 MB/s on a single ~50 MB block, with `LzmaDec.c` as the fallback. **The bar is retired, not met.** Taking the WASM path would put WASM in core, which §2 and AGENTS.md forbid, and D4's consequence already routes big bundles through a Worker — so ~5 s on a 50 MB block instead of ~2.5 s does not justify it yet. Revisit via #69 if real bundle sizes make it hurt.
+  - `lzma1` does **not** throw on truncated input — it returned 52 MB of garbage for a 100 KB slice of a 26 MB stream. #14's wrapper must assert the output length itself (R9).
 - gzip-wrapped files via `fflate`.
 - `BinaryReader` directly over `Uint8Array`. No `ByteSource` interface yet — one impl, one backlog consumer (#51). Guard: total uncompressed block size above typed-array limit → throw.
 - Done when: `load()` returns `env.files` byte-identical to golden raw-file hashes for fixtures covering: LZ4, LZMA (UnityFS), LZMA (legacy UnityWeb), uncompressed, gzip-wrapped.
@@ -198,3 +200,5 @@ Issue edits applied for the previous revision (2026-09-21, via `gh`):
 - #19, #22, #23, #25, #32, #36 → "match AssetStudio" → "match goldens (#20)".
 - #35 → example runs reader in a Worker.
 - #6–#52 → footer: "clean-room" → MIT-derivative wording + UnityPy oracle + no-C#→WASM rule.
+
+Revision 2026-09-21c (M1 spike #13 resolved): LZMA is **`lzma1`**, not the `LzmaDec.c` WASM fallback. The spike measured it correct on both stream shapes but at ~10 MB/s against a 20 MB/s bar; the bar is retired rather than met, because the WASM route would put WASM in `packages/core` (forbidden by §2 and the AGENTS.md core row) and D4 already routes big bundles through a Worker. The WASM fallback becomes on-demand M6 work (#69), to be built only on a real complaint or a measured regression on genuine bundles. §1's LZMA row and the M1 LZMA bullet record the outcome; §2's "LZMA fallback, M6" line was already consistent and now names the issue. Also recorded: `lzma1` does not throw on truncated input, so #14's wrapper must assert output length itself (R9).
