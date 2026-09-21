@@ -11,7 +11,7 @@ Used by humans and by the `.claude/skills/` workflows (`implement-issue`, `revie
 | R1 | No code copied from, imported from, or tested against `@arkntools/unity-js`. | AGPL-3.0 would infect the package and every app shipping it (D1). |
 | R2 | No C# in the repo and no C# compiled to WASM. `git ls-files '*.cs' '*.csproj' '*.sln'` prints nothing. Upstream C# is cloned **outside** the repo and read, never vendored. WASM sources are C/C++ only. | D2. A .NET runtime in WASM kills CDN drop-in use. |
 | R3 | Every file ported from AssetStudio or UnityPy starts with a one-line attribution: `// Ported from AssetStudio/<path>.cs (MIT, © Perfare / RazTools / Razviar)`. `NOTICE` lists upstreams. | MIT requires keeping the notice; this is a derivative port, not clean-room. |
-| R4 | Core (all of `src/`: everything reachable from the `.` and `./texture` entries) has zero `node:*` / `fs` / `path` / `crypto` / `Buffer` / `process` / `__dirname` and zero DOM. Input is `Uint8Array`. Node-only code lives in `node/`. | D3. `npm run check:browser` enforces it. |
+| R4 | `packages/core` and `packages/texture` (all of their `src/`) have zero `node:*` / `fs` / `path` / `crypto` / `Buffer` / `process` / `__dirname` and zero DOM. Input is `Uint8Array`. Node-only code lives in `packages/node`. | D3. `npm run check:browser` enforces it. |
 | R5 | Parse path is sync. Only `initTexture()` and texture decode return promises. No `async` creeping into readers, codecs or classes. | D4. |
 | R6 | 64-bit: SInt64/UInt64 fields and pathIDs are always `bigint`. Offsets and sizes are `number`, with a throw above 2^53. | D9. A value whose type depends on magnitude is a bug factory. |
 | R7 | Bytes: `subarray`, never `slice`, on the read path. | Memory in browsers. |
@@ -20,14 +20,16 @@ Used by humans and by the `.claude/skills/` workflows (`implement-issue`, `revie
 | R10 | Public texture output is RGBA. Block decoders return BGRA, so swap once after decode. | D5. |
 | R11 | No third-party game data committed, ever. Fixtures are built with our own Unity projects. | Licensing. |
 | R12 | Goldens come from the oracle (UnityPy, `scripts/make-goldens.py`), never from this library's own output. | A golden produced by the code under test proves nothing. |
-| R13 | The root `texture2ddecoder-wasm` package keeps building and passing. Reader work stays inside `unity-asset-reader/` unless the issue says otherwise. | D8. Two packages, one repo. |
+| R13 | `packages/texture2ddecoder-wasm` keeps its npm name, public API and tarball contents, and keeps building and passing. Reader work never touches it unless the issue says so. | D7/D8. It is published and stable; the monorepo move must be invisible to its users. |
+| R14 | Dependency direction: feature packages → `unity-asset-reader` (core, as `peerDependency`). Core imports no workspace package. `texture2ddecoder-wasm` imports no workspace package. No deep imports across packages (`unity-asset-reader/src/...`); only public entry points. | D7. A shared core only works if there is exactly one copy of it and nothing reaches around its API. |
 
 ## Design rules (a violation needs a reason in the PR)
 
 - **Scope = the issue.** Implement its Tasks and Acceptance, nothing adjacent. Found something else worth doing? Open a follow-up issue.
 - **Port behavior, not structure.** Match what upstream does on the same bytes; do not reproduce C# class hierarchies, streams or helper layers that TS does not need.
 - **No speculative abstraction.** No interface with one implementation, no options nobody asked for, no plugin hooks before the M6 item that needs them (that is why `ByteSource` waits for #51).
-- **Layout follows plan §2.** New top-level folders or entry points need a plan change first.
+- **Layout follows plan §2.** New packages, top-level folders or entry points need a plan change first.
+- **Core or feature package?** Reading Unity bytes into fields, or needed by two packages → core. WASM, pixels, `fs`, heavy or optional deps → feature package. Do not create a shared helper package for code only one package uses.
 - **Errors carry context:** file name, offset, expected vs actual. `write N bytes but expected M`, not `decode failed`.
 - Deliberate shortcut with a known ceiling → `// ponytail: <ceiling>, <upgrade path>` comment.
 
@@ -41,7 +43,7 @@ Used by humans and by the `.claude/skills/` workflows (`implement-issue`, `revie
 
 ## Tests
 
-- Runner: `tsx --test`, files in `unity-asset-reader/tests/*.test.ts`.
+- Runner: `tsx --test`, files in `packages/<pkg>/tests/**/*.test.ts`; shared fixtures and goldens in root `fixtures/`.
 - Each Acceptance bullet of the issue maps to at least one test that fails when the behavior breaks.
 - Codec/parser tests include the unhappy path the issue names (truncated input, wrong size, bad magic).
 - Fixture-based tests compare against committed goldens under the normalization in plan §5 (int64 → decimal string, floats by float32 bits).
@@ -50,14 +52,10 @@ Used by humans and by the `.claude/skills/` workflows (`implement-issue`, `revie
 ## Verification (run before every push; reviewers rerun it)
 
 ```bash
-cd unity-asset-reader && npm run build && npm test && npm run check:browser
+npm ci && npm run verify
 ```
 
-```bash
-git ls-files '*.cs' '*.csproj' '*.sln'
-```
-
-Second command must print nothing. If files outside `unity-asset-reader/` changed, also run the root `npm run build:rollup` (and root `npm test` when `wasm/` is built locally).
+From the repo root. `verify` = build every package (TS only, no Docker) + test + `check:browser` + the no-C# guard (`git ls-files '*.cs' '*.csproj' '*.sln'` prints nothing). If `packages/texture2ddecoder-wasm/` changed, also run its `npm test -w texture2ddecoder-wasm` with `wasm/` built locally (`build:wasm`, needs Docker).
 
 ## Git and PRs
 

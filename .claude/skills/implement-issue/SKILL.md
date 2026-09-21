@@ -55,7 +55,7 @@ If the working tree is dirty with unrelated changes, stop and ask; do not stash 
 
 ## 4. Implement
 
-- Work inside `unity-asset-reader/` following the layout in plan §2. (If that directory does not exist yet, the scaffold issue #7 has to come first.)
+- Work inside the package the issue belongs to (`packages/core`, `packages/texture`, `packages/node`) following plan §2; respect the dependency direction (R14). (If `packages/` does not exist yet, the M0 workspaces and scaffold issues have to come first.)
 - Go through the issue's **Tasks** list top to bottom. Write the smallest code that satisfies them. Anything adjacent that looks worth doing goes into a follow-up issue, not into this PR - reviewers reject scope creep because it hides the change they are trying to verify.
 - Ported files start with the attribution line from R3.
 - Match the style rules in the rules doc (double quotes, semicolons, JSDoc on exports, version-gate comments that cite the Unity version).
@@ -68,14 +68,10 @@ Some issues deliver a decision instead of code (spikes such as #13). For those, 
 Run the verification block from the rules doc and read the output, do not assume:
 
 ```bash
-cd unity-asset-reader && npm run build && npm test && npm run check:browser
+npm ci && npm run verify
 ```
 
-```bash
-git ls-files '*.cs' '*.csproj' '*.sln'
-```
-
-The second command must print nothing. If you touched files outside `unity-asset-reader/`, also run the root build (`npm run build:rollup`).
+From the repo root; it includes the no-C# guard. If you touched `packages/texture2ddecoder-wasm/`, also run its tests with `wasm/` built (`npm test -w texture2ddecoder-wasm`).
 
 Then self-review the diff (`git diff main...`) against the Hard rules table, one ID at a time. It takes a minute and catches most of what the reviewer would.
 

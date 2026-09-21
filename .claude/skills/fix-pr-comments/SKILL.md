@@ -66,14 +66,10 @@ For each **fix**, in order of severity:
 Then run the full verification from the rules doc, not just the touched test:
 
 ```bash
-cd unity-asset-reader && npm run build && npm test && npm run check:browser
+npm ci && npm run verify
 ```
 
-```bash
-git ls-files '*.cs' '*.csproj' '*.sln'
-```
-
-Second command must print nothing. If a fix cannot be made to pass, do not push a half fix; change its outcome to **ask** and report.
+From the repo root; it includes the no-C# guard. If a fix cannot be made to pass, do not push a half fix; change its outcome to **ask** and report.
 
 ```bash
 git push
