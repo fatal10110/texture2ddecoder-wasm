@@ -37,3 +37,6 @@ yarn-error.log*
 
 # Golden oracle venv (UnityPy) - not a dependency of the package or CI
 .venv-oracle/
+
+# Agent worktrees (Claude Code isolation) - never committed
+.claude/worktrees/
