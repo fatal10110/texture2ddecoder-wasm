@@ -1,0 +1,16 @@
+unity-asset-reader is a derivative work in part: its parsing logic is
+hand-ported to TypeScript from the projects below (all MIT). Their copyright
+notices are retained here as the MIT license requires.
+
+AssetStudio
+  Copyright (c) Perfare
+  Copyright (c) RazTools
+  Copyright (c) Razviar (https://github.com/Razviar/assetstudio)
+  MIT License
+
+UnityPy (behavior reference and golden-data oracle)
+  Copyright (c) K0lb3 (https://github.com/K0lb3/UnityPy)
+  MIT License
+
+Texture decoding is delegated to texture2ddecoder-wasm (MIT), an optional peer
+dependency; see its own LICENSE for the codecs it includes.
