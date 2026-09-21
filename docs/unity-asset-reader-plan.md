@@ -184,7 +184,7 @@ Issues live in this repo (`fatal10110/texture2ddecoder-wasm`, to be renamed — 
 Milestone epics (each has its tasks as sub-issues): M0 #6 · M1 #10 · M2 #21 · M3 #28 · M4 #36 · M5 #42 · M6+ #46
 Labels: `epic`, `area:{bundle,serialized,texture,codec,node,infra}`, `backlog`.
 
-Revision 2026-09-21b (monorepo, D7/D8 rewritten): new M0 issue for the workspaces conversion + package move; #6–#9 re-scoped to `packages/*` and root `verify`; #29–#35 split core/texture; #32 decoder is a regular dependency; #43 → `packages/node`; #44/#45 multi-package docs and lockstep publish. PR #54 (single-package scaffold) is superseded by the re-scoped #7.
+Revision 2026-09-21b (monorepo, D7/D8 rewritten): new M0 issue #55 for the workspaces conversion + package move (#7 → scaffold reader packages, depends on #55; #8 → guards for core/texture + R14; #9 → root `verify` CI); #6–#9 re-scoped to `packages/*` and root `verify`; every implementation issue names its package; #28/#29–#35 split core/texture; #32 decoder is a regular dependency; #43 → `packages/node`; #44/#45 multi-package docs and lockstep publish; M6+ items (#47–#52) each name their own package. Milestones M0/M5 retitled. PR #54 (single-package scaffold) is superseded by the re-scoped #7.
 
 Issue edits applied for the previous revision (2026-09-21, via `gh`):
 - #6, #7, #9 → scaffold + CI scoped to `unity-asset-reader/` subdir (D8).
