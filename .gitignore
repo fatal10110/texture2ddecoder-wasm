@@ -34,3 +34,6 @@ yarn-error.log*
 # Temporary files
 *.tmp
 *.temp
+
+# Golden oracle venv (UnityPy) - not a dependency of the package or CI
+.venv-oracle/
