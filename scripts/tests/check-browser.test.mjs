@@ -41,7 +41,7 @@ for (const [name, code] of [
 }
 
 test("ArrayBuffer and property names are not node globals", async () => {
-  const src = "export const a = new ArrayBuffer(1);\nexport const b = { process() {} }.process;\n";
+  const src = "export const a = new ArrayBuffer(1);\nexport const b = ({} as Record<string, number>).process;\n";
   assert.deepEqual(await checkPackage(pkg("false-pos", src), rules), []);
 });
 
@@ -62,4 +62,22 @@ test("decoder package is dependency-checked without a browser bundle", async () 
   const problems = await checkPackage(root, PACKAGES["texture2ddecoder-wasm"]);
   assert.equal(problems.length, 1);
   assert.match(problems[0], /R14/);
+});
+
+test("unreachable source file importing fs fails (R4)", async () => {
+  const root = pkg("orphan", "export const a = 1;\n");
+  writeFileSync(join(root, "src/orphan.ts"), 'import "fs";\nexport {};\n');
+  assert.match((await checkPackage(root, rules)).join("\n"), /resolve "fs"/);
+});
+
+test("typeof process, globalThis.process and process[] fail", async () => {
+  for (const [i, code] of ["typeof process", "globalThis.process", 'process["env"]'].entries()) {
+    const problems = await checkPackage(pkg(`p${i}`, `export const t = ${code};\n`), rules);
+    assert.match(problems.join("\n"), /node-only global/, code);
+  }
+});
+
+test("deep import of a reader package fails even where imports are allowed", async () => {
+  const root = pkg("deep", 'import { x } from "unity-asset-reader/src/x";\nexport const y = x;\n');
+  assert.match((await checkPackage(root, PACKAGES.texture)).join("\n"), /deep import/);
 });
