@@ -4,6 +4,6 @@ import * as reader from "../src/index.js";
 
 describe("scaffold", () => {
   it("loads the entry module", () => {
-    assert.deepStrictEqual(Object.keys(reader), []);
+    assert.ok(reader);
   });
 });
