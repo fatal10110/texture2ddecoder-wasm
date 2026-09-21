@@ -11,7 +11,7 @@
     "build:wasm": "npm run build:wasm -w texture2ddecoder-wasm",
     "build:rollup": "npm run build:rollup -w texture2ddecoder-wasm",
     "check:browser": "node scripts/check-browser.mjs",
-    "check:no-csharp": "! git ls-files '*.cs' '*.csproj' '*.sln' | grep ."
+    "check:no-csharp": "node scripts/check-no-csharp.mjs"
   },
   "devDependencies": {
     "@rollup/plugin-node-resolve": "^15.3.1",
