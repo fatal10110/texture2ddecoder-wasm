@@ -248,6 +248,18 @@ export async function decode_bc1(
 - **Constants**: `UPPER_SNAKE_CASE`
 - **Variables**: `camelCase`
 
+## Continuous Integration
+
+`.github/workflows/ci.yml` runs on pushes to `main` and on pull requests. A `changes` job picks
+the jobs by changed paths; skipped jobs report success, so all of them can be required checks.
+
+| Status check | Runs when | What |
+|---|---|---|
+| `reader (node 20)`, `reader (node 22)` | `packages/{core,texture,node}/**`, `fixtures/**`, `scripts/**`, root config | `npm ci && npm run verify` (build, test, `check:browser`, no-C# guard) |
+| `decoder` | `packages/texture2ddecoder-wasm/**`, lockfile | `build:wasm` (Docker), `build:rollup`, `npm test -w texture2ddecoder-wasm`; checks out submodules |
+
+Run the reader job locally with `npm ci && npm run verify`.
+
 ## Reporting Issues
 
 ### Bug Reports
