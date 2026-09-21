@@ -13,3 +13,10 @@ AssetStudio -- https://github.com/Razviar/assetstudio (MIT)
 UnityPy -- https://github.com/K0lb3/UnityPy (MIT)
   Copyright (c) K0lb3
   Secondary reference and oracle used to generate the test goldens.
+
+The build inlines the dependency below into dist/, so its notice travels with
+every copy of this package.
+
+fflate -- https://github.com/101arrowz/fflate (MIT)
+  Copyright (c) Arjun Barrett
+  gzip and zlib decompression behind src/codec/inflate.ts.
