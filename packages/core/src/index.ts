@@ -1,5 +1,5 @@
-// brotliDecompress/lzhamDecompress stay internal until the codec dispatch in
-// #16/#17 settles - two always-throwing symbols are not public API yet.
+// brotliDecompress/lzhamDecompress stay internal: neither is reachable from a
+// stock bundle, so two always-throwing symbols are not public API.
 export { NodeFlags, readBundle } from "./bundle/BundleFile.js";
 export type { BundleFile, BundleHeader, StreamFile } from "./bundle/BundleFile.js";
 export { detectContainer, detectFileType } from "./bundle/detect.js";

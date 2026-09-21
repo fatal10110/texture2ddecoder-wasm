@@ -150,9 +150,11 @@ export function readBundle(data: Uint8Array): BundleFile {
 
   // UnityWeb/UnityRaw (and their version-6 spelling, which reuses the UnityFS
   // layout) plus WebFile land with #18; UnityArchive has no upstream
-  // implementation to port at all.
+  // implementation to port at all. The kind is the one detect.ts uses for a
+  // file it cannot open, so a caller branching on the error does not have to
+  // care which entry point sniffed the bytes (R9).
   if (signature !== "UnityFS") {
-    throw new UnsupportedError("bundle signature", signature || "(none)", "only UnityFS is read");
+    throw new UnsupportedError("container", signature || "(none)", "only UnityFS is read");
   }
 
   const header: BundleHeader = {

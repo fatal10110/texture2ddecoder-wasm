@@ -72,7 +72,7 @@ for (const name of ["unityweb-lzma.bundle", "unityraw.bundle"]) {
   test(`refuses ${name}: the legacy containers land with #18`, () => {
     assert.throws(
       () => readBundle(loadFixture(name)),
-      (error: unknown) => error instanceof UnsupportedError && error.kind === "bundle signature",
+      (error: unknown) => error instanceof UnsupportedError && error.kind === "container",
     );
   });
 }
@@ -231,11 +231,20 @@ test("reads the blocks info from the end of the file when flag 0x80 is set", () 
 
 test("pads the data blocks to 16 bytes when flag 0x200 is set", () => {
   const data = payload(64, 5);
-  const bundle = buildBundle({
+  // The node path is one word longer than the default on purpose: with the
+  // default the header and blocks info happen to add up to 112 bytes, the
+  // blocks already start on a 16-byte boundary, and the case would pass even
+  // with the align deleted from the reader.
+  const nodes = [{ path: "CAB-test-pad", offset: 0, size: 64, flags: NodeFlags.SerializedFile }];
+  const unpadded = buildBundle({ blocks: [{ data }], nodes });
+  const padded = buildBundle({
     flags: BLOCKS_AND_DIRECTORY_COMBINED | PADDING_AT_START,
     blocks: [{ data }],
+    nodes,
   });
-  assert.deepEqual(readBundle(bundle).files[0]!.data, data);
+
+  assert.equal(padded.length - unpadded.length, 12, "the crafted bundle carries no padding");
+  assert.deepEqual(readBundle(padded).files[0]!.data, data);
 });
 
 test("pads the header to 16 bytes for format version 7", () => {
@@ -377,6 +386,6 @@ test("reports blocks info at the end that does not fit in the file", () => {
 test("reports a bundle whose signature is not a container at all", () => {
   assert.throws(
     () => readBundle(new Uint8Array(64)),
-    (error: unknown) => error instanceof UnsupportedError && error.kind === "bundle signature",
+    (error: unknown) => error instanceof UnsupportedError && error.kind === "container",
   );
 });
