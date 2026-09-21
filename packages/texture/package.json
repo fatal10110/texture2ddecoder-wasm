@@ -22,7 +22,8 @@
   "scripts": {
     "pretest": "npm run build",
     "build": "rollup -c rollup.config.mjs",
-    "test": "tsx --test 'tests/**/*.test.ts'"
+    "test": "tsx --test 'tests/**/*.test.ts'",
+    "check:browser": "node ../../scripts/check-browser.mjs texture"
   },
   "keywords": [
     "unity",
