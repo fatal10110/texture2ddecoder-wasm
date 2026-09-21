@@ -51,10 +51,10 @@ git submodule update --init --recursive
 
 This will download the C++ texture decoder source files from the upstream repository.
 
-3. **Install dependencies:**
+3. **Install dependencies** (one root lockfile, all workspaces):
 
 ```bash
-npm install
+npm ci
 ```
 
 4. **Verify Docker is installed:**
@@ -75,26 +75,24 @@ The build process has two main steps:
 npm run build:wasm
 ```
 
-This command:
+From the repo root this delegates to `packages/texture2ddecoder-wasm` (npm workspaces). This command:
 - Uses Docker with Emscripten SDK to compile C++ to WebAssembly
-- Generates `wasm/texture2ddecoder.js` and `wasm/texture2ddecoder.wasm`
+- Generates `packages/texture2ddecoder-wasm/wasm/texture2ddecoder.js` and `.wasm`
 - No local Emscripten installation needed
 
 ### Build TypeScript
 
 ```bash
-npm run build:ts
+npm run build:rollup
 ```
 
-This compiles TypeScript source files to JavaScript in the `dist/` directory.
+This bundles the TypeScript sources into `packages/texture2ddecoder-wasm/dist/`.
 
 ### Build Everything
 
 ```bash
-npm run build
+npm run build:wasm && npm run build:rollup
 ```
-
-Runs both WASM and TypeScript builds.
 
 ## Running Tests
 
@@ -106,7 +104,7 @@ npm test
 
 ### Test Structure
 
-Tests are located in the `tests/` directory:
+Tests are located in `packages/texture2ddecoder-wasm/tests/`:
 - `index.test.ts` - Unit tests for decoder functions
 - `samples.test.ts` - Integration tests with real texture samples
 
@@ -177,7 +175,8 @@ git checkout -b feature/your-feature-name
 3. **Test your changes:**
 
 ```bash
-npm run build
+npm run build:wasm
+npm run build:rollup
 npm test
 ```
 
@@ -199,7 +198,7 @@ git push origin feature/your-feature-name
 
 Before submitting, ensure:
 
-- [ ] Code builds successfully (`npm run build`)
+- [ ] Code builds successfully (`npm run build:rollup`)
 - [ ] All tests pass (`npm test`)
 - [ ] No linter errors
 - [ ] Documentation updated (README, JSDoc comments)
@@ -278,18 +277,18 @@ For feature requests, describe:
 ## Project Structure
 
 ```
-texture2ddecoder-wasm/
-├── src/                # TypeScript source files
-│   └── index.ts        # Main entry point
-├── tests/              # Test files
-│   ├── index.test.ts   # Unit tests
-│   └── samples.test.ts # Integration tests
-├── wasm/               # Generated WASM files
-├── dist/               # Compiled JavaScript output
-├── texture2ddecoder/   # Git submodule (C++ source)
-├── scripts/            # Build scripts
-│   └── build-wasm.sh   # WASM build script
-└── wasm_bindings.cpp   # C++ to WASM bindings
+texture2ddecoder-wasm/            # npm workspaces root (private)
+├── package.json                  # workspaces: ["packages/*"]
+├── docs/                         # plan, rules, GitHub Pages
+└── packages/
+    └── texture2ddecoder-wasm/    # the published decoder package
+        ├── src/                  # TypeScript source (index.ts)
+        ├── tests/                # index.test.ts, samples.test.ts
+        ├── scripts/              # build-wasm.sh, copy-wasm.js
+        ├── texture2ddecoder/     # Git submodule (C++ source)
+        ├── wasm_bindings.cpp     # C++ to WASM bindings
+        ├── wasm/                 # Generated WASM files
+        └── dist/                 # Rollup output
 ```
 
 ## Additional Resources

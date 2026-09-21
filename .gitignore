@@ -8,8 +8,8 @@ build/
 .docker/
 
 # Build outputs
-wasm/*.js
-wasm/*.wasm
+**/wasm/*.js
+**/wasm/*.wasm
 *.tsbuildinfo
 
 # Test outputs

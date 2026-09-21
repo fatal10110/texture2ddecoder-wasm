@@ -1,79 +1,12 @@
 {
-  "name": "texture2ddecoder-wasm",
-  "version": "1.2.2",
-  "description": "WebAssembly bindings for Texture2DDecoder - decode various texture formats (BC1-7, ETC, PVRTC, ASTC, etc.) with Unity asset decoder",
-  "main": "dist/index.cjs",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
-    }
-  },
-  "bin": {
-    "texture2ddecoder-copy-wasm": "./scripts/copy-wasm.js"
-  },
-  "files": [
-    "dist/**/*",
-    "wasm/**/*",
-    "scripts/copy-wasm.js"
+  "name": "unity-asset-reader-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*"
   ],
   "scripts": {
-    "build:wasm": "bash scripts/build-wasm.sh",
-    "build:rollup": "rollup -c rollup.config.mjs",
-    "build": "npm run build:wasm && npm run build:rollup",
-    "test": "tsx --test tests/**/*.test.ts",
-    "prepublishOnly": "npm run build"
-  },
-  "keywords": [
-    "texture",
-    "decoder",
-    "bc1",
-    "bc3",
-    "bc4",
-    "bc5",
-    "bc6",
-    "bc7",
-    "dxt1",
-    "dxt5",
-    "etc1",
-    "etc2",
-    "pvrtc",
-    "astc",
-    "atc",
-    "eac",
-    "crunch",
-    "unity",
-    "unity-asset",
-    "sprite",
-    "wasm",
-    "webassembly",
-    "texture-compression",
-    "browser",
-    "nodejs"
-  ],
-  "author": "K0lb3",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/fatal10110/texture2ddecoder-wasm.git"
-  },
-  "engines": {
-    "node": ">=14.0.0"
-  },
-  "devDependencies": {
-    "@rollup/plugin-commonjs": "^28.0.2",
-    "@rollup/plugin-node-resolve": "^15.3.1",
-    "@rollup/plugin-terser": "^0.4.4",
-    "@rollup/plugin-typescript": "^12.1.2",
-    "@types/adm-zip": "^0.5.7",
-    "@types/node": "^20.10.0",
-    "adm-zip": "^0.5.16",
-    "rollup": "^4.30.1",
-    "tslib": "^2.8.1",
-    "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
+    "build:wasm": "npm run build:wasm -w texture2ddecoder-wasm",
+    "build:rollup": "npm run build:rollup -w texture2ddecoder-wasm",
+    "test": "npm test -w texture2ddecoder-wasm"
   }
 }
