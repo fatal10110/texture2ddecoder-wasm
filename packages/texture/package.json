@@ -20,6 +20,7 @@
     "NOTICE"
   ],
   "scripts": {
+    "pretest": "npm run build",
     "build": "rollup -c rollup.config.mjs",
     "test": "tsx --test 'tests/**/*.test.ts'"
   },
@@ -34,7 +35,7 @@
     "texture2ddecoder-wasm": "^1.2.2"
   },
   "peerDependencies": {
-    "unity-asset-reader": "^0.0.0"
+    "unity-asset-reader": "*"
   },
   "devDependencies": {
     "unity-asset-reader": "*"
