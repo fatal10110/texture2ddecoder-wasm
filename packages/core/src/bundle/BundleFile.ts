@@ -1,4 +1,5 @@
 // Ported from AssetStudio/BundleFile.cs (MIT, © Perfare / RazTools / Razviar)
+// Ported from UnityPy/files/BundleFile.py (MIT, © K0lb3)
 
 import { decompressLz4 } from "../codec/lz4.js";
 import { lzmaDecompress } from "../codec/lzma.js";
