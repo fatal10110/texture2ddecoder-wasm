@@ -9,5 +9,7 @@ export type { WebFile } from "./bundle/WebFile.js";
 export { gunzip, unzlib } from "./codec/inflate.js";
 export { decompressLz4 } from "./codec/lz4.js";
 export { lzmaDecompress } from "./codec/lzma.js";
+export { load } from "./env.js";
+export type { Env, LoadedFile, LoadInput } from "./env.js";
 export { CorruptError, UnsupportedError } from "./errors.js";
 export { BinaryReader, type Endian } from "./io/BinaryReader.js";
