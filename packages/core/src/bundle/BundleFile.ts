@@ -417,10 +417,17 @@ function readBlocksInfoAndDirectory(
   }
 
   // 2020.3.34 / 2021.3.2 / 2022.1.1 and later: with this flag the data blocks
-  // start on a 16-byte boundary. On an older bundle the same bit means
-  // encryption, and readArchiveBundle already refused it there, so reaching
-  // this line with the bit set can only mean padding.
-  if ((header.flags & ArchiveFlags.BlockInfoNeedPaddingAtStart) !== 0) reader.align(16);
+  // start on a 16-byte boundary. On an older bundle the same bit is the
+  // encryption flag, which readArchiveBundle already refused, so the flag-set
+  // test here is redundant today - it is the guard UnityPy writes
+  // (`isinstance(self.dataflags, ArchiveFlags) and ...`) and it keeps the two
+  // readings apart whatever the encryption mask above is narrowed to later.
+  if (
+    !usesOldArchiveFlags(version) &&
+    (header.flags & ArchiveFlags.BlockInfoNeedPaddingAtStart) !== 0
+  ) {
+    reader.align(16);
+  }
 
   return { blocks, nodes };
 }
