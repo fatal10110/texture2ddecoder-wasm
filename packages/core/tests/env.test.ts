@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { gzipSync } from "node:zlib";
 
 import { assertMatchesGolden, fixtureNames, loadFixture } from "../../../fixtures/helpers.js";
 import { NodeFlags } from "../src/bundle/BundleFile.js";
@@ -193,6 +194,48 @@ test("unwraps a bundle nested inside a UnityWebData file", () => {
   ]).files;
 
   assert.deepEqual(files, [{ path: "CAB-inner", data }]);
+});
+
+test("keeps every row when two inputs unpack to the same node path", () => {
+  const first = payload(32, 3);
+  const second = payload(32, 5);
+  const files = load([
+    { name: "a.bundle", data: buildBundle([{ path: "CAB-a", data: first }]) },
+    { name: "b.bundle", data: buildBundle([{ path: "CAB-a", data: second }]) },
+  ]).files;
+
+  // Nothing here may drop or rename a duplicate: which node a later `.resS`
+  // reference means is the M3 resolver's call (#30), and it needs both rows.
+  assert.deepEqual(files, [
+    { path: "CAB-a", data: first },
+    { path: "CAB-a", data: second },
+  ]);
+});
+
+test("keeps a node that only looks gzip-wrapped, instead of failing the load", () => {
+  // Two bytes of magic: roughly one resource node in 65536 starts with them by
+  // chance. Upstream never dispatches on a node's sniff at all, and stock Unity
+  // gzips whole files rather than nodes, so opening this one would fail a load
+  // over ordinary asset bytes.
+  const data = Uint8Array.from([0x1f, 0x8b, ...payload(30, 17)]);
+  const files = load([
+    { name: "b.bundle", data: buildBundle([{ path: "CAB-a.resS", data }]) },
+  ]).files;
+
+  assert.deepEqual(files, [{ path: "CAB-a.resS", data }]);
+});
+
+test("still unwraps a gzip wrapper the caller hands in directly", () => {
+  // The node case above must not cost the input case: a doubly-wrapped input
+  // keeps unwrapping, which is what upstream's LoadFile(DecompressGZip(...))
+  // does.
+  const inner = gzipSync(buildBundle([{ path: "CAB-a", data: payload(32, 19) }]));
+  const files = load([{ name: "a.bundle.gz.gz", data: gzipSync(inner) }]).files;
+
+  assert.deepEqual(
+    files.map((f) => f.path),
+    ["CAB-a"],
+  );
 });
 
 test("keeps the input name when a gzip wrapper unwraps to something opaque", () => {
