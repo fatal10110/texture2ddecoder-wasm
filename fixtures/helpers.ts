@@ -23,9 +23,10 @@ interface GoldenFile {
 
 export interface Golden {
   signature: string;
-  formatVersion: number;
-  unityVersion: string;
-  unityRevision: string;
+  /** Bundle fields; absent for a `UnityWebData` fixture, which has no version. */
+  formatVersion?: number;
+  unityVersion?: string;
+  unityRevision?: string;
   files: Record<string, GoldenFile>;
   objects: Record<string, { pathId: string; classId: number; byteSize: number }[]>;
   oracleNote?: string;

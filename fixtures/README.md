@@ -39,10 +39,14 @@ sprites. Replace these with editor-built bundles when one is available.
 | `lz4-v7-align.bundle` | UnityFS v7 | LZ4, 16-byte header align |
 | `unityweb-lzma.bundle` | UnityWeb v3 (legacy) | LZMA |
 | `unityraw.bundle` | UnityRaw v3 (legacy) | none |
+| `unityraw-v2.bundle` | UnityRaw v2 (legacy, no `fileInfoHeaderSize`) | none |
+| `webdata.data` | UnityWebData1.0 (WebFile) | none |
 | `gzip-lz4.bundle.gz` | gzip around UnityFS v6 | LZ4 |
 
-Not covered yet: `UnityWebData` (WebFile), UnityWeb v5+ (UnityPy refuses to
-write it), real typetrees, textures, sprites.
+Not covered yet: UnityWeb/UnityRaw v4+ (UnityPy refuses to write them, so the
+hash/CRC and version-6 archive-layout paths are covered by hand-written bytes in
+`BundleFile.test.ts` instead), gzip/brotli around a `UnityWebData` file, real
+typetrees, textures, sprites.
 
 ## Oracle notes
 

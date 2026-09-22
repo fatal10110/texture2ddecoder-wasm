@@ -58,8 +58,16 @@ function brotliFile(): Uint8Array {
 
 // --- the detection table over every committed fixture -----------------------
 
+/**
+ * The file type a golden's signature stands for. They spell it the same way
+ * except for `UnityWebData`, whose signature carries its version too.
+ */
+function expectedType(signature: string): string {
+  return signature.startsWith("UnityWebData") ? "UnityWebData" : signature;
+}
+
 for (const name of fixtureNames()) {
-  const expected = name.endsWith(".gz") ? "gzip" : golden(name).signature;
+  const expected = name.endsWith(".gz") ? "gzip" : expectedType(golden(name).signature);
 
   test(`detects ${name} as ${expected}`, () => {
     const data = loadFixture(name);
@@ -71,7 +79,7 @@ for (const name of fixtureNames()) {
 
 test("a gzip fixture reveals its bundle signature once unwrapped", () => {
   for (const name of fixtureNames().filter((n) => n.endsWith(".gz"))) {
-    assert.equal(detectFileType(gunzipFixture(name)), golden(name).signature);
+    assert.equal(detectFileType(gunzipFixture(name)), expectedType(golden(name).signature));
   }
 });
 

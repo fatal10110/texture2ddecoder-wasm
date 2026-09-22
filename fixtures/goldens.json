@@ -122,6 +122,23 @@
       },
       "objects": {}
     },
+    "unityraw-v2.bundle": {
+      "signature": "UnityRaw",
+      "formatVersion": 2,
+      "unityVersion": "5.x.x",
+      "unityRevision": "2022.3.0f1",
+      "files": {
+        "CAB-unityraw-v2": {
+          "sha256": "a995ab04e21c6d78116db38e40b69549321fea2cc80576ea0324df64e3b444bc",
+          "size": 4096
+        },
+        "CAB-unityraw-v2.resS": {
+          "sha256": "48312c41c4a2fc16691a10658aab28640657f2b2f0f8dc4fcb06902446c42620",
+          "size": 1536
+        }
+      },
+      "objects": {}
+    },
     "unityraw.bundle": {
       "signature": "UnityRaw",
       "formatVersion": 3,
@@ -151,6 +168,20 @@
         },
         "CAB-unityweb-lzma.resS": {
           "sha256": "192370d9b450e391e05a92bc9110dfefb3f554a84eee933d30fe27d3767993d6",
+          "size": 1536
+        }
+      },
+      "objects": {}
+    },
+    "webdata.data": {
+      "signature": "UnityWebData1.0",
+      "files": {
+        "CAB-webdata": {
+          "sha256": "5fec86bb4200331c32f99144135e4434f54100011728f3a3ec14e382f1ae5bef",
+          "size": 4096
+        },
+        "CAB-webdata.resS": {
+          "sha256": "dd0d791d613f2222e9cec9bd1c6ac29cd0dc4ed25f4594149281e9bab28e7d1c",
           "size": 1536
         }
       },

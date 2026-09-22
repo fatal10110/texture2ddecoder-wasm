@@ -58,9 +58,10 @@ test("unpacks a UnityFS bundle whose blocks info and blocks are both LZMA", () =
 
 test("decodes the LZMA level of a legacy UnityWeb bundle", () => {
   // Shape 2: the stream carries its own 13-byte header, so the u64 size is read
-  // out of it instead of coming from the container. The legacy container parser
-  // is #18's, so this walks the v3 header by hand - just far enough to reach
-  // the one LZMA stream - and checks the unpacked nodes against the golden.
+  // out of it instead of coming from the container. `readBundle` covers the
+  // same fixture end to end (#18); this walks the v3 header by hand so the
+  // assertion below - that the in-stream size is the one the codec is given -
+  // is made against the bytes rather than against the parser.
   const bundle = loadFixture("unityweb-lzma.bundle");
   const view = new DataView(bundle.buffer, bundle.byteOffset, bundle.byteLength);
   let pos = 0;
