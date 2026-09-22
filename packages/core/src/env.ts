@@ -1,7 +1,7 @@
 // Ported from AssetStudio/AssetsManager.cs (MIT, © Perfare / RazTools / Razviar)
 
 import { readBundle } from "./bundle/BundleFile.js";
-import { detectContainer, detectFileType } from "./bundle/detect.js";
+import { detectContainer, detectFileType, type FileType } from "./bundle/detect.js";
 import { readWebFile } from "./bundle/WebFile.js";
 import { gunzip } from "./codec/inflate.js";
 import { UnsupportedError } from "./errors.js";
@@ -14,6 +14,18 @@ import { UnsupportedError } from "./errors.js";
  * Upstream has no equivalent because it never recurses into a bundle node.
  */
 const MAX_DEPTH = 16;
+
+/**
+ * The types a file inside a container may be opened as: the ones Unity writes
+ * a signature for. Everything else detection decides by a magic number.
+ */
+const SIGNED_CONTAINERS: readonly FileType[] = [
+  "UnityFS",
+  "UnityWeb",
+  "UnityRaw",
+  "UnityWebData",
+  "UnityArchive",
+];
 
 /** One file handed to {@link load}. */
 export interface LoadInput {
@@ -59,6 +71,8 @@ export interface Env {
  * is removed and the result sniffed again, a bundle or `UnityWebData` file is
  * unpacked and every node sniffed in turn. Anything that is not a container -
  * a SerializedFile, a `.resS` sidecar - is kept as it is, under its own name.
+ * A node only counts as a container when Unity's own signature says so; a
+ * wrapper detected by a magic number is opened for an input, never for a node.
  *
  * Nothing is decompressed lazily and nothing is copied: the returned bytes are
  * views into the decompressed blocks.
@@ -74,7 +88,7 @@ export interface Env {
 export function load(inputs: readonly LoadInput[]): Env {
   const files: LoadedFile[] = [];
   for (const { name, data } of inputs) {
-    ingest(name, data instanceof Uint8Array ? data : new Uint8Array(data), 0, files);
+    ingest(name, data instanceof Uint8Array ? data : new Uint8Array(data), 0, false, files);
   }
   return { files };
 }
@@ -83,9 +97,15 @@ export function load(inputs: readonly LoadInput[]): Env {
  * Sniff one file and either keep it or open it, appending whatever comes out,
  * with every failure inside it named after this file.
  */
-function ingest(name: string, data: Uint8Array, depth: number, out: LoadedFile[]): void {
+function ingest(
+  name: string,
+  data: Uint8Array,
+  depth: number,
+  packed: boolean,
+  out: LoadedFile[],
+): void {
   try {
-    openFile(name, data, depth, out);
+    openFile(name, data, depth, packed, out);
   } catch (error) {
     throw withSource(name, error);
   }
@@ -96,22 +116,43 @@ function ingest(name: string, data: Uint8Array, depth: number, out: LoadedFile[]
  * layer 1-2: a SerializedFile node is kept as bytes here rather than parsed
  * (M2), and the game-specific containers (`BlkFile`, `MhyFile`, ...) are not
  * ported at all.
+ *
+ * @param packed whether this file came out of a container rather than from the
+ *   caller, which is what decides how far a sniff may be trusted
  */
-function openFile(name: string, data: Uint8Array, depth: number, out: LoadedFile[]): void {
+function openFile(
+  name: string,
+  data: Uint8Array,
+  depth: number,
+  packed: boolean,
+  out: LoadedFile[],
+): void {
   if (depth > MAX_DEPTH) {
     throw new UnsupportedError("container nesting", depth, `above the ${MAX_DEPTH} level limit`);
   }
 
+  const type = detectFileType(data);
+
   // `resource` is detection's "matched nothing" fallback, so `detectContainer`
   // refuses it - but as an input it is exactly the `.resS` sidecar a caller
   // passes next to its bundle, and as a node it is the sidecar packed inside
-  // one. Everything else goes through `detectContainer`, which owns the reason
-  // each refused type is refused (R9).
-  if (detectFileType(data) === "resource") {
+  // one.
+  //
+  // Inside a container the same goes for every type detection decides by a
+  // magic number rather than by a Unity signature: `gzip` is two bytes, so
+  // roughly one resource node in 65536 starts with them, and opening it would
+  // fail the whole load over bytes that are simply asset data. Upstream cannot
+  // hit this - `LoadBundleFile` caches every node that is not a SerializedFile
+  // as an opaque resource stream and never dispatches on the sniff - and stock
+  // Unity gzips whole files for web delivery, never a node inside a bundle, so
+  // nothing real is left unopened.
+  if (type === "resource" || (packed && !SIGNED_CONTAINERS.includes(type))) {
     out.push({ path: name, data });
     return;
   }
 
+  // Everything that is left goes through `detectContainer`, which owns the
+  // reason each refused type is refused (R9).
   switch (detectContainer(data)) {
     case "serialized":
       out.push({ path: name, data });
@@ -119,16 +160,16 @@ function openFile(name: string, data: Uint8Array, depth: number, out: LoadedFile
     // Upstream re-sniffs the decompressed bytes under the same path, so a
     // gzip-wrapped bundle keeps the `.gz` name only if it unwraps to a leaf.
     case "gzip":
-      ingest(name, gunzip(data), depth + 1, out);
+      ingest(name, gunzip(data), depth + 1, packed, out);
       return;
     case "UnityWebData":
       for (const file of readWebFile(data).files) {
-        ingest(file.path, file.data, depth + 1, out);
+        ingest(file.path, file.data, depth + 1, true, out);
       }
       return;
     default:
       for (const file of readBundle(data).files) {
-        ingest(file.path, file.data, depth + 1, out);
+        ingest(file.path, file.data, depth + 1, true, out);
       }
   }
 }
