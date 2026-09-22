@@ -1,4 +1,5 @@
 // Ported from AssetStudio/BundleFile.cs (MIT, © Perfare / RazTools / Razviar)
+// Ported from UnityPy/files/BundleFile.py (MIT, © K0lb3)
 
 import { decompressLz4 } from "../codec/lz4.js";
 import { lzmaDecompress } from "../codec/lzma.js";
@@ -26,17 +27,25 @@ const ArchiveFlags = {
   /**
    * 2020.3.34 / 2021.3.2 / 2022.1.1 and later: the data blocks start on a
    * 16-byte boundary. Older editors wrote the same bit to mean "uses
-   * AssetBundle encryption" - see #74, which owns the version split.
+   * AssetBundle encryption"; {@link usesOldArchiveFlags} tells the two apart.
    */
   BlockInfoNeedPaddingAtStart: 0x200,
   /**
-   * AssetBundle encryption: Unity moved the bit from 0x400 to 0x1000, and
-   * UnityCN builds reuse 0x400 for their own scheme, so both are refused.
-   * The composite is UnityPy's (`UsesAssetBundleEncryption = 0x1400`, old 0x400
-   * / new 0x1000); AssetStudio's own enum stops at `UnityCNEncryption = 0x400`.
-   * It does not cover the pre-2020 0x200 spelling, which is #74's second half.
+   * AssetBundle encryption on a 2020.3.34 / 2021.3.2 / 2022.1.1 or later
+   * bundle: Unity moved the bit from 0x400 to 0x1000, and UnityCN builds reuse
+   * 0x400 for their own scheme, so both are refused. The composite is UnityPy's
+   * (`ArchiveFlags.UsesAssetBundleEncryption = 0x1400`); AssetStudio's own enum
+   * stops at `UnityCNEncryption = 0x400`.
    */
   EncryptionMask: 0x1400,
+  /**
+   * The same on an older bundle, where 0x200 is the encryption bit
+   * (UnityPy `ArchiveFlagsOld.UsesAssetBundleEncryption`). 0x400 and 0x1000
+   * stay in the mask: neither has another meaning in that editor range, and
+   * dropping them would turn bundles this reader refuses today into bundles it
+   * hands to the codecs.
+   */
+  OldEncryptionMask: 0x1600,
 } as const;
 
 /** Low six bits of a storage block's flag word: which codec compressed it. */
@@ -145,6 +154,12 @@ interface DirectoryNode {
   path: string;
 }
 
+/**
+ * The leading numeric components of a `unityRevision`, as
+ * {@link parseVersion} reads them: major, minor, build.
+ */
+type UnityVersion = readonly [major: number, minor: number, build: number];
+
 /** The four fields every container spells the same way, before they diverge. */
 type HeaderStart = Pick<
   BundleHeader,
@@ -215,9 +230,16 @@ function readArchiveBundle(
   // a UnityFS one does; upstream reads and discards it, as does UnityPy.
   if (legacy) reader.readUInt8();
 
+  // Which bits the flags word uses depends on the editor that wrote it, so the
+  // revision has to be parsed before a single flag is branched on.
+  const version = parseVersion(header.unityRevision);
+  const mask = usesOldArchiveFlags(version)
+    ? ArchiveFlags.OldEncryptionMask
+    : ArchiveFlags.EncryptionMask;
+
   // Encrypted archives would otherwise decompress into garbage, which R9 puts
   // above "try anyway". Decryption is game-specific work (plan M6).
-  const encryption = header.flags & ArchiveFlags.EncryptionMask;
+  const encryption = header.flags & mask;
   if (encryption !== 0) {
     throw new UnsupportedError(
       "archive flag",
@@ -226,7 +248,7 @@ function readArchiveBundle(
     );
   }
 
-  const { blocks, nodes } = readBlocksInfoAndDirectory(reader, header);
+  const { blocks, nodes } = readBlocksInfoAndDirectory(reader, header, version);
   const blocksData = readBlocks(reader, blocks);
   return { header, files: readFiles(nodes, blocksData) };
 }
@@ -333,14 +355,19 @@ function decompressLegacyLzma(stream: Uint8Array): Uint8Array {
 function readBlocksInfoAndDirectory(
   reader: BinaryReader,
   header: BundleHeader,
+  version: UnityVersion,
 ): { blocks: StorageBlock[]; nodes: DirectoryNode[] } {
   // Format version 7 (Unity 2020.1+): the header is padded to 16 bytes.
   //
-  // Known gap (#74): Unity backported the alignment fix to 2019.4.15 while the
-  // format version stayed at 6, so such a header is padded and this gate misses
-  // it - the blocks info is then read ~14 bytes early and the decode fails.
-  // AssetStudio has the same gap; UnityPy gates on unityRevision as well.
-  if (header.version >= 7) reader.align(16);
+  // 2019.4.15 got the alignment fix backported (issuetracker: files within
+  // AssetBundles do not start on aligned boundaries, breaking patching on
+  // Nintendo Switch) while the format version stayed at 6, so such a header is
+  // padded too and the format version alone misses it - the blocks info would
+  // be read ~14 bytes early. AssetStudio gates on the format version only;
+  // UnityPy adds the 2019.4.15 case and that is the behaviour matched here.
+  if (header.version >= 7 || (version[0] === 2019 && !isBefore(version, 2019, 4, 15))) {
+    reader.align(16);
+  }
 
   const start = reader.position;
   let blocksInfoBytes: Uint8Array;
@@ -389,15 +416,18 @@ function readBlocksInfoAndDirectory(
     });
   }
 
-  // With this flag the data blocks start on a 16-byte boundary. Aligning
-  // whenever it is set is what AssetStudio does.
-  //
-  // Known gap (#74): before 2020.3.34 / 2021.3.2 / 2022.1.1 the same bit meant
-  // "uses AssetBundle encryption". The encryption refusal above covers 0x400
-  // and 0x1000 only, so such a bundle is aligned and handed to the codecs
-  // instead of being refused; telling the two apart needs the unityRevision
-  // parse that #74 adds.
-  if ((header.flags & ArchiveFlags.BlockInfoNeedPaddingAtStart) !== 0) reader.align(16);
+  // 2020.3.34 / 2021.3.2 / 2022.1.1 and later: with this flag the data blocks
+  // start on a 16-byte boundary. On an older bundle the same bit is the
+  // encryption flag, which readArchiveBundle already refused, so the flag-set
+  // test here is redundant today - it is the guard UnityPy writes
+  // (`isinstance(self.dataflags, ArchiveFlags) and ...`) and it keeps the two
+  // readings apart whatever the encryption mask above is narrowed to later.
+  if (
+    !usesOldArchiveFlags(version) &&
+    (header.flags & ArchiveFlags.BlockInfoNeedPaddingAtStart) !== 0
+  ) {
+    reader.align(16);
+  }
 
   return { blocks, nodes };
 }
@@ -505,6 +535,68 @@ function decode(type: number, src: Uint8Array, uncompressedSize: number): Uint8A
 
     default:
       throw new UnsupportedError("compression type", COMPRESSION_NAMES[type] ?? type);
+  }
+}
+
+/**
+ * Read the first three numbers out of a `unityRevision` such as `"2019.4.15f1"`
+ * (upstream `BundleFile.ParseVersion`, which splits on every non-digit run).
+ *
+ * Missing components read as 0, so an empty or non-numeric revision is
+ * `[0, 0, 0]` - older than every version gate, which is the safe side: the
+ * gates below then pick the older flag set and refuse rather than guess.
+ * Upstream throws on such a revision (AssetStudio indexes an empty array,
+ * UnityPy demands a configured fallback version), and neither is useful to a
+ * caller that only wanted the files out.
+ *
+ * @param revision the header's `unityRevision`
+ * @returns major, minor and build; never throws
+ */
+function parseVersion(revision: string): UnityVersion {
+  const parsed: [number, number, number] = [0, 0, 0];
+  let part = 0;
+  let value = -1;
+  for (let i = 0; i < revision.length && part < parsed.length; i++) {
+    const digit = revision.charCodeAt(i) - 0x30;
+    if (digit >= 0 && digit <= 9) {
+      value = (value < 0 ? 0 : value) * 10 + digit;
+    } else if (value >= 0) {
+      parsed[part++] = value;
+      value = -1;
+    }
+  }
+  if (value >= 0 && part < parsed.length) parsed[part] = value;
+  return parsed;
+}
+
+/** `true` when `version` is strictly older than `major.minor.build`. */
+function isBefore(version: UnityVersion, major: number, minor: number, build: number): boolean {
+  if (version[0] !== major) return version[0] < major;
+  if (version[1] !== minor) return version[1] < minor;
+  return version[2] < build;
+}
+
+/**
+ * Whether the editor that wrote this bundle used the old archive flag set,
+ * where 0x200 means "uses AssetBundle encryption" rather than
+ * "blocks info needs padding at start" (UnityPy `ArchiveFlagsOld`).
+ *
+ * The bit changed meaning in 2020.3.34, 2021.3.2 and 2022.1.1, each of which
+ * only gates its own major version. AssetStudio draws the 2022 line at 2022.3.2
+ * instead; UnityPy's boundaries are the ones this reader is checked against.
+ *
+ * @param version the parsed `unityRevision`
+ */
+function usesOldArchiveFlags(version: UnityVersion): boolean {
+  switch (version[0]) {
+    case 2020:
+      return isBefore(version, 2020, 3, 34);
+    case 2021:
+      return isBefore(version, 2021, 3, 2);
+    case 2022:
+      return isBefore(version, 2022, 1, 1);
+    default:
+      return version[0] < 2020;
   }
 }
 
