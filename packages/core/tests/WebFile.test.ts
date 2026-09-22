@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { assertMatchesGolden, golden, loadFixture } from "../../../fixtures/helpers.js";
+import { detectFileType } from "../src/bundle/detect.js";
 import { readWebFile } from "../src/bundle/WebFile.js";
 import { CorruptError, UnsupportedError } from "../src/errors.js";
 
@@ -147,6 +148,19 @@ test("refuses a file that is not a UnityWebData container", () => {
       `signature ${JSON.stringify(signature)}`,
     );
   }
+});
+
+test("refuses a signature that detection would not accept either", () => {
+  // detect.ts matches the exact "UnityWebData1.0" literal, as upstream's
+  // FileReader does. A prefix match here would best-effort parse a container
+  // that detectContainer refuses outright, which is the one combination that
+  // cannot be defended.
+  const data = buildWebFile([], { signature: "UnityWebData2.0" });
+  assert.throws(
+    () => readWebFile(data),
+    (error: unknown) => error instanceof UnsupportedError && error.kind === "container",
+  );
+  assert.equal(detectFileType(data), "resource");
 });
 
 test("reports an entry that runs past the end of the file", () => {

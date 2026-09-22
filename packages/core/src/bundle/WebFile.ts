@@ -5,17 +5,21 @@ import { BinaryReader } from "../io/BinaryReader.js";
 import type { StreamFile } from "./BundleFile.js";
 
 /**
- * Signature prefix Unity's web player writes. The version follows it in the
- * same string (`"UnityWebData1.0"`), so the check is a prefix, not an equality.
+ * The one signature Unity's web player writes; the version is part of it.
+ *
+ * Matched exactly, not by prefix, because that is what upstream's `FileReader`
+ * does (`case "UnityWebData1.0"`) and what `detect.ts` ports. A prefix match
+ * here would leave a hypothetical `UnityWebData2.0` refused by detection but
+ * best-effort parsed by this function.
  */
-const SIGNATURE_PREFIX = "UnityWebData";
+const SIGNATURE = "UnityWebData1.0";
 
 /** Upstream reads a NUL-terminated signature of at most 20 bytes. */
 const SIGNATURE_MAX_LENGTH = 20;
 
 /** A parsed `UnityWebData` container and the files it holds. */
 export interface WebFile {
-  /** Signature including its version, e.g. `"UnityWebData1.0"`. */
+  /** The signature as it was read; always {@link SIGNATURE} today. */
   signature: string;
   /** Every file in header order; {@link StreamFile.flags} is always 0. */
   files: StreamFile[];
@@ -32,7 +36,7 @@ export interface WebFile {
  *
  * @param data whole file bytes; kept by reference, never copied (R7)
  * @returns the signature and every file, in header order
- * @throws {UnsupportedError} when the signature is not a `UnityWebData` one
+ * @throws {UnsupportedError} when the signature is not exactly `"UnityWebData1.0"`
  * @throws {CorruptError} when the header is truncated or an entry points
  *   outside the file
  */
@@ -42,8 +46,8 @@ export function readWebFile(data: Uint8Array): WebFile {
   const reader = new BinaryReader(data, "little");
 
   const signature = reader.readStringToNull(SIGNATURE_MAX_LENGTH);
-  if (!signature.startsWith(SIGNATURE_PREFIX)) {
-    throw new UnsupportedError("container", signature || "(none)", "not a UnityWebData file");
+  if (signature !== SIGNATURE) {
+    throw new UnsupportedError("container", signature || "(none)", `expected ${SIGNATURE}`);
   }
 
   // The header length doubles as the offset of the first file, so the entry
