@@ -157,6 +157,14 @@ interface BundleOptions {
   /** `"UnityWeb"` / `"UnityRaw"` at version 6 use this layout too, plus a byte. */
   signature?: string;
   version?: number;
+  /** The `unityRevision` field, which both version gates are read from. */
+  revision?: string;
+  /**
+   * Whether to pad the header to 16 bytes. Format version 7 always does;
+   * 2019.4.15+ does it at format version 6 too, which is the case the gate has
+   * to recognise, so the tests set this by hand rather than deriving it.
+   */
+  padHeader?: boolean;
   /** Archive flags; 0x40 (blocks and directory info combined) by default. */
   flags?: number;
   blocks?: Block[];
@@ -184,6 +192,8 @@ function buildBundle(options: BundleOptions = {}): Uint8Array {
   const {
     signature = "UnityFS",
     version = 6,
+    revision = "2022.3.0f1",
+    padHeader = version >= 7,
     flags = BLOCKS_AND_DIRECTORY_COMBINED,
     blocks = [{ data: payload(64) }],
     nodes = [{ path: "CAB-test", offset: 0, size: 64, flags: NodeFlags.SerializedFile }],
@@ -210,15 +220,16 @@ function buildBundle(options: BundleOptions = {}): Uint8Array {
   out.cstr(signature);
   out.u32(version);
   out.cstr("5.x.x");
-  out.cstr("2022.3.0f1");
+  out.cstr(revision);
   out.i64(0n); // total size; upstream reads it but never checks it
   out.u32(options.compressedBlocksInfoSize ?? infoBytes.length);
   out.u32(options.uncompressedBlocksInfoSize ?? infoBytes.length);
   out.u32(flags);
   // A UnityWeb/UnityRaw header at version 6 carries one more byte than UnityFS.
   if (signature !== "UnityFS") out.u8(0);
-  // Format version 7 (Unity 2020.1+) pads the header to 16 bytes.
-  if (version >= 7) out.align(16);
+  // Format version 7 (Unity 2020.1+) pads the header to 16 bytes, and so does
+  // 2019.4.15 and later at format version 6.
+  if (padHeader) out.align(16);
   // Padding and alignment are counted from the start of the file, so the
   // blocks have to be written into the same sink as the header.
   if ((flags & BLOCKS_INFO_AT_THE_END) !== 0) {
@@ -274,6 +285,107 @@ test("pads the header to 16 bytes for format version 7", () => {
   const parsed = readBundle(bundle);
   assert.equal(parsed.header.version, 7);
   assert.deepEqual(parsed.files[0]!.data, data);
+});
+
+// --- version gates read off unityRevision -----------------------------------
+
+/**
+ * Revisions against what `0x200` means there: padding from 2020.3.34 /
+ * 2021.3.2 / 2022.1.1 on, encryption before that. Each boundary is listed with
+ * the revision just below it.
+ */
+const PADDING_BY_REVISION = [
+  ["2019.4.20f1", false],
+  ["2020.3.33f1", false],
+  ["2020.3.34f1", true],
+  ["2021.3.1f1", false],
+  ["2021.3.2f1", true],
+  ["2022.1.0f1", false],
+  ["2022.1.1f1", true],
+  ["6000.0.23f1", true],
+  // No revision at all: nothing says the bit is padding, so it is not read as
+  // padding.
+  ["", false],
+] as const;
+
+/** One node path longer than the default, so the padding is not zero-width. */
+const PAD_NODES = [
+  { path: "CAB-test-pad", offset: 0, size: 64, flags: NodeFlags.SerializedFile },
+];
+
+test("skips the header padding a format 6 bundle written by 2019.4.15 carries", () => {
+  // Unity backported the alignment fix to 2019.4.15 without bumping the format
+  // version, so the gate cannot be the format version alone: miss the padding
+  // and the blocks info is read 14 bytes early.
+  const data = payload(64, 31);
+  const padded = buildBundle({ revision: "2019.4.15f1", padHeader: true, blocks: [{ data }] });
+  const unpadded = buildBundle({ revision: "2019.4.15f1", padHeader: false, blocks: [{ data }] });
+  assert.equal(padded.length - unpadded.length, 14, "the crafted header carries no padding");
+  assert.deepEqual(readBundle(padded).files[0]!.data, data);
+});
+
+test("reads a format 6 bundle written by 2019.4.14, which has no header padding", () => {
+  const data = payload(64, 33);
+  const bundle = buildBundle({ revision: "2019.4.14f1", padHeader: false, blocks: [{ data }] });
+  assert.deepEqual(readBundle(bundle).files[0]!.data, data);
+});
+
+test("aligns the data blocks on 0x200 from 2020.3.34 / 2021.3.2 / 2022.1.1 on", () => {
+  const data = payload(64, 35);
+  for (const [revision, padding] of PADDING_BY_REVISION) {
+    if (!padding) continue;
+    const bundle = buildBundle({
+      revision,
+      flags: BLOCKS_AND_DIRECTORY_COMBINED | PADDING_AT_START,
+      blocks: [{ data }],
+      nodes: PAD_NODES,
+    });
+    const unpadded = buildBundle({
+      revision,
+      blocks: [{ data }],
+      nodes: PAD_NODES,
+    });
+    assert.ok(bundle.length > unpadded.length, `${revision}: the bundle carries no padding`);
+    assert.deepEqual(readBundle(bundle).files[0]!.data, data, revision);
+  }
+});
+
+test("refuses 0x200 as encryption on a bundle written before that", () => {
+  // The same bit meant "uses AssetBundle encryption" in the older flag set, so
+  // aligning on it would hand an encrypted archive to the codecs (R9).
+  const data = payload(64, 37);
+  for (const [revision, padding] of PADDING_BY_REVISION) {
+    if (padding) continue;
+    const bundle = buildBundle({
+      revision,
+      flags: BLOCKS_AND_DIRECTORY_COMBINED | PADDING_AT_START,
+      blocks: [{ data }],
+      nodes: PAD_NODES,
+    });
+    assert.throws(
+      () => readBundle(bundle),
+      (error: unknown) =>
+        error instanceof UnsupportedError &&
+        error.kind === "archive flag" &&
+        error.found === "0x200",
+      `revision ${revision || "(none)"}`,
+    );
+  }
+});
+
+test("keeps refusing the 0x400 and 0x1000 encryption bits on an older bundle", () => {
+  // UnityPy drops both from its older flag set; keeping them means a bundle
+  // this reader refuses today is never silently decoded instead.
+  for (const bit of [0x400, 0x1000]) {
+    assert.throws(
+      () =>
+        readBundle(
+          buildBundle({ revision: "2019.4.20f1", flags: BLOCKS_AND_DIRECTORY_COMBINED | bit }),
+        ),
+      (error: unknown) => error instanceof UnsupportedError && error.kind === "archive flag",
+      `flag 0x${bit.toString(16)}`,
+    );
+  }
 });
 
 test("stitches a file that spans two blocks", () => {
