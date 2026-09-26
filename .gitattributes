@@ -30,3 +30,6 @@ Makefile text
 *.dylib binary
 *.dll binary
 
+
+# Fixtures: bundles are binary even without an extension (editor output has none)
+fixtures/bundles/** binary
