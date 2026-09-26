@@ -28,6 +28,7 @@ import gzip
 import hashlib
 import json
 import pathlib
+import re
 import struct
 import sys
 
@@ -145,8 +146,13 @@ def dump_typetree(name: str, obj, sf) -> dict:
         # the list, then fails its own read-length check (#25). Accept that one
         # case - and only when the unread tail is exactly the sentinel - and
         # record it; anything else is a real oracle failure.
+        # Every v1 registry ends with the sentinel, so that alone proves nothing:
+        # UnityPy must also have stopped exactly the sentinel's length short. A
+        # larger gap means it skipped real entries too (e.g. a second one).
+        short = re.search(r"Expected to read (\d+) bytes, but only read (\d+)", str(error))
+        unread = int(short[1]) - int(short[2]) if short else None
         raw = obj.get_raw_data()
-        if not raw.endswith(REGISTRY_V1_TERMINUS) or "Expected to read" not in str(error):
+        if unread != len(REGISTRY_V1_TERMINUS) or not raw.endswith(REGISTRY_V1_TERMINUS):
             raise SystemExit(f"{name} pathId {obj.path_id}: read_typetree failed: {error}")
         value = obj.read_typetree(check_read=False)
         if value.get("references", {}).get("version") != 1:
