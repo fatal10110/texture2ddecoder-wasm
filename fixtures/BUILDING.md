@@ -73,8 +73,9 @@ public class FixtureData : ScriptableObject
 }
 ```
 
-`Assets/Editor/BuildFixtures.cs` - creates the ScriptableObject asset on first
-run, points it at `hello.txt`, and builds every variant:
+`Assets/Editor/BuildFixtures.cs` - creates `Assets/Fixtures/main/` and the
+ScriptableObject asset in it on first run, points it at `hello.txt`, and builds
+every variant:
 
 ```csharp
 using System.IO;
@@ -88,6 +89,8 @@ public static class BuildFixtures
     public static void Build()
     {
         var text = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Fixtures/shared/hello.txt");
+        // CreateAsset does not create folders, and a fresh project has no main/.
+        if (!AssetDatabase.IsValidFolder("Assets/Fixtures/main")) AssetDatabase.CreateFolder("Assets/Fixtures", "main");
         var data = AssetDatabase.LoadAssetAtPath<FixtureData>(Data);
         if (data == null) { data = ScriptableObject.CreateInstance<FixtureData>(); AssetDatabase.CreateAsset(data, Data); }
         data.textRef = text;
@@ -152,8 +155,13 @@ editor, 36 in total, about 145 KB.
 npm test
 ```
 
-Rebuilding with the same editor is not guaranteed to reproduce the same bytes;
-if a bundle changes, regenerate the goldens with it and commit both together.
+A rebuild does not reproduce the committed bytes: a fresh project gets new
+asset GUIDs, so object IDs (pathIDs, SerializeReference rids) change, and with
+them the order of objects and types and a few bytes of padding. Everything else
+- headers, externals, type trees, object classes and sizes, typetree values - is
+the same (checked for all 36 bundles against projects made from this page
+alone). So if you rebuild, replace all of an editor's bundles together,
+regenerate the goldens and commit both.
 The oracle cannot fully read the version 1 `[SerializeReference]` registry
 (2019.4, 2020.3); `make-goldens.py` handles that one case and records an
 `oracleNote` on the object (see #25).
