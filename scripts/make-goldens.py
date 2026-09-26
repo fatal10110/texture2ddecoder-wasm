@@ -51,6 +51,22 @@ def object_table(serialized) -> list[dict]:
     return table
 
 
+def raw_bytes(name: str, entry) -> bytes:
+    """The node's bytes exactly as stored in the container.
+
+    Opaque nodes carry them as ``.bytes``. A node UnityPy parsed as a
+    SerializedFile keeps them on its ``.reader``; ``entry.save()`` would write
+    the file back out instead, and that re-serialization can differ from the
+    original (#81: 7576 vs 7580 bytes on a Unity 6 bundle).
+    """
+    if hasattr(entry, "bytes"):
+        return bytes(entry.bytes)
+    reader = getattr(entry, "reader", None)
+    if reader is None:
+        raise SystemExit(f"{name}: node has neither .bytes nor .reader - cannot hash its raw bytes")
+    return bytes(reader.bytes)
+
+
 def read_fixture(path: pathlib.Path) -> dict:
     raw = path.read_bytes()
     note = None
@@ -67,7 +83,7 @@ def read_fixture(path: pathlib.Path) -> dict:
     files = {}
     objects = {}
     for name, entry in bundle.files.items():
-        data = bytes(entry.bytes) if hasattr(entry, "bytes") else bytes(entry.save())
+        data = raw_bytes(name, entry)
         files[name] = {"sha256": sha256(data), "size": len(data)}
         table = object_table(entry)
         if table:
