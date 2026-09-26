@@ -661,7 +661,7 @@
                 "text": "h\u00e9llo \u20ac",
                 "kind": 7,
                 "ints": [1, 2, 3],
-                "bytes": [0, 1, 2, 255],
+                "bytes": "hex:000102ff",
                 "nested": {
                   "a": 42,
                   "b": "nested",
@@ -1299,7 +1299,7 @@
                 "text": "h\u00e9llo \u20ac",
                 "kind": 7,
                 "ints": [1, 2, 3],
-                "bytes": [0, 1, 2, 255],
+                "bytes": "hex:000102ff",
                 "nested": {
                   "a": 42,
                   "b": "nested",
@@ -1774,7 +1774,7 @@
                 "text": "h\u00e9llo \u20ac",
                 "kind": 7,
                 "ints": [1, 2, 3],
-                "bytes": [0, 1, 2, 255],
+                "bytes": "hex:000102ff",
                 "nested": {
                   "a": 42,
                   "b": "nested",
@@ -2779,7 +2779,7 @@
                 "text": "h\u00e9llo \u20ac",
                 "kind": 7,
                 "ints": [1, 2, 3],
-                "bytes": [0, 1, 2, 255],
+                "bytes": "hex:000102ff",
                 "nested": {
                   "a": 42,
                   "b": "nested",
@@ -3417,7 +3417,7 @@
                 "text": "h\u00e9llo \u20ac",
                 "kind": 7,
                 "ints": [1, 2, 3],
-                "bytes": [0, 1, 2, 255],
+                "bytes": "hex:000102ff",
                 "nested": {
                   "a": 42,
                   "b": "nested",
@@ -3892,7 +3892,7 @@
                 "text": "h\u00e9llo \u20ac",
                 "kind": 7,
                 "ints": [1, 2, 3],
-                "bytes": [0, 1, 2, 255],
+                "bytes": "hex:000102ff",
                 "nested": {
                   "a": 42,
                   "b": "nested",
@@ -4901,7 +4901,7 @@
                 "text": "h\u00e9llo \u20ac",
                 "kind": 7,
                 "ints": [1, 2, 3],
-                "bytes": [0, 1, 2, 255],
+                "bytes": "hex:000102ff",
                 "nested": {
                   "a": 42,
                   "b": "nested",
@@ -5545,7 +5545,7 @@
                 "text": "h\u00e9llo \u20ac",
                 "kind": 7,
                 "ints": [1, 2, 3],
-                "bytes": [0, 1, 2, 255],
+                "bytes": "hex:000102ff",
                 "nested": {
                   "a": 42,
                   "b": "nested",
@@ -6026,7 +6026,7 @@
                 "text": "h\u00e9llo \u20ac",
                 "kind": 7,
                 "ints": [1, 2, 3],
-                "bytes": [0, 1, 2, 255],
+                "bytes": "hex:000102ff",
                 "nested": {
                   "a": 42,
                   "b": "nested",

@@ -43,7 +43,8 @@ export interface GoldenType {
 /**
  * What the oracle read out of one SerializedFile (M2). Typetree values are
  * normalized per plan §5: int64 as a decimal string, `float` as `"f32:<hex>"`,
- * `double` as `"f64:<hex>"` (big-endian bit patterns), raw bytes as `"hex:<hex>"`.
+ * `double` as `"f64:<hex>"` (big-endian bit patterns), byte vectors (`vector<UInt8>`,
+ * C# `byte[]`) and `TypelessData` as `"hex:<hex>"`.
  */
 export interface GoldenSerialized {
   formatVersion: number;

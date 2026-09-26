@@ -16,7 +16,7 @@ value so the node type decides, not the Python type:
   SInt64/UInt64/FileSize -> decimal string
   float  -> "f32:<8 hex digits>"   double -> "f64:<16 hex digits>"  (bit patterns,
             big-endian, so NaN / -0 / Infinity compare exactly)
-  TypelessData and other raw bytes -> "hex:<hex>"
+  TypelessData, vectors of UInt8/SInt8/char, other raw bytes -> "hex:<hex>"
   hashes (guid, script ids) -> hex string
 
 Usage:  .venv-oracle/bin/python scripts/make-goldens.py
@@ -40,6 +40,7 @@ FIXTURES = ROOT / "fixtures" / "bundles"
 GOLDENS = ROOT / "fixtures" / "goldens.json"
 
 INT64_TYPES = {"SInt64", "UInt64", "long long", "unsigned long long", "FileSize"}
+BYTE_TYPES = {"UInt8", "SInt8", "char"}
 # Classes whose read_typetree() output is part of the goldens (#25).
 DUMPED_CLASSES = {49: "TextAsset", 114: "MonoBehaviour"}
 # Sentinel entry that ends a ManagedReferencesRegistry version 1 list (#25).
@@ -118,6 +119,10 @@ def normalize(node, value, sf):
         return [normalize(node.m_Children[0], value[0], sf), normalize(node.m_Children[1], value[1], sf)]
     if node.m_Children and node.m_Children[0].m_Type == "Array":
         element = node.m_Children[0].m_Children[1]
+        # A byte vector (C# byte[] / sbyte[]) is a byte array under section 5,
+        # though UnityPy hands it over as a list of ints. Strings never get here.
+        if element.m_Type in BYTE_TYPES:
+            return "hex:" + bytes(v & 0xFF for v in value).hex()
         return [normalize(element, v, sf) for v in value]
     if typ == "ReferencedObject":
         out = {}
