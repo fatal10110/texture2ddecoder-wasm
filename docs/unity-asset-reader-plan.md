@@ -128,7 +128,7 @@ Each milestone = shippable npm prerelease. "Port" lists the AssetStudio files th
 ### M2 — SerializedFile + TypeTree (5–6 d)
 - Port: `SerializedFile.cs`, `SerializedFileHeader/FormatVersion`, `SerializedType.cs`, `TypeTree*.cs`, `TypeTreeHelper.cs`, `CommonString.cs`, `ClassIDType.cs`, `ObjectInfo.cs`, `ObjectReader.cs`, `PPtr.cs`; include the fork's Unity 6000 typetree fixes (`UNITY_6000_FIXES.md`).
 - Generic `readTypeTree()` → plain JS object. This alone decodes *every* class in bundles with embedded typetrees — biggest capability per LOC in the project.
-- Format-version claim: parse code is **ported for all versions upstream handles; tested only on what fixtures cover** (Editors 2019/2021/2022/6000 ≈ v21–22). README states the tested range. Older versions get a fixture when someone installs a 5.x/2017/2018 editor — not before.
+- Format-version claim: parse code is **ported for all versions upstream handles; tested only on what fixtures cover** (Editors 2019.4 / 2020.3 / 6000 = formats 21 and 22, both required by the fixture tests; #82). README states the tested range. Older versions get a fixture when someone installs a 5.x/2017/2018 editor — not before.
 - Done when: object table (pathID, classID, size) matches goldens for every fixture incl. one Unity 6 bundle; typetree dump equals golden for TextAsset/MonoBehaviour under the §5 normalization.
 
 ### M3 — Textures + sprites (4–5 d)
@@ -173,7 +173,7 @@ Each item that brings a decoder or writer ships as its own package on top of cor
 | Risk | Mitigation |
 |---|---|
 | `lzma1` API/perf mismatch | 2h spike at start of M1 with a numeric bar (both stream shapes, ≥ 20 MB/s); fallback is a known recipe |
-| Fixture licensing (game assets) | build own fixtures with Unity Editor (2019/2021/2022/6000); never commit third-party game data. Consequence accepted: old format versions and game variants ship untested-by-fixture. |
+| Fixture licensing (game assets) | build own fixtures with Unity Editor (2019.4/2020.3/6000; `fixtures/BUILDING.md`); never commit third-party game data. Consequence accepted: old format versions and game variants ship untested-by-fixture. |
 | Oracle is wrong / disagrees with AssetStudio | UnityPy and AssetStudio are independent implementations; on mismatch, cross-check with AssetStudio GUI and record the verdict next to the golden |
 | 64-bit values | D9: `bigint` for all int64 fields + pathIDs; offsets as `number` with `> 2^53` guard throw |
 | Memory in browser | zero-copy `subarray` everywhere, never `slice` (note: a `subarray` pins its whole parent buffer); size guard throw; `ByteSource` seam deferred to M6 |
@@ -212,3 +212,5 @@ Issue edits applied for the previous revision (2026-09-21, via `gh`):
 - #6–#52 → footer: "clean-room" → MIT-derivative wording + UnityPy oracle + no-C#→WASM rule.
 
 Revision 2026-09-21c (M1 spike #13 resolved): LZMA is **`lzma1`**, not the `LzmaDec.c` WASM fallback. The spike measured it correct on both stream shapes but at ~10 MB/s against a 20 MB/s bar; the bar is retired rather than met, because the WASM route would put WASM in `packages/core` (forbidden by §2 and the AGENTS.md core row) and D4 already routes big bundles through a Worker. The WASM fallback becomes on-demand M6 work (#69), to be built only on a real complaint or a measured regression on genuine bundles. §1's LZMA row and the M1 LZMA bullet record the outcome; §2's "LZMA fallback, M6" line was already consistent and now names the issue. Also recorded: `lzma1` does not throw on truncated input, so #14's wrapper must assert output length itself (R9).
+
+Revision 2026-09-26 (#81, #82): M2 fixtures are editor-built with 2019.4.41f2 (SerializedFile format 21), 2020.3.30f1 and 6000.3.25f1 (format 22); only the bundles are committed, the Unity project stays local and `fixtures/BUILDING.md` carries its sources (R2). The M2 format-version claim and the §6 licensing row name these editors. Also recorded: UnityPy cannot fully read a v1 `[SerializeReference]` registry (≤ 2020.3), so `make-goldens.py` records an `oracleNote` for that case (#25); `files` goldens hash raw node bytes, not UnityPy's re-serialization (#81).

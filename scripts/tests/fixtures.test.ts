@@ -41,6 +41,25 @@ test("M1 compression shapes are all covered", () => {
   assert.ok(names.some((n) => n.endsWith(".gz")), "missing gzip-wrapped fixture");
 });
 
+test("editor fixtures cover SerializedFile formats 21 and 22 in every variant (#82)", () => {
+  // format -> variants seen, from paths like "editor/2019.4.41f2/lz4/main"
+  const seen = new Map<number, Set<string>>();
+  for (const name of names) {
+    for (const serialized of Object.values(golden(name).serialized ?? {})) {
+      const variant = name.split("/")[2] ?? name;
+      const variants = seen.get(serialized.formatVersion) ?? new Set();
+      seen.set(serialized.formatVersion, variants.add(variant));
+    }
+  }
+  for (const format of [21, 22]) {
+    const variants = seen.get(format);
+    assert.ok(variants, `no SerializedFile of format ${format} in any fixture`);
+    for (const want of ["lz4", "lzma", "uncompressed", "lz4-notypetree"]) {
+      assert.ok(variants.has(want), `format ${format} has no ${want} fixture`);
+    }
+  }
+});
+
 test("gzip fixture unpacks to the same files as its plain counterpart", () => {
   assert.deepEqual(golden("gzip-lz4.bundle.gz").files, golden("lz4.bundle").files);
 });

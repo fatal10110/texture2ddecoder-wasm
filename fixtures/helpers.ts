@@ -21,6 +21,45 @@ interface GoldenFile {
   size: number;
 }
 
+/** One type tree node as the goldens store it: `[level, type, name, byteSize, metaFlag]`. */
+export type GoldenNode = [number, string, string, number, number];
+
+/** A `SerializedType` entry (`types` or `refTypes`); hashes are hex. */
+export interface GoldenType {
+  classId: number;
+  isStrippedType: boolean | null;
+  scriptTypeIndex: number;
+  scriptId: string | null;
+  oldTypeHash: string | null;
+  typeDependencies: number[] | null;
+  /** Pre-order node list; `null` when the file was built without type trees. */
+  nodes: GoldenNode[] | null;
+  /** Ref types only. */
+  className?: string;
+  namespace?: string;
+  assembly?: string;
+}
+
+/**
+ * What the oracle read out of one SerializedFile (M2). Typetree values are
+ * normalized per plan §5: int64 as a decimal string, `float` as `"f32:<hex>"`,
+ * `double` as `"f64:<hex>"` (big-endian bit patterns), byte vectors (`vector<UInt8>`,
+ * C# `byte[]`) and `TypelessData` as `"hex:<hex>"`.
+ */
+export interface GoldenSerialized {
+  formatVersion: number;
+  /** Raw, including any suffix Unity appends (`"6000.3.25f1\n2"` when stripped). */
+  unityVersion: string;
+  targetPlatform: number;
+  bigEndian: boolean;
+  enableTypeTree: boolean;
+  externals: { path: string; guid: string | null; type: number | null }[];
+  types: GoldenType[];
+  refTypes: GoldenType[];
+  /** pathId -> `read_typetree()` dump, for TextAsset and MonoBehaviour objects. */
+  typetrees: Record<string, { value: unknown; oracleNote?: string }>;
+}
+
 export interface Golden {
   signature: string;
   /** Bundle fields; absent for a `UnityWebData` fixture, which has no version. */
@@ -29,6 +68,8 @@ export interface Golden {
   unityRevision?: string;
   files: Record<string, GoldenFile>;
   objects: Record<string, { pathId: string; classId: number; byteSize: number }[]>;
+  /** Node path -> SerializedFile golden; only editor-built fixtures have these. */
+  serialized?: Record<string, GoldenSerialized>;
   oracleNote?: string;
 }
 
@@ -46,7 +87,10 @@ export function loadFixture(name: string): Uint8Array {
   return new Uint8Array(readFileSync(join(BUNDLES, name)));
 }
 
-/** Every fixture name that has a golden. */
+/**
+ * Every fixture that has a golden, as its path under `bundles/`
+ * (`"lz4.bundle"`, `"editor/6000.3.25f1/lz4/main"`).
+ */
 export function fixtureNames(): string[] {
   return Object.keys(goldens);
 }
