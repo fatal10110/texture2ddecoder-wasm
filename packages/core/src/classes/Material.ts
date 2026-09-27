@@ -118,7 +118,11 @@ const UNITY_2019: UnityVersion = [2019, 4, 0, 0];
  * A file whose Unity version is unknown (`[0, 0, 0, 0]`, as
  * `AssetBundleStripUnityVersion` leaves it) is read when its format is 18 to
  * 21: only Unity 2019 writes those, and every 2019 release has the one layout
- * (rule for version-stripped files, #36). Any other format allows layouts that
+ * (rule for version-stripped files, #36, as amended: the format and the
+ * object's own bytes leave exactly one candidate layout). That layout is
+ * assumed, not known, so an object that does not fit it (bytes left over, or
+ * too few after `m_Shader`) is refused as not that layout rather than called
+ * corrupt, as `readAssetBundle` does. Any other format allows layouts that
  * differ inside the object (a keyword string or two keyword lists, `m_Ints` or
  * not), which the bytes cannot tell apart, so the file is refused.
  *
@@ -137,12 +141,14 @@ const UNITY_2019: UnityVersion = [2019, 4, 0, 0];
  * @param reader the object's reader, rewound first and left at its end
  * @throws {UnsupportedError} of kind `"Unity version"`, with the file's own
  *   `unityVersion` as `found`: below 3.4, for which no type tree data says what
- *   it holds, and for an unknown version (`[0, 0, 0, 0]`) unless the format is
- *   18 to 21; of kind `"build target"` for an editor file of 2022.1 or later;
- *   and as `readNamedObject` does, for an editor file of unknown version
+ *   it holds; for an unknown version (`[0, 0, 0, 0]`) unless the format is 18
+ *   to 21, and in those formats when the fields after `m_Shader` do not fit
+ *   2019's layout; of kind `"build target"` for an editor file of 2022.1 or
+ *   later; and as `readNamedObject` does, for an editor file of unknown version
  * @throws {CorruptError} when the object ends early, a count or string length
  *   is negative or runs past its end, or bytes are left over after the last
- *   field
+ *   field, with the version known; with it unknown, only inside `m_Name` or
+ *   `m_Shader`, which every layout starts with
  */
 export function readMaterial(reader: ObjectReader): Material {
   const version = layoutVersion(reader);
@@ -157,6 +163,37 @@ export function readMaterial(reader: ObjectReader): Material {
   // Filled in field order, so the keys come out in the order Unity wrote them.
   const out: Partial<Material> & NamedObject = readNamedObject(reader);
   out.m_Shader = readPPtr(reader);
+  // #36 rule, as for AssetBundle's readUnversionedTail: with the layout assumed
+  // (an unknown version, which layoutVersion let through only for formats 18
+  // to 21), a misfit past the fields every layout shares means "not 2019's
+  // layout", which the file cannot tell apart from corruption.
+  if (reader.version.every((part) => part === 0)) {
+    try {
+      readFields(reader, version, out);
+    } catch (error) {
+      if (!(error instanceof CorruptError)) throw error;
+      throw refuse(
+        reader,
+        `the object does not fit 2019's Material layout, the only one formats 18 to 21 allow ` +
+          `(${error.message})`,
+      );
+    }
+  } else {
+    readFields(reader, version, out);
+  }
+  // Every required field was set above.
+  return out as Material;
+}
+
+/**
+ * The fields after `m_Shader`, to the end of the object, by the gates of
+ * Unity's type trees.
+ *
+ * @throws {CorruptError} when the object ends early, a count or string length
+ *   is negative or runs past its end, or bytes are left over after the last
+ *   field
+ */
+function readFields(reader: ObjectReader, version: UnityVersion, out: Partial<Material>): void {
   if (atLeast(version, 2021, 2, 18)) {
     out.m_ValidKeywords = readStrings(reader, "m_ValidKeywords");
     out.m_InvalidKeywords = readStrings(reader, "m_InvalidKeywords");
@@ -196,8 +233,6 @@ export function readMaterial(reader: ObjectReader): Material {
       `Material ${reader.pathId} ends at ${reader.position} of its ${reader.byteSize} bytes`,
     );
   }
-  // Every required field was set above.
-  return out as Material;
 }
 
 /**

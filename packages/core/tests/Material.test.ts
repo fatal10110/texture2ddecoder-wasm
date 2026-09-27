@@ -515,11 +515,34 @@ test('Unity "0.0.0" in a format 18 to 21 file: read as 2019, the one layout they
   }
 });
 
-test('Unity "0.0.0" in a format 21 file: a later layout fails the end-of-object check', () => {
-  // Those of 2020.1 on, had a file of them been written as format 21.
-  for (const pieces of [V2020_1, V2021_1, V2021_2_18]) {
-    const reader = synthetic(FROM, layout(pieces).bytes, STRIPPED, "0.0.0", undefined, 21);
-    assert.throws(() => readMaterial(reader), CorruptError);
+test('Unity "0.0.0" in a format 21 file: bytes that do not fit 2019\'s layout are refused', () => {
+  // The layout was assumed, not read from the file, so a misfit means "not that
+  // layout" (#36), not corruption: those of 2020.1 on, had a file of them been
+  // written as format 21, bytes left over, and a cut after m_Shader.
+  const v2019 = layout(V5_6_2).bytes;
+  const shaderEnd = layout(["name", "shader"]).bytes.length;
+  const misfits = [
+    ...[V2020_1, V2021_1, V2021_2_18].map((pieces) => layout(pieces).bytes),
+    withTail(v2019, 0, 0, 0, 0),
+    v2019.subarray(0, shaderEnd + 2),
+    v2019.subarray(0, v2019.length - 4),
+  ];
+  for (const [i, bytes] of misfits.entries()) {
+    const reader = synthetic(FROM, bytes, STRIPPED, "0.0.0", undefined, 21);
+    assert.throws(() => readMaterial(reader), refusedFor("0.0.0", reader.pathId), `misfit ${i}`);
+    // With the version known, the same bytes are corrupt.
+    const known = synthetic(FROM, bytes, [2019, 4, 41, 2], "2019.4.41f2", undefined, 21);
+    assert.throws(() => readMaterial(known), CorruptError, `misfit ${i}, known version`);
+  }
+});
+
+test('Unity "0.0.0" in a format 21 file: a cut before m_Shader ends is still corrupt', () => {
+  // m_Name and m_Shader come first in every layout, so no layout was assumed yet.
+  const shaderEnd = layout(["name", "shader"]).bytes.length;
+  for (const cut of [2, shaderEnd - 1]) {
+    const bytes = layout(V5_6_2).bytes.subarray(0, cut);
+    const reader = synthetic(FROM, bytes, STRIPPED, "0.0.0", undefined, 21);
+    assert.throws(() => readMaterial(reader), CorruptError, `cut at ${cut}`);
   }
 });
 
