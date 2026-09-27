@@ -33,8 +33,11 @@ import pathlib
 import re
 import struct
 import sys
+import warnings
 
 import UnityPy
+from UnityPy import config
+from UnityPy.exceptions import UnityVersionFallbackWarning
 from UnityPy.export.Texture2DConverter import get_image_from_texture2d
 from UnityPy.helpers.TypeTreeHelper import (
     TypeTreeConfig,
@@ -367,6 +370,39 @@ def read_fixture(path: pathlib.Path) -> dict:
     return golden
 
 
+def editor_of(path: pathlib.Path) -> str | None:
+    """The editor that built an editor fixture, from its folder (editor/<version>/...)."""
+    parts = path.relative_to(FIXTURES).parts
+    return parts[1] if len(parts) > 2 and parts[0] == "editor" else None
+
+
+def read_with_fallback(path: pathlib.Path) -> dict:
+    """read_fixture(), telling UnityPy which editor built a version-stripped fixture (#104).
+
+    A bundle built with AssetBundleStripUnityVersion records "0.0.0" as its
+    revision, and UnityPy refuses that unless config.FALLBACK_UNITY_VERSION is
+    set. For an editor fixture the editor is known from its folder, so the
+    oracle is given that. UnityPy only consults the fallback when a version is
+    missing, and warns when it does; the fixtures that needed it get a note.
+    """
+    editor = editor_of(path)
+    config.FALLBACK_UNITY_VERSION = editor
+    try:
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", UnityVersionFallbackWarning)
+            golden = read_fixture(path)
+    finally:
+        config.FALLBACK_UNITY_VERSION = None
+    if any(issubclass(w.category, UnityVersionFallbackWarning) for w in caught):
+        note = (
+            f'version-stripped ("0.0.0"): UnityPy refuses it without a fallback, so it was '
+            f'read with config.FALLBACK_UNITY_VERSION = "{editor}", the editor that built it '
+            "- see #104"
+        )
+        golden["oracleNote"] = f"{golden['oracleNote']}; {note}" if "oracleNote" in golden else note
+    return golden
+
+
 def to_json(value, level: int = 0) -> str:
     """json.dumps(indent=2), except a list of scalars stays on one line.
 
@@ -396,7 +432,7 @@ def main() -> None:
         key = path.relative_to(FIXTURES).as_posix()
         if any(part.startswith(".") for part in key.split("/")):
             continue
-        goldens["fixtures"][key] = read_fixture(path)
+        goldens["fixtures"][key] = read_with_fallback(path)
         print(f"  {key:<48} {len(goldens['fixtures'][key]['files'])} files")
 
     GOLDENS.write_text(to_json(goldens) + "\n")

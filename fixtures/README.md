@@ -50,6 +50,13 @@ whose type tree carries a nested `ManagedReferencesRegistry` node
 each of the 17 plain formats the texture package converts in TS, pixels written
 by script and kept inline ([`BUILDING.md`](BUILDING.md) section 6).
 
+6000.3.25f1 and 2020.3.30f1 also have `stripped/lz4` and `stripped/uncompressed`
+(#104): the `hello.txt` TextAsset built with `AssetBundleStripUnityVersion`, so
+the bundle header and the SerializedFile both record `"0.0.0"` as the editor.
+The 6000.3.25f1 pair sets archive flag 0x200 (block padding, flags `0x243`); the
+2020.3.30f1 pair predates that and does not (`0x43`)
+([`BUILDING.md`](BUILDING.md) section 7).
+
 NaN does not have one bit pattern everywhere, and that comes from Unity: every
 editor wrote `0xFFC00000` into the first variant it built (`lz4`) and
 `0x7FC00000` into the rest (see `BUILDING.md` section 4). The goldens record the
@@ -146,6 +153,12 @@ texture and no sprites yet; M3 adds the rest.
   widens a 5/6-bit channel as `floor(x * 255 / max)` and AssetStudio repeats its
   top bits (`(x << 3) | (x >> 2)`), up to 1 higher. The tests prove everything
   else about those two against the UnityPy golden.
+- UnityPy refuses a bundle whose revision is `"0.0.0"` (version-stripped)
+  unless `config.FALLBACK_UNITY_VERSION` is set, and with an editor before
+  2020.3.34 as the fallback it reads a 6000.3.25f1 bundle's 0x200 as encryption.
+  For an editor fixture `make-goldens.py` sets the fallback to the editor named
+  by the fixture's folder. UnityPy only uses it when a version is missing, and
+  the fixtures where it did carry `oracleNote` (#104).
 - UnityPy only unwraps gzip when it wraps a `UnityWebData` file, **not** when it
   wraps a bundle. `make-goldens.py` gunzips with stdlib before handing the
   stream to the oracle, and records `oracleNote` on that fixture. The reader

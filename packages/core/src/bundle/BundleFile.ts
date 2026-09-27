@@ -248,9 +248,63 @@ function readArchiveBundle(
     );
   }
 
+  if (namesNoEditor(version) && (header.flags & ArchiveFlags.BlockInfoNeedPaddingAtStart) !== 0) {
+    return readStrippedPadded(reader, header, version);
+  }
+
   const { blocks, nodes } = readBlocksInfoAndDirectory(reader, header, version);
   const blocksData = readBlocks(reader, blocks);
   return { header, files: readFiles(nodes, blocksData) };
+}
+
+/**
+ * Unpack a bundle whose revision names no editor but sets 0x200 (#104).
+ *
+ * With the revision stripped, nothing in the header says which flag set the
+ * bundle uses. 6000.3.25f1 sets 0x200 as `BlockInfoNeedPaddingAtStart` on
+ * every bundle it builds, stripped or not, so the bit is read that way, as
+ * AssetStudio does outside its UnityCN mode. But an editor before 2020.3.34 /
+ * 2021.3.2 / 2022.1.1 wrote 0x200 for AssetBundle encryption, and put a key
+ * block (70 bytes in UnityPy's `ArchiveStorageDecryptor`) between the header
+ * and the blocks info. Read as padding, such a bundle's blocks info or data
+ * would come from the key block.
+ *
+ * So the padded reading has to account for every byte: the data blocks must
+ * end where the header says the bundle ends. A bundle that fails that, or
+ * fails to decode on the way (which is what the key block read as blocks info
+ * does), is refused as the ambiguous flag it is rather than handed over
+ * shifted (R9). Without an editor version this reader cannot tell such a
+ * bundle from a corrupt one, so it does not claim either.
+ *
+ * @throws {UnsupportedError} when the bundle does not read as padded blocks
+ */
+function readStrippedPadded(
+  reader: BinaryReader,
+  header: BundleHeader,
+  version: UnityVersion,
+): BundleFile {
+  try {
+    const { blocks, nodes } = readBlocksInfoAndDirectory(reader, header, version);
+    let end = reader.position;
+    for (const block of blocks) end += block.compressedSize;
+    const atTheEnd = (header.flags & ArchiveFlags.BlocksInfoAtTheEnd) !== 0;
+    const expected = header.size - (atTheEnd ? header.compressedBlocksInfoSize : 0);
+    if (end !== expected) {
+      throw new CorruptError(
+        `data blocks end at ${end} but the header puts the end at ${expected}`,
+      );
+    }
+    return { header, files: readFiles(nodes, readBlocks(reader, blocks)) };
+  } catch (error) {
+    if (!(error instanceof CorruptError)) throw error;
+    throw new UnsupportedError(
+      "archive flag",
+      "0x200",
+      `revision "${header.unityRevision}" names no editor and the bundle does not read with ` +
+        `0x200 as block padding (${error.message}); before 2020.3.34 / 2021.3.2 / 2022.1.1 ` +
+        "the bit meant AssetBundle encryption",
+    );
+  }
 }
 
 /**
@@ -543,11 +597,11 @@ function decode(type: number, src: Uint8Array, uncompressedSize: number): Uint8A
  * (upstream `BundleFile.ParseVersion`, which splits on every non-digit run).
  *
  * Missing components read as 0, so an empty or non-numeric revision is
- * `[0, 0, 0]` - older than every version gate, which is the safe side: the
- * gates below then pick the older flag set and refuse rather than guess.
- * Upstream throws on such a revision (AssetStudio indexes an empty array,
- * UnityPy demands a configured fallback version), and neither is useful to a
- * caller that only wanted the files out.
+ * `[0, 0, 0]`, the same as the `"0.0.0"` a version-stripped build writes. No
+ * editor has major version 0, so {@link namesNoEditor} treats all three alike
+ * (#104). Upstream throws on such a revision (AssetStudio indexes an empty
+ * array, UnityPy demands a configured fallback version for any major version
+ * 0), and neither is useful to a caller that only wanted the files out.
  *
  * @param revision the header's `unityRevision`
  * @returns major, minor and build; never throws
@@ -569,6 +623,15 @@ function parseVersion(revision: string): UnityVersion {
   return parsed;
 }
 
+/**
+ * Whether a parsed `unityRevision` names no editor: the `"0.0.0"` that
+ * `AssetBundleStripUnityVersion` writes, an empty string or no number at all.
+ * UnityPy draws the same line (`version.major == 0` in `parse_version`).
+ */
+function namesNoEditor(version: UnityVersion): boolean {
+  return version[0] === 0;
+}
+
 /** `true` when `version` is strictly older than `major.minor.build`. */
 function isBefore(version: UnityVersion, major: number, minor: number, build: number): boolean {
   if (version[0] !== major) return version[0] < major;
@@ -585,10 +648,17 @@ function isBefore(version: UnityVersion, major: number, minor: number, build: nu
  * only gates its own major version. AssetStudio draws the 2022 line at 2022.3.2
  * instead; UnityPy's boundaries are the ones this reader is checked against.
  *
+ * A revision that names no editor gets the new flag set (#104), which is what
+ * AssetStudio does with every bundle outside its UnityCN mode. The two sets
+ * differ only in 0x200, and a bundle that sets it is checked by
+ * {@link readStrippedPadded} before its bytes are trusted.
+ *
  * @param version the parsed `unityRevision`
  */
 function usesOldArchiveFlags(version: UnityVersion): boolean {
   switch (version[0]) {
+    case 0: // see namesNoEditor
+      return false;
     case 2020:
       return isBefore(version, 2020, 3, 34);
     case 2021:

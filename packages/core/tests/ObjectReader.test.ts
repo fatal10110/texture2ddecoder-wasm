@@ -177,8 +177,10 @@ test("the build type is f for every editor-built fixture, stripped-suffix ones i
       const data = node(name, path);
       const sf = readSerializedFile(data);
       if (sf.unityVersion.includes("\n")) suffixed++;
-      assert.equal(sf.buildType, "f", `${name} ${path}`);
-      for (const r of readers(data)) assert.equal(r.buildType, "f");
+      // A version-stripped fixture (#104) names no editor, so no release type.
+      const want = golden(name).serialized![path]!.unityVersion === "0.0.0" ? "" : "f";
+      assert.equal(sf.buildType, want, `${name} ${path}`);
+      for (const r of readers(data)) assert.equal(r.buildType, want);
     }
   }
   assert.ok(suffixed > 0, "no fixture carries the typetree-stripped suffix");
