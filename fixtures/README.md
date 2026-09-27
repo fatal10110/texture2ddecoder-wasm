@@ -72,9 +72,21 @@ The 6000.3.25f1 pair sets archive flag 0x200 (block padding, flags `0x243`); the
 2020.3.30f1 pair predates that and does not (`0x43`)
 ([`BUILDING.md`](BUILDING.md) section 7).
 
+Each editor also has `material/lz4/material`, `material/lz4-notypetree/material`
+and `material/lz4-stripped/material` (#40): one Material with its serialized
+fields set to values other than their defaults, except an empty
+`m_BuildTextureStacks`, a null `_BumpMap` texture and `_NegZero`, which Unity
+saves as `+0`. Each is built with type trees, without (`DisableWriteTypeTree`) and
+version-stripped (`AssetBundleStripUnityVersion`, `"0.0.0"`). Its shader and
+texture are in a dependency bundle that is not committed, so `m_Shader` and the
+`_MainTex` slot point at an external file. The three editors give three of
+Unity's Material layouts: 2019.4's, 2020.3's (adds `m_BuildTextureStacks`) and
+6000.3's (`m_ValidKeywords` / `m_InvalidKeywords` and `m_Ints`)
+([`BUILDING.md`](BUILDING.md) section 10).
+
 Every editor also has `audio`, `font` and `video` in `lz4`, `lz4-notypetree`
 and `stripped` (#41), built from generated source files
-([`BUILDING.md`](BUILDING.md) section 10):
+([`BUILDING.md`](BUILDING.md) section 11):
 
 - `audio` - two AudioClips, PCM and Vorbis, each an FSB5 sound bank in the
   bundle's `.resource` node

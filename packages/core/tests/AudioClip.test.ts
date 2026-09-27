@@ -39,7 +39,7 @@ for (const name of FIXTURES) {
   test(`${name}: readAudioClip equals the golden dump, read() the golden audio bytes`, () => {
     const tree = goldenTree(name, ClassID.AudioClip);
     const objects = objectsOf(name, ClassID.AudioClip);
-    // A PCM clip and a Vorbis one (fixtures/BUILDING.md section 10).
+    // A PCM clip and a Vorbis one (fixtures/BUILDING.md section 11).
     assert.equal(objects.length, 2);
     for (const { env, reader, dump, enableTypeTree } of objects) {
       assert.ok(dump, `no golden dump for AudioClip ${reader.pathId}`);

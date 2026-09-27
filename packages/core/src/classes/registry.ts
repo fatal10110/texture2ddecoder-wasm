@@ -10,6 +10,7 @@ import type { ObjectReader } from "../serialized/ObjectReader.js";
 import { baseName } from "../serialized/SerializedFile.js";
 import { readTypeTree, type TypeTreeObject } from "../serialized/TypeTreeReader.js";
 import { readAssetBundle, type AssetBundle } from "./AssetBundle.js";
+import { readMaterial, type Material } from "./Material.js";
 import { readTexture2D, type Texture2D } from "./Texture2D.js";
 import { readMonoBehaviour, type MonoBehaviour } from "./MonoBehaviour.js";
 import { readMonoScript, type MonoScript } from "./MonoScript.js";
@@ -58,7 +59,7 @@ export type MonoBehaviourData = MonoBehaviour & { [field: string]: unknown };
 /**
  * What `obj.read()` returns: a hardcoded class reader's result for a class
  * that has one ({@link Texture2DData} for a `Texture2D`, `TextAsset`,
- * `MonoScript`, {@link MonoBehaviourData} for a `MonoBehaviour`), and the
+ * `MonoScript`, {@link MonoBehaviourData} for a `MonoBehaviour`, `Material`), and the
  * `readTypeTree()` result for any other class.
  */
 export type ObjectData =
@@ -67,6 +68,7 @@ export type ObjectData =
   | TextAsset
   | MonoScript
   | MonoBehaviourData
+  | Material
   | AudioClipData
   | Font
   | VideoClipData
@@ -94,6 +96,7 @@ const CLASS_READERS: ReadonlyMap<number, ClassReader> = new Map<number, ClassRea
   [ClassID.TextAsset, readTextAsset],
   [ClassID.MonoScript, readMonoScript],
   [ClassID.MonoBehaviour, readMonoBehaviourData],
+  [ClassID.Material, readMaterial],
   [ClassID.AudioClip, readAudioClipData],
   [ClassID.Font, readFont],
   [ClassID.VideoClip, readVideoClipData],

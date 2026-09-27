@@ -53,6 +53,15 @@ export type { Hash128, MonoScript } from "./classes/MonoScript.js";
 export { readMonoBehaviour } from "./classes/MonoBehaviour.js";
 export type { MonoBehaviour } from "./classes/MonoBehaviour.js";
 export type { MonoBehaviourData } from "./classes/registry.js";
+export { readMaterial } from "./classes/Material.js";
+export type {
+  BuildTextureStackReference,
+  Color,
+  Material,
+  UnityPropertySheet,
+  UnityTexEnv,
+  Vector2,
+} from "./classes/Material.js";
 export { readAudioClip } from "./classes/AudioClip.js";
 export type { AudioClip, AudioClipData } from "./classes/AudioClip.js";
 export { readFont } from "./classes/Font.js";
