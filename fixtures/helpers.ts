@@ -56,7 +56,7 @@ export interface GoldenSerialized {
   externals: { path: string; guid: string | null; type: number | null }[];
   types: GoldenType[];
   refTypes: GoldenType[];
-  /** pathId -> `read_typetree()` dump, for TextAsset and MonoBehaviour objects. */
+  /** pathId -> `read_typetree()` dump, for the `DUMPED_CLASSES` in `make-goldens.py`. */
   typetrees: Record<string, { value: unknown; oracleNote?: string }>;
 }
 

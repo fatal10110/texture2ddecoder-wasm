@@ -18,10 +18,11 @@ older (Unity 2019.2 and earlier) have no fixture.
 ## 1. Create the project (once per editor)
 
 A `Library/` folder is editor-specific, so use one project folder per editor,
-each holding the same three files:
+each holding the same four files:
 
 ```
 <project>/Assets/Fixtures/shared/hello.txt
+<project>/Assets/Fixtures/texture/checker.png
 <project>/Assets/Scripts/FixtureData.cs
 <project>/Assets/Editor/BuildFixtures.cs
 ```
@@ -33,6 +34,21 @@ byte-exact rather than in an editor:
 
 ```bash
 printf 'Hello from unity-asset-reader fixtures.\nLine 2: \xc3\xa9\xe2\x82\xac\xf0\x9f\x98\x80\n' > hello.txt
+```
+
+`checker.png` is a 4x4 RGBA PNG, 136 bytes, sha256
+`bd768da6b1b22a5518559a0a9bd29665de8f20a3393e0ce8479f132cda410063`. Every pixel
+differs and alpha varies, so the importer keeps an alpha channel. Generate it
+(stored deflate, so the bytes do not depend on the zlib version):
+
+```python
+import struct, zlib
+# 4x4 RGBA, every pixel distinct, alpha varies so the importer keeps RGBA.
+px = [[(r * 64, g * 64, 255 - 16 * (4 * r + g), 255 - 32 * g) for g in range(4)] for r in range(4)]
+raw = b"".join(b"\x00" + bytes(c for p in row for c in p) for row in px)
+chunk = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d))
+png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 4, 4, 8, 6, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw, 0)) + chunk(b"IEND", b"")
+open("checker.png", "wb").write(png)
 ```
 
 `Assets/Scripts/FixtureData.cs` - one field per value shape the typetree reader
@@ -59,6 +75,7 @@ public class FixtureData : ScriptableObject
     public ulong u64 = 18446744073709551615UL;
     public float f32 = -0.0f;
     public float fInf = float.PositiveInfinity;
+    public float fNaN = float.NaN;
     public double f64 = 0.1;
     public bool flag = true;
     public byte u8 = 200;
@@ -73,9 +90,10 @@ public class FixtureData : ScriptableObject
 }
 ```
 
-`Assets/Editor/BuildFixtures.cs` - creates `Assets/Fixtures/main/` and the
-ScriptableObject asset in it on first run, points it at `hello.txt`, and builds
-every variant:
+`Assets/Editor/BuildFixtures.cs` - creates `Assets/Fixtures/main/`, the
+ScriptableObject asset and a one-triangle Mesh in it on first run, points the
+asset at `hello.txt`, imports `checker.png` as uncompressed RGBA32 without
+mips, and builds every variant:
 
 ```csharp
 using System.IO;
@@ -85,6 +103,8 @@ using UnityEngine;
 public static class BuildFixtures
 {
     const string Data = "Assets/Fixtures/main/data.asset";
+    const string Tex = "Assets/Fixtures/texture/checker.png";
+    const string Tri = "Assets/Fixtures/main/tri.asset";
 
     public static void Build()
     {
@@ -94,12 +114,25 @@ public static class BuildFixtures
         var data = AssetDatabase.LoadAssetAtPath<FixtureData>(Data);
         if (data == null) { data = ScriptableObject.CreateInstance<FixtureData>(); AssetDatabase.CreateAsset(data, Data); }
         data.textRef = text;
+        // A Mesh keeps its vertex data inline as TypelessData; a texture's goes to .resS.
+        if (AssetDatabase.LoadAssetAtPath<Mesh>(Tri) == null)
+        {
+            var tri = new Mesh { name = "tri", vertices = new[] { Vector3.zero, Vector3.up, Vector3.right }, triangles = new[] { 0, 1, 2 } };
+            AssetDatabase.CreateAsset(tri, Tri);
+        }
         EditorUtility.SetDirty(data);
         AssetDatabase.SaveAssets();
 
+        // Plain RGBA32, one mip: every byte of the image is predictable.
+        var imp = (TextureImporter)AssetImporter.GetAtPath(Tex);
+        imp.textureCompression = TextureImporterCompression.Uncompressed;
+        imp.mipmapEnabled = false;
+        imp.SaveAndReimport();
+
         var builds = new[] {
             new AssetBundleBuild { assetBundleName = "shared", assetNames = new[] { "Assets/Fixtures/shared/hello.txt" } },
-            new AssetBundleBuild { assetBundleName = "main",   assetNames = new[] { Data } },
+            new AssetBundleBuild { assetBundleName = "main",   assetNames = new[] { Data, Tri } },
+            new AssetBundleBuild { assetBundleName = "texture", assetNames = new[] { Tex } },
         };
         Emit("lz4",          BuildAssetBundleOptions.ChunkBasedCompression, builds);
         Emit("lzma",         BuildAssetBundleOptions.None, builds);
@@ -145,8 +178,9 @@ Only the bundles, never the `.manifest` text files:
 Build/<variant>/<file>  ->  fixtures/bundles/editor/<editor version>/<variant>/<file>
 ```
 
-for `<variant>` in `lz4`, `lzma`, `uncompressed`, `lz4-notypetree`: 12 files per
-editor, 36 in total, about 145 KB.
+for `<file>` in `shared`, `main`, `texture` and `<variant>`, and `<variant>` in
+`lz4`, `lzma`, `uncompressed`, `lz4-notypetree`: 16 files per editor, 48 in
+total, about 150 KB.
 
 ## 4. Goldens
 
@@ -157,11 +191,19 @@ npm test
 
 A rebuild does not reproduce the committed bytes: a fresh project gets new
 asset GUIDs, so object IDs (pathIDs, SerializeReference rids) change, and with
-them the order of objects and types and a few bytes of padding. Everything else
-- headers, externals, type trees, object classes and sizes, typetree values - is
-the same (checked for all 36 bundles against projects made from this page
-alone). So if you rebuild, replace all of an editor's bundles together,
-regenerate the goldens and commit both.
+them the order of objects and types, the order of the AssetBundle preload
+table, the bundle hashes in the AssetBundleManifest and a few bytes of padding.
+Everything else - headers, externals, type trees, object classes and sizes,
+all other typetree values - is the same (checked for all 48 bundles against
+projects made from this page alone). So if you rebuild, replace all of an
+editor's bundles together, regenerate the goldens and commit both.
+
+Build every variant in one run, as `BuildFixtures.Build` does. In the first
+run after the asset is created, the first variant built (`lz4`) serializes the
+in-memory `float.NaN` as `0xFFC00000` and the rest get `0x7FC00000` (read back
+from the saved asset). A second run writes `0x7FC00000` everywhere, which
+changes the `lz4` NaN golden.
+
 The oracle cannot fully read the version 1 `[SerializeReference]` registry
 (2019.4, 2020.3); `make-goldens.py` handles that one case and records an
 `oracleNote` on the object (see #25).

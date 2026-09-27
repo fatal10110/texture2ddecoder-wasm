@@ -27,18 +27,28 @@ its sources and the batch-mode command.
 | 6000.3.25f1 | v8 | **22** | `[SerializeReference]` v2 |
 
 Each editor has four variants - `lz4`, `lzma`, `uncompressed`, and
-`lz4-notypetree` (built with `DisableWriteTypeTree`) - and each variant three
+`lz4-notypetree` (built with `DisableWriteTypeTree`) - and each variant four
 bundles:
 
 - `shared` - one TextAsset (UTF-8 incl. a 4-byte emoji)
 - `main` - one ScriptableObject (MonoBehaviour, class 114) covering int32, int64
-  below -2^53, UInt64 max, float -0 / +Infinity, double, bool, byte, string,
-  enum, lists, `byte[]`, nested structs, a PPtr into `shared` (a cross-file
-  external) and a `[SerializeReference]` field
+  below -2^53, UInt64 max, float -0 / +Infinity / NaN, double, bool, byte,
+  string, enum, lists, `byte[]`, nested structs, a PPtr into `shared` (a
+  cross-file external) and a `[SerializeReference]` field; plus a one-triangle
+  Mesh, whose vertex data is inline `TypelessData` (36 bytes)
+- `texture` - one 4x4 RGBA32 Texture2D, no mips. Its `image data` is an empty
+  `TypelessData`; the 64 pixel bytes live in a `.resS` node of the bundle
 - `<variant>` - the AssetBundleManifest bundle Unity writes with every build
 
+NaN does not have one bit pattern everywhere, and that comes from Unity: every
+editor wrote `0xFFC00000` into the first variant it built (`lz4`) and
+`0x7FC00000` into the rest (see `BUILDING.md` section 4). The goldens record the
+bytes as written, so the reader has to keep a NaN's sign bit.
+
 The tested SerializedFile range is **formats 21 and 22** (Unity 2019.4 to
-6000.x); `scripts/tests/fixtures.test.ts` fails if either format goes missing.
+6000.x); `scripts/tests/fixtures.test.ts` fails if either format goes missing,
+or if either loses a non-empty or empty `TypelessData`, a `.resS` node or one
+of the two NaN patterns (#86).
 Format 20 and older are ported but have no fixture.
 
 ## M1 container fixtures (`bundles/*.bundle`)
@@ -74,7 +84,7 @@ cover container shapes no current editor writes (legacy UnityWeb/UnityRaw,
 Not covered yet: UnityWeb/UnityRaw v4+ (UnityPy refuses to write them, so the
 hash/CRC and version-6 archive-layout paths are covered by hand-written bytes in
 `BundleFile.test.ts` instead), gzip/brotli around a `UnityWebData` file. The
-editor fixtures have no textures or sprites yet (M3).
+editor fixtures have one RGBA32 texture and no sprites; M3 adds the rest.
 
 ## Oracle notes
 
