@@ -121,6 +121,25 @@ texture and no sprites yet; M3 adds the rest.
   inside its converter, and YUY2 is not implemented. Those goldens carry
   `oracleError` and no RGBA hash; the texture tests check them against
   AssetStudio's own decode methods instead (plan §6), plus hand-derived values.
+- <a id="assetstudio-cross-check"></a>**AssetStudio cross-check hashes**
+  (`ASSETSTUDIO_RGBA` in `packages/texture/tests/convert.test.ts`). They cover the
+  9 formats above and the 2 below. They are cross-check values under plan §6,
+  **not goldens**: UnityPy 1.25.3 raises on the 9, and they never go into
+  `goldens.json`. Here is how they were made (#31):
+  - **Source:** Razviar/assetstudio at `c37af7d`. The plain-format `Decode*`
+    methods of `AssetStudio.Utility/Texture2DConverter.cs` (Alpha8, ARGB4444,
+    RGB24, RGBA32, ARGB32, RGB565, R16, RGBA4444, BGRA32, RHalf, RGHalf,
+    RGBAHalf, RFloat, RGFloat, RGBAFloat, YUY2, RGB9e5Float, plus
+    `DownScaleFrom16BitTo8Bit`) were copied verbatim, together with
+    `AssetStudio/Math/Half.cs` and `HalfHelper.cs`.
+  - **Build and run:** a .NET 8 console app, built and run on Windows x64,
+    **outside the repo** (R2). It ran over the `plain/textures` image bytes as
+    UnityPy's `get_image_data()` extracts them.
+  - **Hashing:** upstream writes BGRA. The harness swapped R and B once, then
+    the RGBA8 was sha256-hashed, with rows as stored.
+  - **Runtime caveat:** on .NET 8 an out-of-range `(byte)Math.Round(x)` wraps,
+    while .NET 9+ saturates. None of the fixture values is out of range, so the
+    hashes do not depend on the runtime.
 - Two formats decode, but not as AssetStudio (the behavior source of truth)
   does, and carry `oracleNote` with the verdict: **Alpha8**, where UnityPy
   leaves R G B at 0 and AssetStudio sets 255, and **RGB565**, where Pillow

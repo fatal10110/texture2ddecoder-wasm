@@ -75,8 +75,9 @@ const PLAIN = "editor/6000.3.25f1/plain/textures";
  * verbatim, `Half.cs` / `HalfHelper.cs`, .NET 8, run outside the repo), over the
  * image data of the `plain` fixture, for the formats UnityPy either cannot
  * decode (its golden has `oracleError`) or decodes differently (`oracleNote`).
- * The plan's cross-check for an oracle that is wrong or silent (§5, §6); the
- * provenance is in the #31 PR.
+ * The plan's cross-check for an oracle that is wrong or silent (§5, §6), not
+ * goldens. Provenance (upstream revision, methods, runtime, BGRA -> RGBA swap):
+ * `fixtures/README.md`, Oracle notes, "AssetStudio cross-check hashes".
  */
 const ASSETSTUDIO_RGBA: Record<string, string> = {
   Alpha8: "1fdf356f8a42f7cc8f3574135d5239b7def065384872d4eae7c7ea8dcfcba91e",
