@@ -42,3 +42,8 @@ test("the published tarball holds dist, LICENSE, LICENSE-APACHE and NOTICE only"
     [],
   );
 });
+
+test("package.json declares both licenses the tarball ships, as SPDX", () => {
+  // Scanners read this field, not NOTICE: the Apache-2.0 fill must show here (#34).
+  assert.strictEqual(require("../package.json").license, "MIT AND Apache-2.0");
+});
