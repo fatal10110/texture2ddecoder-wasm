@@ -122,8 +122,10 @@ Do the first:
    gone the publish step passes no token and npm uses OIDC. Then set *disallow tokens* per
    package (above).
 
-npm tries the OIDC token before any configured token, so steps 4 and 5 can happen in either
-order without breaking a release in between.
+Do step 4 before step 5. The other way round, a release in between has neither a token nor a
+matching trusted publisher and fails with `ENEEDAUTH`. Once step 4 is done, a release works
+whether or not the secret is still set, because npm tries the OIDC token before any configured
+token.
 
 ## Steps
 
