@@ -76,6 +76,9 @@ export interface LoadedFile {
  * resource file. This is the shape of Unity's `StreamingInfo` (Texture2D's
  * `m_StreamData`); other classes name the same three fields differently
  * (AudioClip's `m_Resource` has `m_Source`, `m_Offset`, `m_Size`).
+ *
+ * The `StreamingInfo` the Texture2D reader returns (#29) is structurally the
+ * same type and can be passed as it is.
  */
 export interface ResourceRef {
   /**
