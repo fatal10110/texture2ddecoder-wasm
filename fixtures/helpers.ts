@@ -110,9 +110,56 @@ export interface GoldenSynthetic {
   rgbaSha256: string;
 }
 
+/**
+ * UnityPy's decode of generated data as a console texture no fixture editor
+ * can build (#33): `syntheticBytes(name, inputSize)` in, with the platform and
+ * (Switch) `m_PlatformBlob`, RGBA8 out in both row orders.
+ */
+export interface GoldenPlatform {
+  /** Unity's `BuildTarget` value: 38 Switch, 11 XBOX360. */
+  platform: number;
+  /** Unity's `TextureFormat` value. */
+  format: number;
+  width: number;
+  height: number;
+  /** `m_PlatformBlob` as hex; `null` for Xbox 360, which has none. */
+  platformBlob: string | null;
+  /**
+   * For DXT: `[stride, c0High, c1High]`, the input made 4-colour with
+   * {@link fourColor} after `syntheticBytes`; `null` otherwise.
+   */
+  fourColor: [number, number, number] | null;
+  inputSize: number;
+  inputSha256: string;
+  /** Rows as stored, bottom row first (`flip=False`), like every texture golden. */
+  rgbaSha256: string;
+  /** Rows top row first (`flip=True`), what `decodeTexture2D` returns. */
+  rgbaTopDownSha256: string;
+}
+
+/**
+ * UnityPy's Switch deswizzle alone (#33): `syntheticBytes("deswizzle <name>",
+ * inputSize)`, the whole padded level of a `width x height` texture whose
+ * texels are `texelWidth x texelHeight` pixels, in; the moved bytes out.
+ */
+export interface GoldenDeswizzle {
+  texelWidth: number;
+  texelHeight: number;
+  width: number;
+  height: number;
+  gobsPerBlock: number;
+  paddedWidth: number;
+  paddedHeight: number;
+  inputSize: number;
+  inputSha256: string;
+  outputSha256: string;
+}
+
 const goldenFile: {
   fixtures: Record<string, Golden>;
   synthetic: Record<string, GoldenSynthetic>;
+  platform: Record<string, GoldenPlatform>;
+  deswizzle: Record<string, GoldenDeswizzle>;
 } = JSON.parse(readFileSync(join(HERE, "goldens.json"), "utf8"));
 const goldens = goldenFile.fixtures;
 
@@ -143,6 +190,51 @@ export function golden(name: string): Golden {
 /** Every synthetic texture golden, by name (`"ATC_RGB4"`). */
 export function syntheticGoldens(): Record<string, GoldenSynthetic> {
   return goldenFile.synthetic;
+}
+
+/** Every console-layout texture golden, by name (`"Switch DXT1"`). */
+export function platformGoldens(): Record<string, GoldenPlatform> {
+  return goldenFile.platform;
+}
+
+/** Every Switch deswizzle golden, by texel shape (`"8x4"`). */
+export function deswizzleGoldens(): Record<string, GoldenDeswizzle> {
+  return goldenFile.deswizzle;
+}
+
+/**
+ * `data` with every BC1 colour block in 4-colour mode (c0 > c1), in place, as
+ * `four_color` in `scripts/make-goldens.py` makes the DXT inputs of the
+ * `platform` goldens: in each `stride` bytes, the top bit of byte `c0High`
+ * set and of byte `c1High` cleared. See `PLATFORM` there for why.
+ */
+export function fourColor(
+  data: Uint8Array,
+  stride: number,
+  c0High: number,
+  c1High: number,
+): Uint8Array {
+  for (let block = 0; block < data.length; block += stride) {
+    data[block + c0High] = data[block + c0High]! | 0x80;
+    data[block + c1High] = data[block + c1High]! & 0x7f;
+  }
+  return data;
+}
+
+/**
+ * An RGBA8 image with its rows in reverse order, as a new array. The texture
+ * goldens hash Unity's stored order, bottom row first; `decodeTexture2D`
+ * returns the top row first (#33), so its tests turn it back before hashing.
+ * The `platform` goldens record both orders, which proves this is UnityPy's
+ * own flip.
+ */
+export function reverseRows(rgba: Uint8Array, width: number): Uint8Array {
+  const stride = width * 4;
+  const out = new Uint8Array(rgba.length);
+  for (let from = 0; from < rgba.length; from += stride) {
+    out.set(rgba.subarray(from, from + stride), rgba.length - from - stride);
+  }
+  return out;
 }
 
 /**
