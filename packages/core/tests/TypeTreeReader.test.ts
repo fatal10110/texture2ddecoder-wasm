@@ -535,7 +535,7 @@ test("a string field keeps a leading UTF-8 BOM as U+FEFF, as UnityPy does", () =
     byteSize: bytes.length,
     serializedType: { ...info.serializedType!, nodes },
   });
-  assert.deepEqual(synthetic.readTypeTree(), { m_Name: "﻿a" });
+  assert.deepEqual(synthetic.readTypeTree(), { m_Name: "\uFEFFa" });
 });
 
 // --- unhappy paths ----------------------------------------------------------------
