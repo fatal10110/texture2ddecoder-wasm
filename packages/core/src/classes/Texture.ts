@@ -3,8 +3,8 @@
 import { UnsupportedError } from "../errors.js";
 import { BuildTarget } from "../serialized/BuildTarget.js";
 import type { ObjectReader } from "../serialized/ObjectReader.js";
-import type { UnityVersion } from "../serialized/SerializedFile.js";
 import { readNamedObject, type NamedObject } from "./NamedObject.js";
+import { atLeast } from "./version.js";
 
 /**
  * The fields of a `Texture` (upstream's base of `Texture2D` and the other
@@ -28,6 +28,13 @@ export interface Texture extends NamedObject {
  * Only player builds are read. An editor file (`BuildTarget.NoTarget`) stores
  * editor-only fields here, such as `m_ImageContentsHash`, that upstream does
  * not read either, so it is refused rather than misread.
+ *
+ * ponytail: the texture readers' gates compare release numbers only (see
+ * `atLeast`), as upstream's do. Alpha and beta builds of 2020.1, 2020.2 and
+ * 2023.1/2023.2 changed these layouts mid-cycle (UnityPy's TPK data), so such
+ * a pre-release may be misread; the texture readers' byte-size check turns
+ * most of those into a `CorruptError`. Compare `buildType` and the build
+ * number in the gates if a pre-release file ever matters.
  *
  * @param reader the object's reader, rewound first and left just past these
  *   fields and their padding
@@ -69,24 +76,4 @@ export function readTexture(reader: ObjectReader): Texture {
   if (atLeast(version, 2020, 2)) out.m_IsAlphaChannelOptional = reader.readUInt8() !== 0;
   reader.align();
   return out;
-}
-
-/**
- * Whether `version` is `major.minor.patch` or later.
- *
- * ponytail: compares release numbers only, as upstream does. Alpha and beta
- * builds of 2020.1, 2020.2 and 2023.1/2023.2 changed these layouts mid-cycle
- * (UnityPy's TPK data), so such a pre-release may be misread; the texture
- * readers' byte-size check turns most of those into a `CorruptError`. Compare
- * `buildType` and the build number here if a pre-release file ever matters.
- */
-export function atLeast(
-  [major, minor, patch]: UnityVersion,
-  wantMajor: number,
-  wantMinor: number,
-  wantPatch = 0,
-): boolean {
-  if (major !== wantMajor) return major > wantMajor;
-  if (minor !== wantMinor) return minor > wantMinor;
-  return patch >= wantPatch;
 }

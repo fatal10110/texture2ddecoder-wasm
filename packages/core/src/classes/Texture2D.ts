@@ -4,7 +4,8 @@ import type { ResourceRef } from "../env.js";
 import { CorruptError } from "../errors.js";
 import type { ObjectReader } from "../serialized/ObjectReader.js";
 import { readCount } from "../serialized/TypeTree.js";
-import { atLeast, readTexture, type Texture } from "./Texture.js";
+import { readTexture, type Texture } from "./Texture.js";
+import { atLeast } from "./version.js";
 
 /**
  * Where a texture's image data lives when it is not stored in the object
