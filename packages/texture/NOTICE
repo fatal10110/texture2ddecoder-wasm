@@ -9,7 +9,9 @@ ported from.
 AssetStudio -- https://github.com/Razviar/assetstudio (MIT)
   Copyright (c) Perfare, RazTools, Razviar
   Source of truth for AssetBundle, SerializedFile, TypeTree and class layout,
-  and for the plain texture format conversion (Texture2DConverter.cs, Half.cs).
+  for the plain texture format conversion (Texture2DConverter.cs, Half.cs),
+  and for which block or Crunch decoder each texture format goes to
+  (Texture2DConverter.cs).
 
 UnityPy -- https://github.com/K0lb3/UnityPy (MIT)
   Copyright (c) K0lb3

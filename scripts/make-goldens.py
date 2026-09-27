@@ -12,6 +12,8 @@ Per fixture (keyed by its path under fixtures/bundles/):
                 read_typetree() dumps of the DUMPED_CLASSES objects  (M2);
                 plus, for a file holding a Texture2D, `textures`: the sha256 of
                 its image data and of UnityPy's RGBA decode, rows as stored  (#31)
+Plus `synthetic`: UnityPy's RGBA for generated block data in the formats no
+editor on hand writes (ATC, signed EAC - #32).
 
 Normalization (plan section 5), applied by walking the type tree next to the
 value so the node type decides, not the Python type:
@@ -38,7 +40,8 @@ import warnings
 import UnityPy
 from UnityPy import config
 from UnityPy.exceptions import UnityVersionFallbackWarning
-from UnityPy.export.Texture2DConverter import get_image_from_texture2d
+from UnityPy.enums import BuildTarget
+from UnityPy.export.Texture2DConverter import get_image_from_texture2d, parse_image_data
 from UnityPy.helpers.TypeTreeHelper import (
     TypeTreeConfig,
     get_ref_type_node,
@@ -83,7 +86,46 @@ ORACLE_DISAGREES = {
         "repeating its top bits ((x << 3) | (x >> 2)), which is up to 1 higher. "
         "Verdict: AssetStudio - see #31"
     ),
+    # Block formats UnityPy decodes with Pillow or astc-encoder rather than with
+    # texture2ddecoder, the codec AssetStudio (and this library) uses. Established
+    # on the #32 fixtures.
+    24: (
+        "BC6H: UnityPy decodes with Pillow, AssetStudio with its Texture2DDecoder; they "
+        "turn the half floats into 8 bits differently, channels differ by at most 1. "
+        "Verdict: AssetStudio - see #32"
+    ),
+    26: (
+        "BC4: UnityPy decodes with Pillow into grayscale (R = G = B), AssetStudio's "
+        "Texture2DDecoder writes the value to R only (G = B = 0). "
+        "Verdict: AssetStudio - see #32"
+    ),
+    **{
+        f: (
+            "ASTC: UnityPy decodes with astc-encoder (unorm8), AssetStudio with its "
+            "Texture2DDecoder; channels differ by at most 1. Verdict: AssetStudio - see #32"
+        )
+        for f in range(48, 60)  # ASTC_RGB_4x4 .. ASTC_RGBA_12x12
+    },
+    **{
+        f: (
+            "ASTC HDR: UnityPy decodes with astc-encoder's LDR profile, which returns its "
+            "magenta error colour for every HDR block; AssetStudio's Texture2DDecoder "
+            "decodes them. Verdict: AssetStudio - see #32"
+        )
+        for f in range(66, 72)  # ASTC_HDR_4x4 .. ASTC_HDR_12x12
+    },
 }
+# Formats none of the fixture editors (2019.4, 2020.3, 6000.3) compresses (#32):
+# ATC, which their TextureFormat no longer has, and signed EAC, which the editor
+# refuses. UnityPy decodes synthetic_bytes(name) of each instead; see
+# synthetic_goldens().
+SYNTHETIC = [
+    # name, TextureFormat, width, height, bytes per 4x4 block
+    ("ATC_RGB4", 35, 16, 8, 8),
+    ("ATC_RGBA8", 36, 16, 8, 16),
+    ("EAC_R_SIGNED", 42, 16, 8, 8),
+    ("EAC_RG_SIGNED", 44, 16, 8, 16),
+]
 
 
 def sha256(data: bytes) -> str:
@@ -312,6 +354,43 @@ def texture_golden(obj) -> dict:
     return out
 
 
+def synthetic_bytes(name: str, size: int) -> bytes:
+    """sha256(f"{name}/0") + sha256(f"{name}/1") + ..., cut to `size` bytes.
+
+    Every byte string is valid ATC or EAC block data, so no editor is needed;
+    `syntheticBytes` in fixtures/helpers.ts makes the same bytes.
+    """
+    out = b""
+    while len(out) < size:
+        out += hashlib.sha256(f"{name}/{len(out) // 32}".encode()).digest()
+    return out[:size]
+
+
+def synthetic_goldens() -> dict:
+    """UnityPy's RGBA for block formats no editor on hand writes (#32).
+
+    `parse_image_data` is what `get_image_from_texture2d` calls with a
+    texture's fields; here it gets `synthetic_bytes(name)` instead. The Unity
+    version and platform only matter for Crunch and console swizzling, so
+    UnityPy's own defaults are passed.
+    """
+    out = {}
+    for name, fmt, width, height, block in SYNTHETIC:
+        data = synthetic_bytes(name, (width // 4) * (height // 4) * block)
+        image = parse_image_data(
+            data, width, height, fmt, (0, 0, 0, 0), BuildTarget.UnknownPlatform, None, flip=False
+        )
+        out[name] = {
+            "format": fmt,
+            "width": width,
+            "height": height,
+            "inputSize": len(data),
+            "inputSha256": sha256(data),
+            "rgbaSha256": sha256(image.convert("RGBA").tobytes()),
+        }
+    return out
+
+
 def raw_bytes(name: str, entry) -> bytes:
     """The node's bytes exactly as stored in the container.
 
@@ -439,6 +518,7 @@ def main() -> None:
             continue
         goldens["fixtures"][key] = read_with_fallback(path)
         print(f"  {key:<48} {len(goldens['fixtures'][key]['files'])} files")
+    goldens["synthetic"] = synthetic_goldens()
 
     GOLDENS.write_text(to_json(goldens) + "\n")
     print(f"\n{len(goldens['fixtures'])} goldens -> {GOLDENS.relative_to(ROOT)}")
