@@ -21,6 +21,8 @@ export interface NamedObject extends EditorExtension {
  *
  * @param reader the object's reader, rewound first and left just past
  *   `m_Name` and its padding
+ * @throws {UnsupportedError} for an editor file with no known header layout,
+ *   as `readEditorExtension` does
  * @throws {CorruptError} when the object is too short for these fields
  */
 export function readNamedObject(reader: ObjectReader): NamedObject {

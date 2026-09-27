@@ -15,11 +15,15 @@ import { readEditorExtension } from "../src/classes/EditorExtension.js";
 import { readNamedObject } from "../src/classes/NamedObject.js";
 import { readObject } from "../src/classes/Object.js";
 import { load } from "../src/env.js";
-import { CorruptError } from "../src/errors.js";
+import { CorruptError, UnsupportedError } from "../src/errors.js";
 import { BuildTarget } from "../src/serialized/BuildTarget.js";
 import { ClassID } from "../src/serialized/ClassID.js";
 import { ObjectReader } from "../src/serialized/ObjectReader.js";
-import { readSerializedFile, type SerializedFile } from "../src/serialized/SerializedFile.js";
+import {
+  readSerializedFile,
+  type SerializedFile,
+  type UnityVersion,
+} from "../src/serialized/SerializedFile.js";
 
 const SERIALIZED_FIXTURES = fixtureNames().filter((name) => golden(name).serialized);
 const STRIPPED_FIXTURES = SERIALIZED_FIXTURES.filter((name) => name.includes("/lz4-notypetree/"));
@@ -189,16 +193,29 @@ function textAsset(): { sf: SerializedFile; info: SerializedFile["objects"][numb
   return { sf, info };
 }
 
-/** A reader over `bytes` for a file built for `platform` in SerializedFile `format`. */
-function synthetic(bytes: Uint8Array, platform: BuildTarget, format: number): ObjectReader {
+/**
+ * A reader over `bytes` for a file built for `platform` by Unity `unity` in
+ * SerializedFile `format`; the caller keeps the two consistent.
+ */
+function synthetic(
+  bytes: Uint8Array,
+  platform: BuildTarget,
+  format: number,
+  unity: UnityVersion,
+): ObjectReader {
   const { sf, info } = textAsset();
   const file: SerializedFile = {
     ...sf,
     header: { ...sf.header, version: format },
+    unityVersion: unity.slice(0, 3).join("."),
+    version: unity,
     targetPlatform: platform,
   };
   return new ObjectReader(bytes, file, { ...info, byteStart: 0, byteSize: bytes.length });
 }
+
+/** A player file as the 6000 fixtures are: format 22. */
+const PLAYER_6000 = [22, [6000, 3, 25, 1]] as const;
 
 type Field = ["u32" | "i32", number] | ["i64", bigint] | ["str", string];
 
@@ -224,72 +241,95 @@ function bytesOf(fields: Field[]): Uint8Array {
   return Uint8Array.from(out);
 }
 
-test("NoTarget, format 14+: hide flags, two 64-bit prefab PPtrs, then m_Name", () => {
-  const bytes = bytesOf([
-    ["u32", 0x8000_0001],
-    ["i32", 1],
-    ["i64", -(2n ** 60n)],
-    ["i32", 0],
-    ["i64", 2n ** 53n + 1n],
-    ["str", "héllo"],
-    ["i32", 0x1234],
-  ]);
-  const reader = synthetic(bytes, BuildTarget.NoTarget, 22);
-  assert.deepEqual(readNamedObject(reader), {
-    m_ObjectHideFlags: 0x8000_0001,
-    m_PrefabParentObject: { m_FileID: 1, m_PathID: -(2n ** 60n) },
-    m_PrefabInternal: { m_FileID: 0, m_PathID: 2n ** 53n + 1n },
-    m_Name: "héllo",
-  });
-  assert.equal(reader.readInt32(), 0x1234);
-  assert.equal(reader.remaining, 0);
-});
+const OLD_NAMES = ["m_PrefabParentObject", "m_PrefabInternal"];
+const RENAMED = ["m_CorrespondingSourceObject", "m_PrefabInternal"];
+const REWORK = ["m_CorrespondingSourceObject", "m_PrefabInstance", "m_PrefabAsset"];
 
-test("NoTarget, below format 14: prefab PPtr path ids are 32-bit, still bigint", () => {
-  const bytes = bytesOf([
-    ["u32", 4],
-    ["i32", 2],
-    ["i32", -7],
-    ["i32", 0],
-    ["i32", 9],
-    ["i32", 0x1234],
-  ]);
-  const reader = synthetic(bytes, BuildTarget.NoTarget, 13);
-  assert.deepEqual(readEditorExtension(reader), {
-    m_ObjectHideFlags: 4,
-    m_PrefabParentObject: { m_FileID: 2, m_PathID: -7n },
-    m_PrefabInternal: { m_FileID: 0, m_PathID: 9n },
+/**
+ * The prefab pointers Unity's editor type trees put between `m_ObjectHideFlags`
+ * and `m_Name`, as UnityPy's TPK data records them (EditorRootNode of every
+ * EditorExtension class, 3.4.0 to 6000.7a3), with the first and last version
+ * of each layout, plus both sides of the format 14 path id gate.
+ */
+const LAYOUTS: { unity: UnityVersion; format: number; pointers: string[] }[] = [
+  { unity: [3, 4, 0, 1], format: 8, pointers: ["m_ExtensionPtr"] },
+  { unity: [3, 5, 0, 1], format: 9, pointers: OLD_NAMES },
+  { unity: [5, 0, 0, 1], format: 13, pointers: OLD_NAMES },
+  { unity: [5, 0, 0, 1], format: 14, pointers: OLD_NAMES },
+  { unity: [2018, 1, 9, 1], format: 17, pointers: OLD_NAMES },
+  { unity: [2018, 2, 0, 1], format: 17, pointers: RENAMED },
+  { unity: [2018, 2, 21, 1], format: 17, pointers: RENAMED },
+  { unity: [2018, 3, 0, 1], format: 17, pointers: REWORK },
+  { unity: [2019, 4, 41, 2], format: 21, pointers: REWORK },
+  { unity: [6000, 3, 25, 1], format: 22, pointers: REWORK },
+];
+
+for (const { unity, format, pointers } of LAYOUTS) {
+  const wide = format >= 14;
+  test(`NoTarget, Unity ${unity.join(".")} format ${format}: ${pointers.join(", ")}`, () => {
+    const fields: Field[] = [["u32", 0x8000_0001]];
+    const expected: Record<string, unknown> = { m_ObjectHideFlags: 0x8000_0001 };
+    pointers.forEach((key, i) => {
+      // Beyond 32 bits from format 14 on, so a 32-bit read cannot pass.
+      const pathId = wide ? -(2n ** 60n) + BigInt(i) : BigInt(-7 - i);
+      fields.push(["i32", i + 1], wide ? ["i64", pathId] : ["i32", Number(pathId)]);
+      expected[key] = { m_FileID: i + 1, m_PathID: pathId };
+    });
+    fields.push(["str", "héllo"], ["i32", 0x1234]);
+
+    const reader = synthetic(bytesOf(fields), BuildTarget.NoTarget, format, unity);
+    assert.deepEqual(readNamedObject(reader), { ...expected, m_Name: "héllo" });
+    assert.equal(reader.readInt32(), 0x1234);
+    assert.equal(reader.remaining, 0);
   });
-  assert.equal(reader.readInt32(), 0x1234);
+}
+
+for (const unity of [[3, 3, 0, 1], [0, 0, 0, 0]] as const) {
+  test(`NoTarget, Unity ${unity.join(".")}: no known layout, so UnsupportedError`, () => {
+    const reader = synthetic(bytesOf([["u32", 0], ["str", "x"]]), BuildTarget.NoTarget, 7, unity);
+    assert.throws(
+      () => readNamedObject(reader),
+      (err: unknown) =>
+        err instanceof UnsupportedError &&
+        err.found === unity.join(".") &&
+        err.message.includes(`object ${reader.pathId}`),
+    );
+  });
+}
+
+test("NoTarget, 2018.3+: two pointers are not enough (upstream reads only two)", () => {
+  const bytes = bytesOf([
+    ["u32", 0],
+    ["i32", 0],
+    ["i64", 1n],
+    ["i32", 0],
+    ["i64", 2n],
+  ]);
+  const reader = synthetic(bytes, BuildTarget.NoTarget, 21, [2019, 4, 41, 2]);
+  assert.throws(() => readEditorExtension(reader), CorruptError);
 });
 
 test("NoTarget: readObject reads the hide flags and nothing else", () => {
-  const reader = synthetic(bytesOf([["u32", 7], ["i32", 1]]), BuildTarget.NoTarget, 22);
+  const reader = synthetic(bytesOf([["u32", 7], ["i32", 1]]), BuildTarget.NoTarget, ...PLAYER_6000);
   assert.deepEqual(readObject(reader), { m_ObjectHideFlags: 7 });
   assert.equal(reader.position, 4);
 });
 
 test("a player build has no header: readObject reads nothing", () => {
-  const reader = synthetic(bytesOf([["u32", 7]]), BuildTarget.StandaloneWindows64, 22);
+  const reader = synthetic(bytesOf([["u32", 7]]), BuildTarget.StandaloneWindows64, ...PLAYER_6000);
   assert.deepEqual(readObject(reader), {});
   assert.equal(reader.position, 0);
 });
 
 test("every reader starts from the object's first byte, as upstream's Reset() does", () => {
   const bytes = bytesOf([["str", "twice"], ["i32", 0]]);
-  const reader = synthetic(bytes, BuildTarget.Android, 22);
+  const reader = synthetic(bytes, BuildTarget.Android, ...PLAYER_6000);
   assert.equal(readNamedObject(reader).m_Name, "twice");
   reader.position = 8;
   assert.equal(readNamedObject(reader).m_Name, "twice");
 });
 
-test("throws CorruptError when an editor object ends inside its prefab PPtrs", () => {
-  const bytes = bytesOf([["u32", 0], ["i32", 0], ["i32", 0]]);
-  const reader = synthetic(bytes, BuildTarget.NoTarget, 22);
-  assert.throws(() => readEditorExtension(reader), CorruptError);
-});
-
 test("throws CorruptError when an object ends before m_Name's length", () => {
-  const reader = synthetic(new Uint8Array(2), BuildTarget.StandaloneWindows64, 22);
+  const reader = synthetic(new Uint8Array(2), BuildTarget.StandaloneWindows64, ...PLAYER_6000);
   assert.throws(() => readNamedObject(reader), CorruptError);
 });
