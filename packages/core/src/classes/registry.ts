@@ -31,8 +31,15 @@ export interface Texture2DData extends Texture2D {
 /**
  * A `MonoBehaviour` as `obj.read()` returns it: the whole object as
  * `readTypeTree()` reads it when the file has a type tree, and otherwise the
- * header alone. Either way the header fields come first, with the same values
- * and shapes; the script's own fields follow only with a type tree.
+ * header alone. The header fields have the same values and shapes either
+ * way; the script's own fields are there only with a type tree.
+ *
+ * In a player build the type tree starts with the header, in the same order.
+ * An editor file's (`BuildTarget.NoTarget`) type tree puts editor fields
+ * around it: `m_ObjectHideFlags` and the prefab pointers first,
+ * `m_EditorHideFlags` between `m_Enabled` and `m_Script`, and, from Unity 4.2,
+ * `m_EditorClassIdentifier` after `m_Name`. Such a file always has a type
+ * tree; the header reader alone refuses it.
  */
 export type MonoBehaviourData = MonoBehaviour & { [field: string]: unknown };
 
@@ -146,7 +153,8 @@ function readTexture2DData(
  */
 function readMonoBehaviourData(reader: ObjectReader): MonoBehaviourData {
   const nodes = reader.serializedType?.nodes;
-  // The type tree's first four fields are the header, under the same names.
+  // The type tree holds the header under the same names: its first four fields
+  // in a player build, with editor fields around them in an editor file.
   if (nodes && nodes.length > 0) return readTypeTree(reader) as MonoBehaviourData;
   // An interface has no implicit index signature; the header has no other keys.
   return readMonoBehaviour(reader) as MonoBehaviourData;
