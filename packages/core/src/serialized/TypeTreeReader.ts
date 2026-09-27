@@ -341,7 +341,8 @@ function readRefData(walk: Walk, cls: unknown, ns: unknown, asm: unknown): TypeT
  * nothing special. Version 1 has a single `ReferencedObject` child standing
  * for every entry: read entries until the `Terminus` sentinel, which is
  * consumed and not returned. The golden oracle (UnityPy 1.25.3) and upstream
- * both read only the first entry and stop the sentinel's 44 bytes short.
+ * both read only the first entry, so they stop before the entries after it
+ * and the sentinel: 44 bytes short when there is one entry.
  */
 function readRegistry(walk: Walk, t: Tree, i: number): TypeTreeObject {
   const out: TypeTreeObject = {};
