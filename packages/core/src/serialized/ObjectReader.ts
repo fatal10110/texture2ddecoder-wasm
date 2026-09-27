@@ -204,9 +204,10 @@ export class ObjectReader extends BinaryReader {
    * is one, as upstream does, and with {@link readTypeTree} otherwise.
    *
    * Hardcoded readers so far: `Texture2D`, which returns a `Texture2DData`,
-   * the `readTexture2D` fields plus `imageData`, the image bytes resolved: a
+   * the `readTexture2D` fields plus `imageData`, the image bytes resolved: the
+   * inline `image data` when it is not empty, as upstream, and otherwise a
    * view into the `.resS` / `.resource` file `m_StreamData` names, read
-   * through the env that built this reader, or the inline `image data`.
+   * through the env that built this reader.
    *
    * `T` is the caller's claim about the result, not checked: pick it after
    * checking {@link type}, as in

@@ -16,9 +16,10 @@ import { readTexture2D, type Texture2D } from "./Texture2D.js";
 export interface Texture2DData extends Texture2D {
   /**
    * The image data, every mip level, still encoded in `m_TextureFormat`:
-   * `size` bytes of the resource file `m_StreamData` names when its `path` is
-   * not empty, and `image data` otherwise. Either way a view, never a copy
-   * (R7), with the aliasing of the bytes it views.
+   * `image data` when it is not empty, otherwise `size` bytes of the resource
+   * file `m_StreamData` names when its `path` is not empty, and otherwise
+   * `image data` (0 bytes). Either way a view, never a copy (R7), with the
+   * aliasing of the bytes it views.
    */
   imageData: Uint8Array;
 }
@@ -78,8 +79,9 @@ export function readObjectData(
 
 /**
  * `readTexture2D` with the image bytes resolved, as upstream's `Texture2D`
- * sets `image_data`: a non-empty `m_StreamData.path` wins, and anything else
- * is inline, empty data included.
+ * sets `image_data`: non-empty inline data wins, since upstream only reads
+ * `m_StreamData` when the inline size is 0 (UnityPy agrees). Then a non-empty
+ * `m_StreamData.path` is read, and otherwise the empty inline data is kept.
  */
 function readTexture2DData(
   reader: ObjectReader,
@@ -87,7 +89,9 @@ function readTexture2DData(
 ): Texture2DData {
   const texture = readTexture2D(reader);
   const stream = texture.m_StreamData;
-  if (!stream?.path) return { ...texture, imageData: texture["image data"] };
+  if (texture["image data"].length > 0 || !stream?.path) {
+    return { ...texture, imageData: texture["image data"] };
+  }
   // A reader built outside `load()` has no files to look in.
   if (!resources) throw new ResourceNotFoundError(stream.path, baseName(stream.path));
   return { ...texture, imageData: resources(stream, reader) };

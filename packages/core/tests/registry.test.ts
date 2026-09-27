@@ -226,6 +226,37 @@ test("a reader not built by load() reads inline data, and has no .resS to look i
   );
 });
 
+test("non-empty inline image data wins over a non-empty m_StreamData.path", () => {
+  // Upstream `Texture2D.cs` reads `m_StreamData` only when the inline size is
+  // 0, and UnityPy returns `image_data` whenever it is non-empty. Unity never
+  // writes both, so the path is spliced into an inline texture.
+  const name = "editor/6000.3.25f1/plain/textures";
+  const node = loadName(name).files.find((f) => golden(name).serialized![f.path])!;
+  const sf = readSerializedFile(node.data);
+  assert.equal(sf.bigEndian, false);
+  const info = sf.objects.find((o) => o.classId === ClassID.Texture2D)!;
+  const object = node.data.subarray(info.byteStart, info.byteStart + info.byteSize);
+  // The object ends with m_StreamData.path: an empty string, Int32 length 0.
+  assert.deepEqual([...object.subarray(-4)], [0, 0, 0, 0]);
+
+  const path = "archive:/CAB-x/CAB-x.resS";
+  const text = new TextEncoder().encode(path);
+  const length = new Uint8Array(4);
+  new DataView(length.buffer).setInt32(0, text.length, true);
+  const padding = new Uint8Array((4 - (text.length % 4)) % 4);
+  const bytes = Uint8Array.from([...object.subarray(0, -4), ...length, ...text, ...padding]);
+  const reader = new ObjectReader(bytes, sf, { ...info, byteStart: 0, byteSize: bytes.length });
+  const texture = readTexture2D(reader);
+  assert.equal(texture.m_StreamData?.path, path);
+  assert.ok(texture["image data"].length > 0);
+
+  // A hand-built reader has no .resS to look in, so the stream would throw.
+  const data = reader.read<Texture2DData>();
+  assert.equal(data.imageData, data["image data"]);
+  const want = textureGoldens(name).get(String(info.pathId))!;
+  assert.equal(sha256(data.imageData), want.imageSha256);
+});
+
 /**
  * A big-endian format-8 SerializedFile (Unity 3.x layout, the smallest that
  * records an editor version) whose one object, path id 1, is a Texture2D of
