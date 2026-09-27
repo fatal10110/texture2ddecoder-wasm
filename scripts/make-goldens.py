@@ -42,8 +42,11 @@ GOLDENS = ROOT / "fixtures" / "goldens.json"
 INT64_TYPES = {"SInt64", "UInt64", "long long", "unsigned long long", "FileSize"}
 BYTE_TYPES = {"UInt8", "SInt8", "char"}
 # Classes whose read_typetree() output is part of the goldens (#25). AssetBundle
-# and AssetBundleManifest are the only map / pair / set in the fixtures (#84).
+# and AssetBundleManifest are the only map / pair / set in the fixtures (#84);
+# Mesh and Texture2D the only TypelessData, non-empty and empty (#86).
 DUMPED_CLASSES = {
+    28: "Texture2D",
+    43: "Mesh",
     49: "TextAsset",
     114: "MonoBehaviour",
     142: "AssetBundle",

@@ -11,6 +11,7 @@ import {
   gunzipFixture,
   loadFixture,
   sha256,
+  type GoldenSerialized,
 } from "../../fixtures/helpers.js";
 
 const names = fixtureNames();
@@ -57,6 +58,46 @@ test("editor fixtures cover SerializedFile formats 21 and 22 in every variant (#
     for (const want of ["lz4", "lzma", "uncompressed", "lz4-notypetree"]) {
       assert.ok(variants.has(want), `format ${format} has no ${want} fixture`);
     }
+  }
+});
+
+test("editor fixtures cover TypelessData, .resS and both NaN patterns in formats 21 and 22 (#86)", () => {
+  // #25's test inputs. A rebuild that drops tri.asset, or runs BuildFixtures a
+  // second time (every NaN becomes 0x7FC00000), must fail here, not go quiet.
+  const hasTypeless = (s: GoldenSerialized, name: string) =>
+    s.types.some((t) => t.nodes?.some(([, type, n]) => type === "TypelessData" && n === name));
+  const strings = (value: unknown): string[] =>
+    typeof value === "string"
+      ? [value]
+      : value !== null && typeof value === "object"
+        ? Object.values(value).flatMap(strings)
+        : [];
+
+  for (const format of [21, 22]) {
+    const found = { filled: false, empty: false, resS: false, nan7f: false, nanFf: false };
+    for (const name of names) {
+      const g = golden(name);
+      for (const s of Object.values(g.serialized ?? {})) {
+        if (s.formatVersion !== format) continue;
+        if (Object.keys(g.files).some((path) => path.endsWith(".resS"))) found.resS = true;
+        for (const { value } of Object.values(s.typetrees)) {
+          const v = value as { m_VertexData?: { m_DataSize?: unknown }; "image data"?: unknown };
+          const data = v.m_VertexData?.m_DataSize;
+          if (hasTypeless(s, "m_DataSize") && typeof data === "string" && /^hex:([0-9a-f]{2})+$/.test(data)) {
+            found.filled = true;
+          }
+          if (hasTypeless(s, "image data") && v["image data"] === "hex:") found.empty = true;
+          const all = strings(value);
+          if (all.includes("f32:7fc00000")) found.nan7f = true;
+          if (all.includes("f32:ffc00000")) found.nanFf = true;
+        }
+      }
+    }
+    assert.deepEqual(
+      found,
+      { filled: true, empty: true, resS: true, nan7f: true, nanFf: true },
+      `format ${format} is missing a #86 shape`,
+    );
   }
 });
 
