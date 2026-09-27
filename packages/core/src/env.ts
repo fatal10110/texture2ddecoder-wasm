@@ -73,8 +73,19 @@ export interface Env {
    * Every object of every SerializedFile in {@link files}, in file order and,
    * within a file, in object table order. A path id a file lists twice is
    * kept once, the first time, as upstream's `ObjectsDic` keeps it.
+   *
+   * The SerializedFiles are parsed on the first access of this or of
+   * {@link resolve}, not by {@link load}, so a file this library cannot parse
+   * never costs a caller who only unpacks. The result is kept; a failed parse
+   * is not, and throws again on the next access.
+   *
+   * @throws {UnsupportedError} for a SerializedFile format version this library
+   *   does not read, its message naming the containers the file was found
+   *   under, outermost first, then the file
+   * @throws {CorruptError} when a SerializedFile's metadata does not hold
+   *   together, named the same way
    */
-  objects: ObjectReader[];
+  readonly objects: ObjectReader[];
   /**
    * Find the object a pointer points at.
    *
@@ -88,6 +99,8 @@ export interface Env {
    * @returns the object, or why there is none; a null or dangling pointer is a
    *   result, never an exception
    * @throws {Error} when `from` is not one of this env's {@link objects}
+   * @throws {UnsupportedError} / {CorruptError} as {@link objects} does, since
+   *   resolving parses the SerializedFiles too
    */
   resolve(pptr: PPtr, from: ObjectReader): PPtrResolution;
 }
@@ -104,15 +117,32 @@ export interface SerializedFileEntry {
   objects: Map<bigint, ObjectReader>;
 }
 
+/** A file detection called a SerializedFile, kept by {@link load} unparsed. */
+interface SerializedCandidate {
+  /** The containers it was found under, outermost first, then its own path. */
+  source: string;
+  /** Its own path. */
+  path: string;
+  data: Uint8Array;
+}
+
 /** What {@link load} collects on its way down. */
 interface Collected {
   files: LoadedFile[];
-  serialized: SerializedFileEntry[];
+  serialized: SerializedCandidate[];
+}
+
+/** The parsed SerializedFiles of an env, indexed for {@link Env.resolve}. */
+interface EnvIndex {
+  objects: ObjectReader[];
+  sourceOf: Map<ObjectReader, SerializedFileEntry>;
+  /** By lower-cased name, first loaded only. */
+  byName: Map<string, SerializedFileEntry>;
 }
 
 /**
- * Unpack Unity files into their contents and read the object table of every
- * SerializedFile among them.
+ * Unpack Unity files into their contents, and give access to the objects of
+ * every SerializedFile among them.
  *
  * Each input is sniffed, and containers are opened recursively: a gzip wrapper
  * is removed and the result sniffed again, a bundle or `UnityWebData` file is
@@ -121,45 +151,37 @@ interface Collected {
  * A node only counts as a container when Unity's own signature says so; a
  * wrapper detected by a magic number is opened for an input, never for a node.
  *
- * A file detected as a SerializedFile has its header and metadata parsed, and
- * its objects become {@link Env.objects}. Object data is not read.
+ * Files detected as SerializedFiles are only parsed when {@link Env.objects} or
+ * {@link Env.resolve} is first used, so unpacking never fails over one; see
+ * there for what that parse throws.
  *
  * Nothing is decompressed lazily and nothing is copied: the returned bytes are
  * views into the decompressed blocks.
  *
  * @param inputs the files to open; an `ArrayBuffer` is wrapped, never copied
- * @returns an {@link Env} whose `files` hold every unpacked file and whose
- *   `objects` hold every object of every SerializedFile
- * @throws {UnsupportedError} for a container, compression type, nesting depth or
- *   SerializedFile format version this library does not implement, its message
- *   naming the containers it was found under, outermost first
- * @throws {CorruptError} when a file claims to be a container or a
- *   SerializedFile but does not hold together, named the same way
+ * @returns an {@link Env} whose `files` hold every unpacked file
+ * @throws {UnsupportedError} for a container, compression type or nesting depth
+ *   this library does not implement, its message naming the containers it was
+ *   found under, outermost first
+ * @throws {CorruptError} when a file claims to be a container but does not hold
+ *   together, named the same way
  */
 export function load(inputs: readonly LoadInput[]): Env {
   const out: Collected = { files: [], serialized: [] };
   for (const { name, data } of inputs) {
-    ingest(name, data instanceof Uint8Array ? data : new Uint8Array(data), 0, false, out);
+    ingest(name, data instanceof Uint8Array ? data : new Uint8Array(data), 0, false, "", out);
   }
 
-  const objects: ObjectReader[] = [];
-  const sourceOf = new Map<ObjectReader, SerializedFileEntry>();
-  // Upstream matches externals with `OrdinalIgnoreCase`; lower-casing agrees
-  // with it on every name Unity writes (`CAB-<hex>`, `sharedassets0.assets`).
-  const byName = new Map<string, SerializedFileEntry>();
-  for (const entry of out.serialized) {
-    for (const object of entry.objects.values()) {
-      objects.push(object);
-      sourceOf.set(object, entry);
-    }
-    const key = entry.name.toLowerCase();
-    if (!byName.has(key)) byName.set(key, entry);
-  }
+  let index: EnvIndex | undefined;
+  const indexed = (): EnvIndex => (index ??= indexSerializedFiles(out.serialized));
 
   return {
     files: out.files,
-    objects,
+    get objects() {
+      return indexed().objects;
+    },
     resolve(pptr, from) {
+      const { sourceOf, byName } = indexed();
       const source = sourceOf.get(from);
       if (!source) {
         throw new Error(`object ${from.pathId} was not loaded by this env`);
@@ -170,18 +192,67 @@ export function load(inputs: readonly LoadInput[]): Env {
 }
 
 /**
+ * Parse every SerializedFile {@link load} kept (upstream `LoadAssetsFile` /
+ * `LoadAssetsFromMemory`) and index their objects.
+ *
+ * A file detection calls a SerializedFile but that does not parse as one
+ * throws here (R9), where upstream logs the error and keeps it as a resource.
+ * Detection only says "serialized" when the header's file size is exactly the
+ * bytes at hand, so such a file is broken or of a format this library does not
+ * read, not a resource that happened to look like one - and dropping its
+ * objects without a word would hand back an `objects` with holes in it. Its
+ * bytes stay in `files` either way.
+ */
+function indexSerializedFiles(candidates: readonly SerializedCandidate[]): EnvIndex {
+  const objects: ObjectReader[] = [];
+  const sourceOf = new Map<ObjectReader, SerializedFileEntry>();
+  // Upstream matches externals with `OrdinalIgnoreCase`; lower-casing agrees
+  // with it on every name Unity writes (`CAB-<hex>`, `sharedassets0.assets`).
+  const byName = new Map<string, SerializedFileEntry>();
+  for (const { source, path, data } of candidates) {
+    let entry: SerializedFileEntry;
+    try {
+      entry = readEntry(path, data);
+    } catch (error) {
+      throw withSource(source, error);
+    }
+    for (const object of entry.objects.values()) {
+      objects.push(object);
+      sourceOf.set(object, entry);
+    }
+    const key = entry.name.toLowerCase();
+    if (!byName.has(key)) byName.set(key, entry);
+  }
+  return { objects, sourceOf, byName };
+}
+
+/** Parse one SerializedFile and give each of its objects a reader. */
+function readEntry(path: string, data: Uint8Array): SerializedFileEntry {
+  const file = readSerializedFile(data);
+  const objects = new Map<bigint, ObjectReader>();
+  for (const info of file.objects) {
+    if (!objects.has(info.pathId)) objects.set(info.pathId, new ObjectReader(data, file, info));
+  }
+  return { name: baseName(path), file, objects };
+}
+
+/**
  * Sniff one file and either keep it or open it, appending whatever comes out,
  * with every failure inside it named after this file.
+ *
+ * @param trail the containers this file was found in, outermost first, each
+ *   followed by `": "`; empty for an input
  */
 function ingest(
   name: string,
   data: Uint8Array,
   depth: number,
   packed: boolean,
+  trail: string,
   out: Collected,
 ): void {
   try {
-    openFile(name, data, depth, packed, out);
+    openFile(name, data, depth, packed, trail, out);
   } catch (error) {
     throw withSource(name, error);
   }
@@ -199,6 +270,7 @@ function openFile(
   data: Uint8Array,
   depth: number,
   packed: boolean,
+  trail: string,
   out: Collected,
 ): void {
   if (depth > MAX_DEPTH) {
@@ -221,53 +293,46 @@ function openFile(
   // Unity gzips whole files for web delivery, never a node inside a bundle, so
   // nothing real is left unopened.
   if (type === "resource" || (packed && !SIGNED_CONTAINERS.includes(type))) {
-    keep(name, data, type, out);
+    keep(name, data, type, trail, out);
     return;
   }
 
   // Everything that is left goes through `detectContainer`, which owns the
   // reason each refused type is refused (R9).
+  const inner = `${trail}${name}: `;
   switch (detectContainer(data)) {
     case "serialized":
-      keep(name, data, type, out);
+      keep(name, data, type, trail, out);
       return;
     // Upstream re-sniffs the decompressed bytes under the same path, so a
     // gzip-wrapped bundle keeps the `.gz` name only if it unwraps to a leaf.
     case "gzip":
-      ingest(name, gunzip(data), depth + 1, packed, out);
+      ingest(name, gunzip(data), depth + 1, packed, inner, out);
       return;
     case "UnityWebData":
       for (const file of readWebFile(data).files) {
-        ingest(file.path, file.data, depth + 1, true, out);
+        ingest(file.path, file.data, depth + 1, true, inner, out);
       }
       return;
     default:
       for (const file of readBundle(data).files) {
-        ingest(file.path, file.data, depth + 1, true, out);
+        ingest(file.path, file.data, depth + 1, true, inner, out);
       }
   }
 }
 
 /**
- * Keep a file that is not a container, reading its metadata first when it is a
- * SerializedFile (upstream `LoadAssetsFile` / `LoadAssetsFromMemory`).
- *
- * A file detection calls a SerializedFile but that does not parse as one fails
- * the load (R9), where upstream logs the error and keeps it as a resource.
- * Detection only says "serialized" when the header's file size is exactly the
- * bytes at hand, so such a file is broken or of a format this library does not
- * read, not a resource that happened to look like one - and dropping its
- * objects without a word would hand back an `objects` with holes in it.
+ * Keep a file that is not a container, and remember it for parsing later when
+ * detection calls it a SerializedFile.
  */
-function keep(name: string, data: Uint8Array, type: FileType, out: Collected): void {
-  if (type === "serialized") {
-    const file = readSerializedFile(data);
-    const objects = new Map<bigint, ObjectReader>();
-    for (const info of file.objects) {
-      if (!objects.has(info.pathId)) objects.set(info.pathId, new ObjectReader(data, file, info));
-    }
-    out.serialized.push({ name: baseName(name), file, objects });
-  }
+function keep(
+  name: string,
+  data: Uint8Array,
+  type: FileType,
+  trail: string,
+  out: Collected,
+): void {
+  if (type === "serialized") out.serialized.push({ source: `${trail}${name}`, path: name, data });
   out.files.push({ path: name, data });
 }
 

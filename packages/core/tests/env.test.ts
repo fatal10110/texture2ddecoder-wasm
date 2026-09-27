@@ -108,24 +108,40 @@ test("keeps a SerializedFile input under its own name and reads its objects", ()
   assert.deepEqual(objectTable(env.objects), golden(SHARED).objects[SHARED_CAB]);
 });
 
-test("fails the load, naming the file, when a detected SerializedFile does not parse", () => {
+test("keeps a header-only SerializedFile in files; objects throws, naming it", () => {
   // Detection is satisfied by the header alone; the metadata after it is cut.
-  assert.throws(
-    () => load([{ name: "CAB-loose", data: serializedFile(32) }]),
-    (error: unknown) => error instanceof CorruptError && /^CAB-loose: /.test(error.message),
-  );
+  const data = serializedFile(32);
+  const env = load([{ name: "CAB-loose", data }]);
+  assert.deepEqual(env.files, [{ path: "CAB-loose", data }]);
+
+  // Named exactly once, also on the second throw.
+  const corrupt = (error: unknown): boolean =>
+    error instanceof CorruptError && /^CAB-loose: (?!CAB-loose)/.test(error.message);
+  assert.throws(() => env.objects, corrupt);
+  // A failed parse is not kept: the next access parses, and throws, again.
+  assert.throws(() => env.objects, corrupt);
 });
 
-test("refuses a detected SerializedFile of a format version it does not read", () => {
-  const data = buildBundle([{ path: "CAB-next", data: serializedFile(48, 23) }]);
-  assert.throws(
-    () => load([{ name: "next.bundle", data }]),
-    (error: unknown) =>
-      error instanceof UnsupportedError &&
-      error.kind === "SerializedFile format version" &&
-      error.found === 23 &&
-      /^next\.bundle: CAB-next: /.test(error.message),
-  );
+test("unpacks a bundle holding a SerializedFile format it does not read; objects refuses it", () => {
+  const node = serializedFile(48, 23);
+  const env = load([{ name: "next.bundle", data: buildBundle([{ path: "CAB-next", data: node }]) }]);
+  // Unpacking is layers 1-2 and does not depend on the SerializedFile inside.
+  assert.deepEqual(env.files, [{ path: "CAB-next", data: node }]);
+
+  const unsupported = (error: unknown): boolean =>
+    error instanceof UnsupportedError &&
+    error.kind === "SerializedFile format version" &&
+    error.found === 23 &&
+    /^next\.bundle: CAB-next: unsupported/.test(error.message);
+  assert.throws(() => env.objects, unsupported);
+  // Resolving needs the same parse, so it refuses the same way.
+  const other = load([{ name: SHARED, data: loadFixture(SHARED) }]).objects[0]!;
+  assert.throws(() => env.resolve({ m_FileID: 0, m_PathID: 1n }, other), unsupported);
+});
+
+test("parses SerializedFiles once, on first use", () => {
+  const env = load([{ name: SHARED, data: loadFixture(SHARED) }]);
+  assert.equal(env.objects, env.objects);
 });
 
 test("accepts an ArrayBuffer and wraps it without copying", () => {
