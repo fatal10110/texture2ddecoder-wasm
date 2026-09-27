@@ -424,17 +424,22 @@ wasmTest("a texture 0 pixels wide or high is an empty image", async () => {
   }
 });
 
-wasmTest("0 x N, N x 0, 0 x 0, no image data: an empty image, whatever else (#139)", async () => {
-  // Nothing is decoded, so neither the format, nor the platform, nor the data
-  // is looked at: not even those that would be refused with pixels.
+const ZERO_SIZES = [
+  [0, 16],
+  [16, 0],
+  [0, 0],
+] as const;
+
+wasmTest("0 x N, N x 0, 0 x 0, no image data: an empty image, on any platform (#139)", async () => {
+  // Nothing is decoded, so the platform refusals do not apply: no pixels can
+  // come out wrong, and a PS4 build's own Font Texture must not throw.
   const blockLinear = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]);
   const inputs: [string, Partial<Texture2DData>][] = [
     ["RGBA32", { m_TextureFormat: TextureFormat.RGBA32 }],
     ["BC7", { m_TextureFormat: TextureFormat.BC7 }],
     ["DXT1Crunched", { m_TextureFormat: TextureFormat.DXT1Crunched }],
-    ["DXT3", { m_TextureFormat: TextureFormat.DXT3 }],
-    ["format 1000", { m_TextureFormat: 1000 }],
     ["PS4 DXT1", { m_TextureFormat: TextureFormat.DXT1, platform: BuildTarget.PS4 }],
+    ["PS5 RGBA32", { m_TextureFormat: TextureFormat.RGBA32, platform: BuildTarget.PS5 }],
     ["Xbox 360 DXT5", { m_TextureFormat: TextureFormat.DXT5, platform: BuildTarget.XBOX360 }],
     [
       "Switch-swizzled ETC_RGB4",
@@ -444,8 +449,16 @@ wasmTest("0 x N, N x 0, 0 x 0, no image data: an empty image, whatever else (#13
         m_PlatformBlob: blockLinear,
       },
     ],
+    [
+      "Switch, 64 GOBs per block",
+      {
+        m_TextureFormat: TextureFormat.RGBA32,
+        platform: BuildTarget.Switch,
+        m_PlatformBlob: new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0]),
+      },
+    ],
   ];
-  for (const [w, h] of [[0, 16], [16, 0], [0, 0]] as const) {
+  for (const [w, h] of ZERO_SIZES) {
     for (const [name, fields] of inputs) {
       const input = { ...texture(0, w, h, new Uint8Array(0)), ...fields };
       const out = await decodeTexture2D(input);
@@ -457,6 +470,51 @@ wasmTest("0 x N, N x 0, 0 x 0, no image data: an empty image, whatever else (#13
     decodeTexture2D(texture(TextureFormat.RGBA32, 1, 1, new Uint8Array(0))),
     CorruptError,
   );
+});
+
+wasmTest("0 x N, N x 0, 0 x 0: DXT3 and formats with no decoder are still refused", async () => {
+  for (const [w, h] of ZERO_SIZES) {
+    for (const format of [TextureFormat.DXT3, 1000]) {
+      await assert.rejects(
+        decodeTexture2D(texture(format, w, h, new Uint8Array(0))),
+        (e: Error) =>
+          e instanceof UnsupportedError && e.kind === "texture format" && e.found === format,
+        `${format} ${w}x${h}`,
+      );
+    }
+  }
+});
+
+wasmTest("at 0 x 0 exactly the formats refused with pixels are refused (#139)", async () => {
+  // Every TextureFormat value, and one no format has: at 4 x 4 with enough
+  // bytes for any format, and at 0 x 0 with none. The same set is refused.
+  const formats = [...new Set(Object.values(TextureFormat)), 1000];
+  const refused = async (input: Texture2DData): Promise<boolean> => {
+    try {
+      await decodeTexture2D(input);
+      return false;
+    } catch (e) {
+      if (e instanceof UnsupportedError && e.kind === "texture format") return true;
+      // Decoded but refused as data: zeros are no Crunch data, for one.
+      if (e instanceof CorruptError) return false;
+      throw e;
+    }
+  };
+  const sized: number[] = [];
+  const empty: number[] = [];
+  for (const format of formats) {
+    if (await refused(texture(format, 4, 4, new Uint8Array(4 * 4 * 16)))) sized.push(format);
+    const zero = texture(format, 0, 0, new Uint8Array(0));
+    if (await refused(zero)) {
+      empty.push(format);
+    } else {
+      const out = await decodeTexture2D(zero);
+      assert.deepEqual(out, { data: new Uint8Array(0), width: 0, height: 0 }, `${format}`);
+    }
+  }
+  assert.ok(sized.includes(TextureFormat.DXT3) && sized.includes(1000), `${sized}`);
+  assert.ok(sized.length < formats.length / 2, `${sized}`);
+  assert.deepEqual(empty, sized);
 });
 
 /** The editor fixtures holding a dynamic font, whose "Font Texture" is 0x0 (#41). */

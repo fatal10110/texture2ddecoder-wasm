@@ -204,8 +204,9 @@ export async function initTexture(options?: InitTextureOptions): Promise<void> {
  * @returns a new RGBA image, `width * height * 4` bytes, top row first;
  *   `imageData` is not modified. A texture 0 pixels wide or high (such as a
  *   dynamic font's 0x0 "Font Texture", whose `imageData` is empty, #139) gives
- *   an empty image of its size, whatever its format, platform and
- *   `imageData`: nothing is decoded, but {@link initTexture} is still required
+ *   an empty image of its size, whatever its platform and `imageData`, if its
+ *   format has a decoder: nothing is decoded, but {@link initTexture} is
+ *   still required
  * @throws {TypeError} when `texture` is not a Texture2D with image data
  *   (`obj.read()`'s type is not checked): `m_Width`, `m_Height` or
  *   `m_TextureFormat` is not a number, `imageData` is not a `Uint8Array`, or
@@ -216,8 +217,10 @@ export async function initTexture(options?: InitTextureOptions): Promise<void> {
  *   formats neither this nor `convertPlain` knows); for a Switch-swizzled
  *   texture, also a format with no known Switch layout (Crunch, ETC, PVRTC,
  *   ASTC HDR, ...) or more than 32 GOBs per block; and for any PS4 or PS5
- *   texture (kind `"texture platform"`). None of these for a texture 0
- *   pixels wide or high, see `@returns`
+ *   texture (kind `"texture platform"`). For a texture 0 pixels wide or high
+ *   only the format refusals apply (a format with no decoder, YUY2 of odd
+ *   width), not the Switch and PS4/PS5 ones: it has no pixels to lay out
+ *   (#139)
  * @throws {CorruptError} when the image data is shorter than the first level
  *   needs (for Switch, the padded level), the Crunch data does not unpack,
  *   the block decoder refuses the data (such as PVRTC whose block counts are
@@ -233,8 +236,12 @@ export async function decodeTexture2D(texture: Texture2DData): Promise<RgbaImage
   if (!Number.isInteger(width) || width < 0 || !Number.isInteger(height) || height < 0) {
     throw new CorruptError(`texture size ${width} x ${height} is not a non-negative integer size`);
   }
-  // No pixels: nothing to swap, deswizzle, detile or decode (#139).
-  if (width === 0 || height === 0) return { data: new Uint8Array(0), width, height };
+  // No pixels: no layout to undo or refuse, nothing to decode (#139). A format
+  // with no decoder is still refused (R9): `plain` checks it, at no cost here.
+  if (width === 0 || height === 0) {
+    if (!BLOCK.has(CRUNCHED.get(format) ?? format)) plain(texture.imageData, width, height, format);
+    return { data: new Uint8Array(0), width, height };
+  }
   const platform = texture.platform ?? BuildTarget.UnknownPlatform;
   refuseTiledPlatform(platform);
   // Upstream's order: the Xbox swap, then (UnityPy) the Switch deswizzle, then decode.
