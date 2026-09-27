@@ -480,7 +480,7 @@ The WebAssembly build uses Docker with the official Emscripten SDK image, which 
 The build script ([scripts/build-wasm.sh](scripts/build-wasm.sh)) automatically:
 
 1. Checks if Docker is installed
-2. Pulls the latest Emscripten SDK image
+2. Pulls the pinned Emscripten SDK image (`emscripten/emsdk:4.0.7`)
 3. Compiles the C++ texture decoders to WebAssembly
 4. Generates optimized WASM and JavaScript glue code
 

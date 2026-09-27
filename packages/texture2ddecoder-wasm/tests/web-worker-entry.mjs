@@ -16,6 +16,10 @@ Object.defineProperty(globalThis, "WorkerGlobalScope", {
   value: class WorkerGlobalScope {},
   configurable: true,
 });
+// Every Worker scope has `self` and `self.location` (the worker script's URL). The emsdk 4.0.7
+// glue reads `self.location.href` in worker mode before preferring its own import.meta.url.
+globalThis.self = globalThis;
+globalThis.location = new URL(import.meta.url);
 delete globalThis.process;
 
 // The glue fetches the .wasm next to itself (`new URL(..., import.meta.url)`), which a browser

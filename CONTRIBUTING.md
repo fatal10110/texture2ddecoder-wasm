@@ -76,7 +76,8 @@ npm run build:wasm
 ```
 
 From the repo root this delegates to `packages/texture2ddecoder-wasm` (npm workspaces). This command:
-- Uses Docker with Emscripten SDK to compile C++ to WebAssembly
+- Uses Docker with Emscripten SDK to compile C++ to WebAssembly; the image is pinned to
+  `emscripten/emsdk:4.0.7` (the toolchain of the published 1.2.2) so every build is the same
 - Generates `packages/texture2ddecoder-wasm/wasm/texture2ddecoder.js` and `.wasm`
 - No local Emscripten installation needed
 
