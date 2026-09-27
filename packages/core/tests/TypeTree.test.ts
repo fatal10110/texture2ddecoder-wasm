@@ -104,7 +104,8 @@ test("commonString looks up Unity's built-in strings by offset", () => {
 
 test("commonString falls back to the offset as text, like upstream", () => {
   assert.equal(commonString(1), "1"); // inside "AABB", not the start of a string
-  assert.equal(commonString(1169), "1169"); // just past the end of the table
+  // Past the end of every known table: UnityPy's last entry, 1226, is 16 bytes.
+  assert.equal(commonString(1300), "1300");
 });
 
 /** A format-22 `m_Types` entry with one blob node, no hashes beyond the old type hash. */
