@@ -74,8 +74,17 @@ export class ResourceNotFoundError extends Error {
   /** The file name that was looked for: the last component of {@link path}. */
   readonly fileName: string;
 
+  /**
+   * @param path the path as the reference holds it
+   * @param fileName its last component; empty when the path names no file,
+   *   which upstream readers take to mean the data is inline in the object
+   */
   constructor(path: string, fileName: string) {
-    super(`resource file ${fileName} is not loaded (referenced as ${path})`);
+    super(
+      fileName
+        ? `resource file ${fileName} is not loaded (referenced as ${path})`
+        : `resource path "${path}" names no file: the data is inline in the object`,
+    );
     this.path = path;
     this.fileName = fileName;
   }

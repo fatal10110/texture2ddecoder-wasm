@@ -776,7 +776,9 @@ test("readResource() refuses an empty path: the data is inline, there is no file
   const { texture } = streamedTexture(env);
   assert.throws(
     () => env.readResource({ path: "", offset: 0, size: 0 }, texture),
-    ResourceNotFoundError,
+    (error: unknown) =>
+      error instanceof ResourceNotFoundError &&
+      error.message === `resource path "" names no file: the data is inline in the object`,
   );
 });
 
