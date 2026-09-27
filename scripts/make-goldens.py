@@ -393,6 +393,11 @@ def read_with_fallback(path: pathlib.Path) -> dict:
             golden = read_fixture(path)
     finally:
         config.FALLBACK_UNITY_VERSION = None
+    # Recording swallows every warning; only the fallback ones are handled here,
+    # so pass the rest on, as they would have been without the recording.
+    for w in caught:
+        if not issubclass(w.category, UnityVersionFallbackWarning):
+            warnings.showwarning(w.message, w.category, w.filename, w.lineno)
     if any(issubclass(w.category, UnityVersionFallbackWarning) for w in caught):
         note = (
             f'version-stripped ("0.0.0"): UnityPy refuses it without a fallback, so it was '
