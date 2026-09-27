@@ -30,11 +30,14 @@ export interface Texture extends NamedObject {
  * not read either, so it is refused rather than misread.
  *
  * ponytail: the texture readers' gates compare release numbers only (see
- * `atLeast`), as upstream's do. Alpha and beta builds of 2020.1, 2020.2 and
- * 2023.1/2023.2 changed these layouts mid-cycle (UnityPy's TPK data), so such
- * a pre-release may be misread; the texture readers' byte-size check turns
- * most of those into a `CorruptError`. Compare `buildType` and the build
- * number in the gates if a pre-release file ever matters.
+ * `atLeast`), as upstream's do. Unity changed these layouts mid-cycle
+ * (UnityPy's TPK data): 2019.3.0a2 to f4 lack `m_IgnoreMasterTextureLimit`
+ * (added in f5), 2022.2.0a13 to b2 still have it rather than 2022.2.0b3's
+ * `m_IgnoreMipmapLimit` and `m_MipmapLimitGroupName`, and alpha and beta builds
+ * of 2020.1, 2020.2 and 2023.1/2023.2 had interim layouts. Such a pre-release
+ * may be misread; the texture readers' byte-size check turns most of those
+ * into a `CorruptError`. Compare `buildType` and the build number in the gates
+ * if a pre-release file ever matters.
  *
  * @param reader the object's reader, rewound first and left just past these
  *   fields and their padding
