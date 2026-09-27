@@ -58,6 +58,29 @@ export interface GoldenSerialized {
   refTypes: GoldenType[];
   /** pathId -> `read_typetree()` dump, for the `DUMPED_CLASSES` in `make-goldens.py`. */
   typetrees: Record<string, { value: unknown; oracleNote?: string }>;
+  /** pathId -> Texture2D golden; only files holding a Texture2D have it (#31). */
+  textures?: Record<string, GoldenTexture>;
+}
+
+/**
+ * One Texture2D as the oracle decodes it (#31). The RGBA hash is of the rows
+ * in the order Unity stores them, bottom row first (UnityPy's `flip=False`).
+ */
+export interface GoldenTexture {
+  name: string;
+  /** `m_TextureFormat`, Unity's `TextureFormat` value. */
+  format: number;
+  width: number;
+  height: number;
+  /** Image data, all mip levels, inline or from the `.resS` node. */
+  imageSize: number;
+  imageSha256: string;
+  /** UnityPy's RGBA8; absent when UnityPy cannot decode the format. */
+  rgbaSha256?: string;
+  /** Why UnityPy could not decode it, when it could not. */
+  oracleError?: string;
+  /** Where UnityPy's RGBA is known to differ from AssetStudio's, and the verdict. */
+  oracleNote?: string;
 }
 
 export interface Golden {
