@@ -298,6 +298,9 @@ for (const { unity, format, pointers } of LAYOUTS) {
  */
 const REFUSED: { text: string; unity: UnityVersion; format: number; hint: string }[] = [
   { text: "0.0.0", unity: [0, 0, 0, 0], format: 22, hint: "does not record one" },
+  // No real file looks like this: below format 8 the platform is not stored,
+  // so it reads as `UnknownPlatform`, never `NoTarget`. The row only checks
+  // that a loose pre-7 file's version string is passed through as `found`.
   { text: "2.5.0f5", unity: [0, 0, 0, 0], format: 6, hint: "does not record one" },
   { text: "3.3.0f1", unity: [3, 3, 0, 1], format: 8, hint: "before 3.4" },
 ];
