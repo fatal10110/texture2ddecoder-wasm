@@ -151,6 +151,15 @@ test("a file takes <stem>.resource and matches sidecar names ignoring case", () 
   );
 });
 
+test("a folder named like a sidecar is not read as one", () => {
+  const root = folder("sidecar-dir", { main: mainBundle });
+  mkdirSync(join(root, "main.resS"));
+  assert.deepEqual(
+    loadPath(join(root, "main")).files.map((f) => f.path),
+    [MAIN_CAB],
+  );
+});
+
 test("a path to one split part loads the whole merged file", () => {
   const env = loadPath(join(tree, "bundles", "main.split1"));
   assertMatchesGolden(MAIN, env.files);

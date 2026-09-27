@@ -74,10 +74,13 @@ export function loadPath(fileOrDir: string): Env {
   const own = basename(fileOrDir);
   const target = SPLIT_PART.exec(own)?.[1] ?? own;
   const sidecars = [`${target}.resS`, `${stem(target)}.resource`].map((n) => n.toLowerCase());
-  // Names only: an unrelated entry next to the file is never touched.
+  // Match names first, so an unrelated entry next to the file is never
+  // touched; then keep the matches that are files or links to files, as
+  // upstream's `File.Exists` does (a folder named `main.resS` is no sidecar).
   const wanted = readdirSync(dir).filter((name) => {
     const merged = SPLIT_PART.exec(name)?.[1] ?? name;
-    return merged === target || sidecars.includes(merged.toLowerCase());
+    if (merged !== target && !sidecars.includes(merged.toLowerCase())) return false;
+    return statSync(join(dir, name)).isFile();
   });
   return load(readInputs(dir, wanted));
 }
