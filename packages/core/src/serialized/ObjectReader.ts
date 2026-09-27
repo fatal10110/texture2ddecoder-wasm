@@ -5,6 +5,7 @@ import { BinaryReader } from "../io/BinaryReader.js";
 import type { BuildTarget } from "./BuildTarget.js";
 import type { ObjectInfo, SerializedFile, UnityVersion } from "./SerializedFile.js";
 import type { SerializedType } from "./TypeTree.js";
+import { readTypeTree, type TypeTreeObject } from "./TypeTreeReader.js";
 
 /**
  * A reader over one object's data, in the file's byte order, carrying what a
@@ -52,6 +53,8 @@ export class ObjectReader extends BinaryReader {
   readonly version: UnityVersion;
   /** Platform the file was built for (upstream `platform`). */
   readonly platform: BuildTarget;
+  /** The file's `[SerializeReference]` types, for {@link readTypeTree}. */
+  readonly refTypes: SerializedType[];
 
   /**
    * @param data the whole SerializedFile the object table was read from
@@ -77,5 +80,18 @@ export class ObjectReader extends BinaryReader {
     this.format = file.header.version;
     this.version = file.version;
     this.platform = file.targetPlatform;
+    this.refTypes = file.refTypes;
+  }
+
+  /**
+   * Read the whole object into a plain JS object by walking its type tree; see
+   * the `readTypeTree` function for the value shapes.
+   *
+   * @throws {UnsupportedError} when the file has no type tree for the object
+   * @throws {CorruptError} when the data does not match the type tree, or does
+   *   not end exactly at `byteSize`
+   */
+  readTypeTree(): TypeTreeObject {
+    return readTypeTree(this);
   }
 }
