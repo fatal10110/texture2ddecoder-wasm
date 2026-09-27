@@ -25,3 +25,5 @@ export type {
   UnityVersion,
 } from "./serialized/SerializedFile.js";
 export type { SerializedType, TypeTreeNode } from "./serialized/TypeTree.js";
+export { ClassID, classIdName } from "./serialized/ClassID.js";
+export { ObjectReader } from "./serialized/ObjectReader.js";
