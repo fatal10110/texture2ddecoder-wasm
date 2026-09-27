@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import { golden, loadFixture } from "../../../fixtures/helpers.js";
 import type { PPtr, PPtrResolution } from "../src/classes/PPtr.js";
-import { load, type Env } from "../src/env.js";
+import { load, type Env, type LoadedFile } from "../src/env.js";
 import { ClassID } from "../src/serialized/ClassID.js";
 import type { ObjectReader } from "../src/serialized/ObjectReader.js";
 
@@ -223,10 +223,11 @@ test("a same-file pointer stays in its own file when another loaded file shares 
   }
 });
 
-test("an external two loaded files answer to resolves into the first one loaded", () => {
+test("an external two other containers answer to resolves into the first one loaded", () => {
   // Both editors' shared bundles hold a CAB of the same name, with different
   // ids: 2019.4's TextAsset id is not in 6000's, while both have the
-  // AssetBundle at path id 1.
+  // AssetBundle at path id 1. main is a bundle of its own, so neither shared
+  // CAB is in its container and the same-container rule falls back.
   const main = "editor/2019.4.41f2/lz4/main";
   const shared19 = "editor/2019.4.41f2/lz4/shared";
 
@@ -250,6 +251,105 @@ test("an external two loaded files answer to resolves into the first one loaded"
       assert.deepEqual(text, { status: "objectNotFound", fileName: SHARED_CAB });
     }
   }
+});
+
+// --- two builds loaded together: the requester's own container first -----------
+
+const MAIN19 = "editor/2019.4.41f2/lz4/main";
+const SHARED19 = "editor/2019.4.41f2/lz4/shared";
+
+/** The one node of a single-CAB fixture bundle. */
+function node(fixture: string): LoadedFile {
+  const [file, ...rest] = loadFixtures(fixture).files;
+  assert.ok(file && rest.length === 0, `${fixture} should hold exactly one node`);
+  return file;
+}
+
+/**
+ * A `UnityWebData1.0` container holding `files` loose, the way a WebGL build's
+ * `.data` holds the player's SerializedFiles: one container, several files.
+ */
+function webData(files: LoadedFile[]): Uint8Array {
+  const SIGNATURE = "UnityWebData1.0\0";
+  let headerLength = SIGNATURE.length + 4;
+  for (const { path } of files) headerLength += 12 + path.length;
+  const size = files.reduce((total, { data }) => total + data.length, headerLength);
+
+  const out = new Uint8Array(size);
+  const view = new DataView(out.buffer);
+  let at = 0;
+  const ascii = (text: string): void => {
+    for (const char of text) out[at++] = char.charCodeAt(0);
+  };
+  const u32 = (value: number): void => {
+    view.setUint32(at, value, true);
+    at += 4;
+  };
+  ascii(SIGNATURE);
+  u32(headerLength);
+  let offset = headerLength;
+  for (const { path, data } of files) {
+    u32(offset);
+    u32(data.length);
+    u32(path.length);
+    ascii(path);
+    offset += data.length;
+  }
+  for (const { data } of files) {
+    out.set(data, at);
+    at += data.length;
+  }
+  return out;
+}
+
+test("each build's external resolves into its own container when two builds share names", () => {
+  // Each container holds one build's main and shared CABs, and both builds use
+  // the same two CAB names, so main's textRef names shared's CAB in both. The
+  // 2019.4 and 6000 TextAsset ids differ: resolved into the other build's
+  // shared, the pointer would be objectNotFound.
+  const builds = [
+    { name: "2019.4.data", data: webData([node(MAIN19), node(SHARED19)]) },
+    { name: "6000.data", data: webData([node(MAIN), node(SHARED)]) },
+  ];
+
+  for (const order of [builds, [...builds].reverse()]) {
+    const env = load(order);
+    const first = `${order[0]!.name} loaded first`;
+    const behaviours = env.objects.filter((o) => o.type === ClassID.MonoBehaviour);
+    assert.deepEqual(behaviours.map((b) => b.format).sort(), [21, 22]);
+    for (const behaviour of behaviours) {
+      const main = behaviour.format === 21 ? MAIN19 : MAIN;
+      const { textRef } = dump<MonoBehaviourDump>(main, MAIN_CAB, behaviour.pathId);
+      assert.equal(textRef.m_FileID, 1);
+
+      const text = found(env.resolve(pptr(textRef), behaviour));
+      assert.equal(text.type, ClassID.TextAsset);
+      assert.equal(text.pathId, BigInt(textRef.m_PathID));
+      assert.equal(text.format, behaviour.format, first);
+
+      // A path id both shared CABs hold: its own build's, not the first one's.
+      const bundle = found(env.resolve({ m_FileID: 1, m_PathID: 1n }, behaviour));
+      assert.equal(bundle.type, ClassID.AssetBundle);
+      assert.equal(bundle.format, behaviour.format, first);
+    }
+  }
+});
+
+test("a loose SerializedFile's external prefers a loose file over a bundle loaded first", () => {
+  // The caller's own inputs are one container, as for readResource().
+  const main = node(MAIN);
+  const shared = node(SHARED);
+  const env = load([
+    { name: SHARED19, data: loadFixture(SHARED19) },
+    { name: main.path, data: main.data },
+    { name: shared.path, data: shared.data },
+  ]);
+  const behaviour = only(env, ClassID.MonoBehaviour);
+  assert.equal(behaviour.format, 22);
+  const { textRef } = dump<MonoBehaviourDump>(MAIN, MAIN_CAB, behaviour.pathId);
+  const text = found(env.resolve(pptr(textRef), behaviour));
+  assert.equal(text.type, ClassID.TextAsset);
+  assert.equal(text.format, 22);
 });
 
 test("refuses to resolve from an object another env loaded", () => {
