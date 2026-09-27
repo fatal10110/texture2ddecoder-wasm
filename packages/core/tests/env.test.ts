@@ -7,9 +7,16 @@ import {
   fixtureNames,
   golden,
   loadFixture,
+  sha256,
 } from "../../../fixtures/helpers.js";
 import { NodeFlags } from "../src/bundle/BundleFile.js";
-import { load } from "../src/env.js";
+import {
+  load,
+  ResourceNotFoundError,
+  type Env,
+  type LoadedFile,
+  type ResourceRef,
+} from "../src/env.js";
 import { CorruptError, UnsupportedError } from "../src/errors.js";
 import { ClassID } from "../src/serialized/ClassID.js";
 import { ObjectReader } from "../src/serialized/ObjectReader.js";
@@ -652,4 +659,213 @@ test("names every container on the way down to the bad bytes", () => {
     (error: unknown) =>
       error instanceof CorruptError && /^outer\.data: inner\.bundle: /.test(error.message),
   );
+});
+
+// --- resource files (#30) ------------------------------------------------------
+
+/**
+ * Every fixture with a Texture2D golden and a `.resS` node - the editor
+ * texture bundles built with type trees, whose image data lives in the node.
+ */
+const RESS_FIXTURES = fixtureNames().filter((name) => {
+  const { files, serialized } = golden(name);
+  return (
+    Object.keys(files).some((path) => path.endsWith(".resS")) &&
+    Object.values(serialized ?? {}).some((s) => s.textures)
+  );
+});
+
+/** The texture fixture every hand-made case below starts from. */
+const TEXTURE = "editor/2020.3.30f1/lz4/texture";
+
+/** Its nodes: the SerializedFile holding the Texture2D, and the `.resS` beside it. */
+function textureNodes(): { cab: LoadedFile; ress: LoadedFile } {
+  const files = load([{ name: TEXTURE, data: loadFixture(TEXTURE) }]).files;
+  const ress = files.find((f) => f.path.endsWith(".resS"));
+  const cab = files.find((f) => f !== ress);
+  assert.ok(cab && ress, `${TEXTURE} has no SerializedFile + .resS pair`);
+  return { cab, ress };
+}
+
+/** A Texture2D and its `m_StreamData`, as its typetree holds it. */
+interface StreamedTexture {
+  texture: ObjectReader;
+  ref: ResourceRef;
+}
+
+/** Every Texture2D of `env` with its `m_StreamData`, in load order. */
+function streamedTextures(env: Env): StreamedTexture[] {
+  return env.objects
+    .filter((o) => o.type === ClassID.Texture2D)
+    .map((texture) => {
+      const tree = texture.readTypeTree() as {
+        m_StreamData: { path: string; offset: number | bigint; size: number };
+      };
+      const { path, offset, size } = tree.m_StreamData;
+      // UInt32 before 2020.1, UInt64 (so a bigint, D9) from 2020.1 on.
+      return { texture, ref: { path, offset: Number(offset), size } };
+    });
+}
+
+/** The only Texture2D of `env`. */
+function streamedTexture(env: Env): StreamedTexture {
+  const [only, ...rest] = streamedTextures(env);
+  assert.ok(only && rest.length === 0, "expected exactly one Texture2D");
+  return only;
+}
+
+for (const name of RESS_FIXTURES) {
+  test(`readResource() reads ${name}'s image data out of its .resS as the golden hashes it`, () => {
+    const env = load([{ name, data: loadFixture(name) }]);
+    const { texture, ref } = streamedTexture(env);
+    const expected = Object.values(golden(name).serialized ?? {})
+      .map((s) => s.textures?.[String(texture.pathId)])
+      .find((t) => t !== undefined);
+    assert.ok(expected, `${name} has no texture golden for ${texture.pathId}`);
+    assert.match(ref.path, /^archive:\/CAB-[0-9a-f]+\/CAB-[0-9a-f]+\.resS$/);
+
+    const data = env.readResource(ref, texture);
+    assert.equal(data.length, expected.imageSize);
+    assert.equal(sha256(data), expected.imageSha256);
+
+    // A view into the unpacked node (R7), not a copy.
+    const ress = env.files.find((f) => f.path.endsWith(".resS"));
+    assert.equal(data.buffer, ress?.data.buffer);
+  });
+}
+
+test("the golden .resS fixtures cover every editor", () => {
+  for (const editor of ["2019.4.41f2", "2020.3.30f1", "6000.3.25f1"]) {
+    assert.ok(RESS_FIXTURES.some((name) => name.startsWith(`editor/${editor}/`)), editor);
+  }
+});
+
+test("readResource() finds a .resS passed as its own input next to the bundle", () => {
+  const { cab, ress } = textureNodes();
+  const env = load([
+    { name: "texture.bundle", data: buildBundle([cab]) },
+    { name: ress.path, data: ress.data },
+  ]);
+  const { texture, ref } = streamedTexture(env);
+  assert.deepEqual(env.readResource(ref, texture), ress.data);
+});
+
+test("readResource() finds a .resS next to a loose SerializedFile, ignoring case", () => {
+  const { cab, ress } = textureNodes();
+  const env = load([
+    { name: cab.path, data: cab.data },
+    { name: ress.path.toUpperCase(), data: ress.data },
+  ]);
+  const { texture, ref } = streamedTexture(env);
+  assert.deepEqual(env.readResource(ref, texture), ress.data);
+});
+
+test("readResource() throws ResourceNotFoundError naming the path of a missing .resS", () => {
+  const { cab, ress } = textureNodes();
+  const env = load([{ name: "texture.bundle", data: buildBundle([cab]) }]);
+  const { texture, ref } = streamedTexture(env);
+
+  assert.throws(
+    () => env.readResource(ref, texture),
+    (error: unknown) => {
+      assert.ok(error instanceof ResourceNotFoundError);
+      assert.equal(error.path, ref.path);
+      assert.equal(error.fileName, ress.path);
+      assert.ok(error.message.includes(ref.path), error.message);
+      return true;
+    },
+  );
+});
+
+test("readResource() refuses an empty path: the data is inline, there is no file", () => {
+  const env = load([{ name: TEXTURE, data: loadFixture(TEXTURE) }]);
+  const { texture } = streamedTexture(env);
+  assert.throws(
+    () => env.readResource({ path: "", offset: 0, size: 0 }, texture),
+    ResourceNotFoundError,
+  );
+});
+
+test("readResource() reads up to the last byte and refuses a range past it", () => {
+  const env = load([{ name: TEXTURE, data: loadFixture(TEXTURE) }]);
+  const { texture, ref } = streamedTexture(env);
+  const { path, data } = textureNodes().ress;
+  const at = (offset: number, size: number): ResourceRef => ({ path: ref.path, offset, size });
+
+  assert.deepEqual(env.readResource(at(data.length - 1, 1), texture), data.subarray(-1));
+  assert.equal(env.readResource(at(data.length, 0), texture).length, 0);
+  for (const [offset, size] of [
+    [1, data.length],
+    [data.length, 1],
+    [data.length + 1, 0],
+  ] as const) {
+    assert.throws(
+      () => env.readResource(at(offset, size), texture),
+      (error: unknown) =>
+        error instanceof CorruptError &&
+        error.message.startsWith(`${path}: `) &&
+        error.message.includes(`${offset}+${size}`) &&
+        error.message.includes(`${data.length} bytes`),
+      `${offset}+${size}`,
+    );
+  }
+});
+
+test("readResource() refuses an offset or size a number cannot hold exactly (D9)", () => {
+  const env = load([{ name: TEXTURE, data: loadFixture(TEXTURE) }]);
+  const { texture, ref } = streamedTexture(env);
+  const cases: [number, number][] = [[-1, 1], [0, -1], [2 ** 53, 0], [0, 2 ** 53], [0.5, 1]];
+  for (const [offset, size] of cases) {
+    assert.throws(
+      () => env.readResource({ path: ref.path, offset, size }, texture),
+      RangeError,
+      `${offset}+${size}`,
+    );
+  }
+});
+
+test("readResource() refuses an object another env loaded", () => {
+  const { texture, ref } = streamedTexture(load([{ name: TEXTURE, data: loadFixture(TEXTURE) }]));
+  const other = load([{ name: TEXTURE, data: loadFixture(TEXTURE) }]);
+  assert.throws(() => other.readResource(ref, texture), /was not loaded by this env/);
+});
+
+test("readResource() reads each bundle's own .resS when two share a name, in either order", () => {
+  // A second build of the texture bundle: same node names, other `.resS`
+  // bytes - what two builds of one asset loaded together look like.
+  const { cab, ress } = textureNodes();
+  const other = payload(ress.data.length, 5);
+  const inputs = [
+    { name: "real.bundle", data: loadFixture(TEXTURE) },
+    { name: "rebuilt.bundle", data: buildBundle([cab, { path: ress.path, data: other }]) },
+  ];
+
+  for (const order of [inputs, [...inputs].reverse()]) {
+    const env = load(order);
+    const read = streamedTextures(env).map(({ texture, ref }) => env.readResource(ref, texture));
+    const expected = order[0]!.name === "real.bundle" ? [ress.data, other] : [other, ress.data];
+    assert.deepEqual(read, expected);
+  }
+});
+
+test("readResource() prefers its own bundle's .resS over a same-named input loaded first", () => {
+  const { ress } = textureNodes();
+  const env = load([
+    { name: ress.path, data: payload(ress.data.length, 5) },
+    { name: TEXTURE, data: loadFixture(TEXTURE) },
+  ]);
+  const { texture, ref } = streamedTexture(env);
+  assert.deepEqual(env.readResource(ref, texture), ress.data);
+});
+
+test("readResource() takes the first one loaded when its own container has none", () => {
+  const { cab, ress } = textureNodes();
+  const first = payload(ress.data.length, 5);
+  const env = load([
+    { name: "cab-only.bundle", data: buildBundle([cab]) },
+    { name: "a.bundle", data: buildBundle([{ path: ress.path, data: first }]) },
+    { name: "b.bundle", data: buildBundle([{ path: ress.path, data: ress.data }]) },
+  ]);
+  const { texture, ref } = streamedTexture(env);
+  assert.deepEqual(env.readResource(ref, texture), first);
 });
