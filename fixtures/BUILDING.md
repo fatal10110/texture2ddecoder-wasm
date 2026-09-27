@@ -680,3 +680,164 @@ A rebuild of either section gives new pathIDs (section 4) and may give other
 compressed bytes. Then regenerate the goldens and the AssetStudio cross-check
 hashes of `decode.test.ts` together
 ([`README.md`](README.md#assetstudio-block-cross-check)).
+
+## 10. The `material` bundles (#40)
+
+Three bundles per editor, all three editors: `material/lz4`,
+`material/lz4-notypetree` and `material/lz4-stripped`, each holding one bundle
+file `material`. It holds one Material whose every serialized field has a value
+that is not its default. The shader and the texture it uses go into a second
+bundle, `matdeps`, which is not committed: the material bundle then holds only
+the Material and its AssetBundle, and `m_Shader` and the `_MainTex` slot point
+at an external file. (With the built-in Standard shader, Unity copies the whole
+compiled shader, about 74 KB, into the bundle.)
+
+Any project will do; the committed bundles came from a fresh one per editor
+holding only these files:
+
+```
+<project>/Assets/Fixtures/material/checker.png   (section 1)
+<project>/Assets/Fixtures/material/uar.shader
+<project>/Assets/Editor/BuildMaterial.cs
+```
+
+`uar.shader` declares each kind of property the Material saves. Replace
+`INT_TYPE` with `Integer` for 6000.3.25f1 (Unity 2021.1 added the type; its
+values go to `m_Ints`) and with `Int` for 2019.4.41f2 and 2020.3.30f1 (a float,
+saved in `m_Floats`):
+
+```shaderlab
+// Properties of every kind a Material saves (#40). INT_TYPE is Integer from
+// Unity 2021.1 (saved in m_Ints), Int (a float, saved in m_Floats) before.
+Shader "UAR/Fixture"
+{
+    Properties
+    {
+        _MainTex ("Main", 2D) = "white" {}
+        _BumpMap ("Bump", 2D) = "bump" {}
+        _Color ("Color", Color) = (1, 1, 1, 1)
+        _EmissionColor ("Emission", Color) = (0, 0, 0, 1)
+        _Glossiness ("Gloss", Range(0, 1)) = 0.5
+        _NegZero ("NegZero", Float) = 0
+        _UarInt ("Int", INT_TYPE) = 0
+    }
+    SubShader
+    {
+        Tags { "RenderType" = "Opaque" }
+        Pass
+        {
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma shader_feature _EMISSION
+            #pragma shader_feature _NORMALMAP
+            #include "UnityCG.cginc"
+            sampler2D _MainTex;
+            fixed4 _Color;
+            float4 vert(float4 v : POSITION) : SV_POSITION { return UnityObjectToClipPos(v); }
+            fixed4 frag() : SV_Target { return _Color; }
+            ENDCG
+        }
+        Pass
+        {
+            Tags { "LightMode" = "ShadowCaster" }
+            CGPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #include "UnityCG.cginc"
+            float4 vert(float4 v : POSITION) : SV_POSITION { return UnityObjectToClipPos(v); }
+            fixed4 frag() : SV_Target { return 0; }
+            ENDCG
+        }
+    }
+}
+```
+
+`Assets/Editor/BuildMaterial.cs`:
+
+```csharp
+using System.IO;
+using UnityEditor;
+using UnityEngine;
+
+// One Material with every field Unity serializes set to a value that is not
+// its default (#40): a shader and a texture in another bundle, scale and offset, floats,
+// colors, keywords, tags, a disabled pass, a render queue, instancing, GI flags.
+public static class BuildMaterial
+{
+    const string Dir = "Assets/Fixtures/material";
+    const string Mat = Dir + "/uar.mat";
+    const string Tex = Dir + "/checker.png";
+    const string Shd = Dir + "/uar.shader";
+
+    public static void Build()
+    {
+        if (!AssetDatabase.IsValidFolder("Assets/Fixtures")) AssetDatabase.CreateFolder("Assets", "Fixtures");
+        if (!AssetDatabase.IsValidFolder(Dir)) AssetDatabase.CreateFolder("Assets/Fixtures", "material");
+        var imp = (TextureImporter)AssetImporter.GetAtPath(Tex);
+        imp.textureCompression = TextureImporterCompression.Uncompressed;
+        imp.mipmapEnabled = false;
+        imp.SaveAndReimport();
+
+        AssetDatabase.DeleteAsset(Mat);
+        var mat = new Material(AssetDatabase.LoadAssetAtPath<Shader>(Shd)) { name = "uar" };
+        mat.SetTexture("_MainTex", AssetDatabase.LoadAssetAtPath<Texture2D>(Tex));
+        mat.SetTextureScale("_MainTex", new Vector2(2f, 3f));
+        mat.SetTextureOffset("_MainTex", new Vector2(0.25f, -0.5f));
+        mat.SetColor("_Color", new Color(0.1f, 0.2f, 0.3f, 0.4f));
+        mat.SetColor("_EmissionColor", new Color(2f, 0.5f, 0f, 1f));
+        mat.SetFloat("_Glossiness", 0.75f);
+        mat.SetFloat("_NegZero", -0f);
+#if UNITY_2021_1_OR_NEWER
+        mat.SetInteger("_UarInt", -7);
+#else
+        mat.SetFloat("_UarInt", -7f);
+#endif
+        mat.EnableKeyword("_EMISSION");
+        mat.EnableKeyword("_NORMALMAP");
+        mat.EnableKeyword("UAR_NOT_IN_SHADER");
+        mat.SetOverrideTag("RenderType", "TransparentCutout");
+        mat.SetShaderPassEnabled("ShadowCaster", false);
+        mat.renderQueue = 2450;
+        mat.enableInstancing = true;
+        mat.doubleSidedGI = true;
+        mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.BakedEmissive;
+        AssetDatabase.CreateAsset(mat, Mat);
+        AssetDatabase.SaveAssets();
+
+        // The shader and the texture go into a bundle of their own, so m_Shader and
+        // m_TexEnvs point at another file and the material bundle holds only the
+        // Material (and its AssetBundle).
+        var builds = new[] {
+            new AssetBundleBuild { assetBundleName = "material", assetNames = new[] { Mat } },
+            new AssetBundleBuild { assetBundleName = "matdeps", assetNames = new[] { Shd, Tex } },
+        };
+        var lz4 = BuildAssetBundleOptions.ChunkBasedCompression;
+        Emit("lz4", lz4, builds);
+        Emit("lz4-notypetree", lz4 | BuildAssetBundleOptions.DisableWriteTypeTree, builds);
+        Emit("lz4-stripped", lz4 | BuildAssetBundleOptions.AssetBundleStripUnityVersion, builds);
+    }
+
+    static void Emit(string name, BuildAssetBundleOptions opts, AssetBundleBuild[] builds)
+    {
+        var dir = Path.Combine("Build", "material-" + name);
+        Directory.CreateDirectory(dir);
+        var m = BuildPipeline.BuildAssetBundles(dir, builds, opts, BuildTarget.StandaloneWindows64);
+        if (m == null) throw new System.Exception("build failed: material " + name);
+        Debug.Log("FIXTURE-OK material " + name + " -> " + dir);
+    }
+}
+```
+
+Build with `-executeMethod BuildMaterial.Build` (same command as section 2).
+The log must hold three `FIXTURE-OK material` lines. Copy only
+`Build/material-<variant>/material` to
+`fixtures/bundles/editor/<editor version>/material/<variant>/material` for
+`<variant>` in `lz4`, `lz4-notypetree` and `lz4-stripped`, then rerun
+`make-goldens.py`; it dumps the Material's type tree (class 21).
+
+Unity drops properties the shader does not declare, and saved `_NegZero`'s
+`-0f` as `+0`. The keywords come out as the script enabled them:
+`_EMISSION` and `_NORMALMAP` are declared, `UAR_NOT_IN_SHADER` is not, so from
+2021.2.18 it lands in `m_InvalidKeywords`. `SetShaderPassEnabled` stores the
+pass's `LightMode` upper-cased (`SHADOWCASTER`).
