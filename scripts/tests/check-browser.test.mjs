@@ -96,6 +96,10 @@ for (const [name, source] of [
       '// const t = require("unity-asset-reader");\nexport const a = 1;\n',
   ],
   [
+    "a block comment without leading *",
+    '/*\nimport { load } from "unity-asset-reader";\n*/\nexport const a = 1;\n',
+  ],
+  [
     "a string literal",
     'export const a = \'import { load } from "unity-asset-reader";\';\n' +
       "export function f(): never {\n" +
@@ -140,4 +144,21 @@ test("importSpecifiers reads statements and skips comments and strings (#76)", (
     'throw new Error(`bad input from "j"`);',
   ].join("\n");
   assert.deepEqual(importSpecifiers(src), ["a", "b", "c", "d", "e", "f"]);
+});
+
+test("importSpecifiers skips a block comment whose body lines have no leading * (#76)", () => {
+  const src = [
+    "/*",
+    'import { load } from "unity-asset-reader";',
+    'const m = require("unity-asset-reader-texture");',
+    "*/",
+    'import a from "a";',
+    '/** one-line */ ',
+    'import b from "b";',
+    "  /* opened",
+    'export * from "x";',
+    "     closed */",
+    'export * from "c";',
+  ].join("\n");
+  assert.deepEqual(importSpecifiers(src), ["a", "b", "c"]);
 });
