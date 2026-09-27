@@ -60,9 +60,12 @@ interface Walk {
  * Reads from the object's first byte whatever the reader's position, and
  * leaves the reader at its end.
  *
- * Floats are the `number` `DataView` returns, so -0 and Infinity survive. A
- * NaN keeps its sign bit and payload as far as the engine does: V8 keeps them,
- * SpiderMonkey canonicalizes NaN to one pattern.
+ * Floats are plain `number`s, exactly as `DataView` returns them, so -0 and
+ * Infinity survive. The reader never canonicalizes NaN itself, so a NaN keeps
+ * its sign bit wherever the engine keeps it: V8 (Node, Chromium) does, while
+ * SpiderMonkey (Firefox) and JavaScriptCore (Safari) turn every NaN into
+ * `0x7FC00000`, which ECMAScript allows. That is documented, not worked
+ * around (#25's acceptance, as amended on PR #97).
  *
  * `[SerializeReference]` data (`ManagedReferencesRegistry`) is read in both
  * layouts. Version 2 (Unity 2021+) is an ordinary `RefIds` vector. In version 1

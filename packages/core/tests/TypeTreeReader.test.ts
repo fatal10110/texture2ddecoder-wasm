@@ -206,7 +206,14 @@ interface Data extends TypeTreeObject {
   textRef: TypeTreeObject;
 }
 
-test("keeps both NaN bit patterns: 0xFFC00000 (lz4 builds) and 0x7FC00000 (the rest)", () => {
+// #25 as amended on PR #97: the reader must not canonicalize NaN itself. It
+// cannot do better than the engine (SpiderMonkey and JavaScriptCore collapse
+// every NaN to 0x7FC00000), so this proves the pass-through where the engine
+// keeps the bits: on V8 any canonicalization in the reader turns the lz4
+// builds' 0xFFC00000 into 0x7FC00000 and fails here.
+test("passes a NaN's bits through: on V8 0xFFC00000 (lz4) and 0x7FC00000 (rest) survive", () => {
+  const raw = new DataView(Uint8Array.from([0xff, 0xc0, 0, 0]).buffer).getFloat32(0);
+  assert.equal(floatBits(raw, 4), "ffc00000", "this engine canonicalizes NaN; run on V8");
   for (const editor of ["2019.4.41f2", "2020.3.30f1", "6000.3.25f1"]) {
     for (const [variant, bits] of [
       ["lz4", "ffc00000"],
