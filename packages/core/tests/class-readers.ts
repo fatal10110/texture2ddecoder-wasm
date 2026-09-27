@@ -37,8 +37,8 @@ export interface FixtureObject {
   /**
    * The oracle's `read_typetree()` dump of the object: the fixture's own, or,
    * for a build without type trees, its typed twin's, which holds the same
-   * objects under the same path ids. `undefined` for a class the oracle does
-   * not dump (MonoScript).
+   * objects under the same path ids. `undefined` for a class outside
+   * `make-goldens.py`'s `DUMPED_CLASSES`.
    */
   dump: Record<string, unknown> | undefined;
 }
