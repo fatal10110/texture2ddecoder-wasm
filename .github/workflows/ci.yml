@@ -42,9 +42,10 @@ jobs:
           else
             echo "reader=false" >> "$GITHUB_OUTPUT"
           fi
-          # The decoder job also runs the texture package's decode tests (#119), so it
-          # runs for what they build from: core, texture, fixtures and the reader build config.
-          if echo "$files" | grep -qE '^(packages/(texture2ddecoder-wasm|core|texture)/|fixtures/|\.github/|package(-lock)?\.json$|tsconfig[^/]*\.json$|rollup\.reader\.mjs$)'; then
+          # The decoder job also runs the texture package's decode tests (#119) and the
+          # examples/ smoke test (#35), so it runs for what they build from: core, texture,
+          # fixtures, the reader build config and the examples.
+          if echo "$files" | grep -qE '^(packages/(texture2ddecoder-wasm|core|texture)/|fixtures/|examples/|\.github/|package(-lock)?\.json$|tsconfig[^/]*\.json$|rollup\.reader\.mjs$)'; then
             echo "decoder=true" >> "$GITHUB_OUTPUT"
           else
             echo "decoder=false" >> "$GITHUB_OUTPUT"
@@ -70,7 +71,8 @@ jobs:
       - run: npm run verify
 
   # Rebuilds the WASM (Docker, needs the C++ submodule) and runs the decoder tests, then the
-  # texture package's tests, whose decode tests need that WASM and skip in `reader` (#119).
+  # texture package's tests, whose decode tests need that WASM and skip in `reader` (#119),
+  # then the examples/cdn.html smoke test in Chromium (#35).
   decoder:
     name: decoder
     needs: changes
@@ -93,3 +95,14 @@ jobs:
       - run: npm test -w unity-asset-reader-texture
         env:
           REQUIRE_WASM: "1"
+      # The examples/cdn.html smoke test (#35). It runs here because initTexture loads
+      # the WASM even for a plain-format texture, and this is the job that builds it.
+      # Core and texture dist/ come from the steps above.
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:smoke
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-results
+          path: examples/test-results/
+          if-no-files-found: ignore
