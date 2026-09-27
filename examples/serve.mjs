@@ -70,7 +70,10 @@ function esmEntry(pkg) {
 const BARE = String.raw`([^'"./][^'":]*)`;
 // Statement-shaped only, as jsDelivr's Rollup rewrite: `import ... from "x"`,
 // `export ... from "x"` and `import "x"` at the start of a line, and a literal
-// `import("x")`. A comment or a string that reads `from "x"` stays as it is.
+// `import("x")`. A line that does not start with import/export stays as it is.
+// ponytail: a line-based match, not a parser. A quoted `from "x"` in a comment or
+// template literal on an import/export line, or `import("x")` inside a string, is
+// still rewritten; no served module has one. Use a tokenizer if one ever does.
 const STATIC_IMPORT = new RegExp(
   String.raw`^(\s*(?:import|export)\b[^;'"]*?\bfrom\s*|\s*import\s*)(['"])${BARE}\2`,
   "gm",

@@ -59,7 +59,7 @@ test("a malformed escape is a 400, and the server keeps running", async () => {
   assert.equal((await get("/examples/cdn.html")).status, 200);
 });
 
-test("only import statements are rewritten, not comments or strings", () => {
+test("import statements and literal import() are rewritten, other lines are not", () => {
   const source = [
     `import { a } from 'fflate';`,
     `import {`,
