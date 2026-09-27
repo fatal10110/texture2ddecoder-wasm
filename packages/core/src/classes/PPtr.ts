@@ -1,6 +1,7 @@
 // Ported from AssetStudio/Classes/PPtr.cs (MIT, © Perfare / RazTools / Razviar)
 
 import type { SerializedFileEntry } from "../env.js";
+import { SerializedFileFormatVersion as V } from "../serialized/FormatVersion.js";
 import type { ObjectReader } from "../serialized/ObjectReader.js";
 
 /**
@@ -32,6 +33,21 @@ export type PPtrResolution =
   | { status: "fileIdOutOfRange" }
   | { status: "fileNotLoaded"; fileName: string }
   | { status: "objectNotFound"; fileName: string };
+
+/**
+ * Read a pointer from object data (upstream's `PPtr(ObjectReader)`
+ * constructor): an `Int32` file id, then the path id. Internal to the class
+ * readers, not exported from the package.
+ *
+ * @param reader the object's reader, left just past the pointer
+ * @throws {CorruptError} when the object ends inside the pointer
+ */
+export function readPPtr(reader: ObjectReader): PPtr {
+  const m_FileID = reader.readInt32();
+  // Format 14+ (5.0.0): path ids are 64-bit.
+  const m_PathID = reader.format < V.Unknown_14 ? BigInt(reader.readInt32()) : reader.readInt64();
+  return { m_FileID, m_PathID };
+}
 
 /**
  * Upstream's `PPtr.TryGet`: pick the file through the source file's externals,
