@@ -78,7 +78,7 @@ export interface SpriteSource {
  * `Rotate(270)`). That direction is not verified against Unity's packer: no
  * fixture editor's packer writes `Rotate90`, and UnityPy, which turns the
  * other way, mistranslates the same upstream call rather than checking it
- * independently (#34, tracked in the follow-up named in `fixtures/README.md`).
+ * independently (#34; verification tracked in #160).
  *
  * Every call decodes the texture again. ponytail: an atlas with many sprites
  * is decoded once per sprite; a cache of decoded textures (or a variant that
@@ -321,7 +321,13 @@ function crop(image: RgbaImage, x: number, y: number, width: number, height: num
 /**
  * Undo a packer's flip or rotation (upstream's `RotateAndFlip` switch), on
  * rows bottom first as upstream holds them. `Rotate90` is upstream's
- * ImageSharp `Rotate(270)`, a quarter turn clockwise on those rows.
+ * ImageSharp `Rotate(270)` on those rows: output pixel (x, y) is input pixel
+ * (width - 1 - y, x), counting y from the first stored row.
+ *
+ * ponytail: `Rotate90`'s direction follows upstream and is unverified against
+ * Unity's packer (no fixture has one; UnityPy's opposite turn mistranslates
+ * the same upstream call). A real Rotate90 sprite's mesh UV0 against its
+ * positions settles it (#160).
  *
  * @throws {UnsupportedError} for a value `SpritePackingRotation` does not
  *   define, which upstream leaves as it is

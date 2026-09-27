@@ -333,9 +333,15 @@ sprites (#34).
     blend also clears the colour of every pixel whose alpha is 0.
   - **Rotate90** (`rotations["4"].oracleNote`): UnityPy turns with PIL's
     `ROTATE_270`, AssetStudio with ImageSharp's `Rotate(270)`, which turns the
-    other way. AssetStudio's comment names System.Drawing's
-    `Rotate270FlipNone`, which turns as ImageSharp does, so UnityPy's port
-    looks like the slip. **Verdict: AssetStudio**, not confirmed by a fixture.
+    other way. The two oracles are **not independent** here. UnityPy's
+    `export/SpriteHelper.py` keeps Perfare's
+    `RotateFlip(Rotate270FlipNone)` as a comment next to its
+    `Transpose.ROTATE_270`, so it is a mistranslation of the same System.Drawing
+    call, which turns as ImageSharp does. **Verdict: AssetStudio**, the
+    original's intent (maintainer decision on #34). The direction is
+    **unverified against Unity's packer**: no fixture editor's packer writes
+    Rotate90. #160 tracks settling it with a real Rotate90 sprite, whose mesh
+    UV0 against its positions gives the direction independently of both oracles.
 - <a id="assetstudio-sprite-cross-check"></a>**AssetStudio sprite cross-check
   hashes** (`ASSETSTUDIO_RGBA` in `packages/texture/tests/sprite.test.ts`).
   Cross-check values under plan §6, **not goldens**, for the golden entries
