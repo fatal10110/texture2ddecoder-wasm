@@ -11,7 +11,9 @@ import {
 import { NodeFlags } from "../src/bundle/BundleFile.js";
 import { load } from "../src/env.js";
 import { CorruptError, UnsupportedError } from "../src/errors.js";
+import { ClassID } from "../src/serialized/ClassID.js";
 import { ObjectReader } from "../src/serialized/ObjectReader.js";
+import { readSerializedFile } from "../src/serialized/SerializedFile.js";
 
 /** Deterministic opaque bytes, so a failure names a byte rather than a seed. */
 function payload(length: number, step = 7): Uint8Array {
@@ -137,6 +139,36 @@ test("unpacks a bundle holding a SerializedFile format it does not read; objects
   // Resolving needs the same parse, so it refuses the same way.
   const other = load([{ name: SHARED, data: loadFixture(SHARED) }]).objects[0]!;
   assert.throws(() => env.resolve({ m_FileID: 0, m_PathID: 1n }, other), unsupported);
+});
+
+test("objects throws CorruptError, naming the file, when a path id is listed twice", () => {
+  const node = load([{ name: SHARED, data: loadFixture(SHARED) }]).files[0]!.data;
+  const sf = readSerializedFile(node);
+  const ids = sf.objects.map((o) => o.pathId);
+  // Overwrite the TextAsset's path id in the table with the AssetBundle's (1).
+  // Its id is 8 bytes nothing else in the metadata repeats, and the table
+  // comes before any object data, so the first match is the table entry.
+  const text = sf.objects.find((o) => o.classId === ClassID.TextAsset)!.pathId;
+  const data = Uint8Array.from(node);
+  const view = new DataView(data.buffer);
+  const offset = [...data.keys()].find(
+    (i) => i + 8 <= data.length && view.getBigInt64(i, true) === text,
+  );
+  assert.ok(offset !== undefined && offset < sf.header.dataOffset);
+  view.setBigInt64(offset, 1n, true);
+  assert.deepEqual(
+    readSerializedFile(data).objects.map((o) => o.pathId),
+    ids.map(() => 1n),
+  );
+
+  const env = load([{ name: "patched.bundle", data: buildBundle([{ path: SHARED_CAB, data }]) }]);
+  assert.equal(env.files.length, 1);
+  assert.throws(
+    () => env.objects,
+    (error: unknown) =>
+      error instanceof CorruptError &&
+      error.message === `patched.bundle: ${SHARED_CAB}: object table lists path id 1 twice`,
+  );
 });
 
 test("parses SerializedFiles once, on first use", () => {

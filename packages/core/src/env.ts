@@ -5,7 +5,7 @@ import { detectContainer, detectFileType, type FileType } from "./bundle/detect.
 import { readWebFile } from "./bundle/WebFile.js";
 import { resolvePPtr, type PPtr, type PPtrResolution } from "./classes/PPtr.js";
 import { gunzip } from "./codec/inflate.js";
-import { UnsupportedError } from "./errors.js";
+import { CorruptError, UnsupportedError } from "./errors.js";
 import { ObjectReader } from "./serialized/ObjectReader.js";
 import {
   baseName,
@@ -71,8 +71,7 @@ export interface Env {
   files: LoadedFile[];
   /**
    * Every object of every SerializedFile in {@link files}, in file order and,
-   * within a file, in object table order. A path id a file lists twice is
-   * kept once, the first time, as upstream's `ObjectsDic` keeps it.
+   * within a file, in object table order.
    *
    * The SerializedFiles are parsed on the first access of this or of
    * {@link resolve}, not by {@link load}, so a file this library cannot parse
@@ -83,7 +82,8 @@ export interface Env {
    *   does not read, its message naming the containers the file was found
    *   under, outermost first, then the file
    * @throws {CorruptError} when a SerializedFile's metadata does not hold
-   *   together, named the same way
+   *   together - an object table listing a path id twice included - named the
+   *   same way
    */
   readonly objects: ObjectReader[];
   /**
@@ -113,7 +113,7 @@ export interface SerializedFileEntry {
   /** Last component of the file's path, which is what an external names. */
   name: string;
   file: SerializedFile;
-  /** Objects by path id; if a file repeats one, the first wins, as upstream. */
+  /** Objects by path id, which are unique within a file. */
   objects: Map<bigint, ObjectReader>;
 }
 
@@ -226,12 +226,21 @@ function indexSerializedFiles(candidates: readonly SerializedCandidate[]): EnvIn
   return { objects, sourceOf, byName };
 }
 
-/** Parse one SerializedFile and give each of its objects a reader. */
+/**
+ * Parse one SerializedFile and give each of its objects a reader.
+ *
+ * @throws {CorruptError} when the object table lists a path id twice. Unity
+ *   never writes that, and either choice of object would leave a pointer to
+ *   it meaning one of two things; upstream's `ObjectsDic.Add` throws too.
+ */
 function readEntry(path: string, data: Uint8Array): SerializedFileEntry {
   const file = readSerializedFile(data);
   const objects = new Map<bigint, ObjectReader>();
   for (const info of file.objects) {
-    if (!objects.has(info.pathId)) objects.set(info.pathId, new ObjectReader(data, file, info));
+    if (objects.has(info.pathId)) {
+      throw new CorruptError(`object table lists path id ${info.pathId} twice`);
+    }
+    objects.set(info.pathId, new ObjectReader(data, file, info));
   }
   return { name: baseName(path), file, objects };
 }
