@@ -15,6 +15,8 @@ UnityPy -- https://github.com/K0lb3/UnityPy (MIT)
   Oracle used to generate the test goldens, and behaviour source where it and
   AssetStudio disagree: the UnityFS header version gates in
   src/bundle/BundleFile.ts are ported from its files/BundleFile.py.
+  src/serialized/TypeTreeReader.ts ports its [SerializeReference] ref type
+  lookup and registry reading from its helpers/TypeTreeHelper.py.
 
 Runtime dependencies are external (see package.json): dist/ keeps the import and
 npm installs them, so their own LICENSE files ship with them and no copy of
