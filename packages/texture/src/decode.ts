@@ -1,5 +1,6 @@
 // Ported from AssetStudio.Utility/Texture2DConverter.cs (MIT, © Perfare / RazTools / Razviar)
 // Ported from AssetStudio.Utility/Texture2DExtensions.cs (MIT, © Perfare / RazTools / Razviar)
+// Ported from UnityPy/export/Texture2DConverter.py (MIT, © K0lb3)
 
 import {
   decode_astc,
@@ -24,9 +25,10 @@ import {
   unpack_crunch,
   unpack_unity_crunch,
 } from "texture2ddecoder-wasm";
-import { CorruptError, TextureFormat, UnsupportedError } from "unity-asset-reader";
+import { BuildTarget, CorruptError, TextureFormat, UnsupportedError } from "unity-asset-reader";
 import type { Texture2DData } from "unity-asset-reader";
 import { convertPlain, type RgbaImage } from "./convert.js";
+import { deswizzle, switchLayout, xbox360Swap } from "./platform.js";
 
 /** Where `initTexture` finds the WASM files; passed to `texture2ddecoder-wasm` as it is. */
 export interface InitTextureOptions {
@@ -172,6 +174,18 @@ export async function initTexture(options?: InitTextureOptions): Promise<void> {
  * result is the top of the image, as `ImageData` and image files expect
  * (upstream's `ConvertToImage(flip: true)`).
  *
+ * Console layouts are undone first, by `platform` (which `obj.read()` sets):
+ * - **Xbox 360:** ARGB4444, RGB565, DXT1 and DXT5 store their 16-bit words
+ *   big-endian, and are swapped back (upstream's `SwapBytesForXbox`).
+ * - **Switch:** a texture whose `m_PlatformBlob` gives more than one GOB per
+ *   block is in the Tegra block-linear layout. It is deswizzled over its size
+ *   padded to whole blocks of GOBs, decoded at that size and cropped back
+ *   (UnityPy's `TextureSwizzler`; AssetStudio has no Switch path). RGB24 and
+ *   BGR24 are stored as RGBA32 and BGRA32 there, and decoded as those.
+ *
+ * Without `platform` (an input not from `obj.read()`), the data is taken as
+ * linear, as every other platform stores it.
+ *
  * DXT1 and DXT5 Crunch come in two variants: upstream unpacks Unity's own
  * from Unity 2017.3 on, and the original crunch before. The Unity version is
  * not a Texture2D field, so the fields 2017.3 added stand in for it: a
@@ -181,22 +195,25 @@ export async function initTexture(options?: InitTextureOptions): Promise<void> {
  * @param texture a Texture2D as `obj.read()` returns it. Only `m_Width`,
  *   `m_Height`, `m_TextureFormat` and `imageData` are required at run time
  *   (and `m_DownscaleFallback` / `m_IsAlphaChannelOptional` for DXT Crunch,
- *   see above); they are checked, since `obj.read()`'s type is the caller's
- *   claim
+ *   `platform` and `m_PlatformBlob` for consoles, see above); they are
+ *   checked, since `obj.read()`'s type is the caller's claim
  * @returns a new RGBA image, `width * height * 4` bytes, top row first;
  *   `imageData` is not modified. A texture 0 pixels wide or high gives an
  *   empty image.
  * @throws {TypeError} when `texture` is not a Texture2D with image data
  *   (`obj.read()`'s type is not checked): `m_Width`, `m_Height` or
- *   `m_TextureFormat` is not a number, or `imageData` is not a `Uint8Array`;
- *   the message names each
+ *   `m_TextureFormat` is not a number, `imageData` is not a `Uint8Array`, or
+ *   `platform` / `m_PlatformBlob`, when present, is not a number /
+ *   `Uint8Array`; the message names each
  * @throws {Error} before {@link initTexture} has finished
  * @throws {UnsupportedError} for a format with no decoder here (DXT3, and
- *   formats neither this nor `convertPlain` knows)
+ *   formats neither this nor `convertPlain` knows); for a Switch-swizzled
+ *   texture, also a format with no known Switch layout (Crunch, ETC, PVRTC,
+ *   ASTC HDR, ...) or more than 32 GOBs per block
  * @throws {CorruptError} when the image data is shorter than the first level
- *   needs, the Crunch data does not unpack, the block decoder refuses the data
- *   (such as PVRTC whose block counts are not powers of two), or the size is
- *   not a non-negative integer
+ *   needs (for Switch, the padded level), the Crunch data does not unpack,
+ *   the block decoder refuses the data (such as PVRTC whose block counts are
+ *   not powers of two), or the size is not a non-negative integer
  * @example
  * await initTexture();
  * const { data, width, height } = await decodeTexture2D(obj.read());
@@ -204,36 +221,56 @@ export async function initTexture(options?: InitTextureOptions): Promise<void> {
 export async function decodeTexture2D(texture: Texture2DData): Promise<RgbaImage> {
   checkInput(texture);
   if (!initialized) throw new Error(NOT_INITIALIZED);
-  const image = await decodeStored(texture);
+  const { m_Width: width, m_Height: height, m_TextureFormat: format } = texture;
+  if (!Number.isInteger(width) || width < 0 || !Number.isInteger(height) || height < 0) {
+    throw new CorruptError(`texture size ${width} x ${height} is not a non-negative integer size`);
+  }
+  const platform = texture.platform ?? BuildTarget.UnknownPlatform;
+  // Upstream's order: the Xbox swap, then (UnityPy) the Switch deswizzle, then decode.
+  const data = xbox360Swap(texture.imageData, platform, format);
+  const layout = switchLayout(platform, texture.m_PlatformBlob, format, width, height);
+  let image: RgbaImage;
+  if (layout === undefined) {
+    image = await decodeLinear(texture, format, data, width, height);
+  } else {
+    const { paddedWidth, paddedHeight } = layout;
+    const linear = deswizzle(data, layout);
+    const padded = await decodeLinear(texture, layout.format, linear, paddedWidth, paddedHeight);
+    image = crop(padded, width, height);
+  }
   flipRows(image);
   return image;
 }
 
-/** The first level to RGBA8, with the rows as Unity stores them. */
-async function decodeStored(texture: Texture2DData): Promise<RgbaImage> {
-  const { m_Width: width, m_Height: height, m_TextureFormat: format, imageData } = texture;
-
+/**
+ * The first level of `data`, stored linear, to RGBA8 with the rows as
+ * stored: `convertPlain`, or the WASM decoder and the BGRA -> RGBA swap.
+ */
+async function decodeLinear(
+  texture: Texture2DData,
+  format: number,
+  data: Uint8Array,
+  width: number,
+  height: number,
+): Promise<RgbaImage> {
   const unpackedFormat = CRUNCHED.get(format);
   const codec = BLOCK.get(unpackedFormat ?? format);
-  if (codec === undefined) return plain(imageData, width, height, format);
-
-  if (!Number.isInteger(width) || width < 0 || !Number.isInteger(height) || height < 0) {
-    throw new CorruptError(`texture size ${width} x ${height} is not a non-negative integer size`);
-  }
+  if (codec === undefined) return plain(data, width, height, format);
   if (width === 0 || height === 0) return { data: new Uint8Array(0), width, height };
 
-  const data = unpackedFormat === undefined ? imageData : await unpack(texture);
+  // Crunch is neither byte-swapped nor swizzled, so its data is `imageData`.
+  const blocks = unpackedFormat === undefined ? data : await unpack(texture);
   const need =
     Math.ceil(width / codec.blockWidth) * Math.ceil(height / codec.blockHeight) * codec.blockBytes;
-  if (data.length < need) {
+  if (blocks.length < need) {
     throw new CorruptError(
       `${describe(format)} image data${unpackedFormat === undefined ? "" : " (unpacked)"} is ` +
-        `${data.length} bytes, ${width} x ${height} needs ${need}`,
+        `${blocks.length} bytes, ${width} x ${height} needs ${need}`,
     );
   }
 
   // Only the first level: the binding copies its input byte by byte.
-  const out = await codec.decode(data.subarray(0, need), width, height);
+  const out = await codec.decode(blocks.subarray(0, need), width, height);
   if (out === null || out.length !== width * height * 4) {
     throw new CorruptError(
       `texture2ddecoder-wasm could not decode ${describe(format)} at ${width} x ${height} ` +
@@ -245,6 +282,17 @@ async function decodeStored(texture: Texture2DData): Promise<RgbaImage> {
     const b = out[i]!;
     out[i] = out[i + 2]!;
     out[i + 2] = b;
+  }
+  return { data: out, width, height };
+}
+
+/** The top-left `width x height` of a padded image, as UnityPy crops a Switch texture. */
+function crop(image: RgbaImage, width: number, height: number): RgbaImage {
+  if (image.width === width && image.height === height) return image;
+  const out = new Uint8Array(width * height * 4);
+  for (let y = 0; y < height; y++) {
+    const from = y * image.width * 4;
+    out.set(image.data.subarray(from, from + width * 4), y * width * 4);
   }
   return { data: out, width, height };
 }
@@ -276,6 +324,13 @@ function checkInput(texture: unknown): asserts texture is Texture2DData {
     .map((key) => `${key} must be a number (${got(input[key])})`);
   if (!(input.imageData instanceof Uint8Array)) {
     problems.push(`imageData must be a Uint8Array (${got(input.imageData)})`);
+  }
+  // Optional: a hand-built input may leave them out, but not get them wrong.
+  if (input.platform !== undefined && typeof input.platform !== "number") {
+    problems.push(`platform must be a number (${got(input.platform)})`);
+  }
+  if (input.m_PlatformBlob !== undefined && !(input.m_PlatformBlob instanceof Uint8Array)) {
+    problems.push(`m_PlatformBlob must be a Uint8Array (${got(input.m_PlatformBlob)})`);
   }
   if (problems.length > 0) {
     throw new TypeError(`decodeTexture2D: not a Texture2D with image data: ${problems.join(", ")}`);

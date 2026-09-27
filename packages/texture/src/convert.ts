@@ -43,9 +43,10 @@ const BYTES_PER_PIXEL: ReadonlyMap<number, number> = new Map([
  * white. Half and float channels are scaled by 255, rounded half to even and
  * clamped to 0..255, so HDR values saturate and NaN becomes 0.
  *
- * Rows stay in the order Unity stores them, bottom row first; turning the
- * image top-down is a separate step (#33). No platform byte swap is applied
- * (#33 too).
+ * A converter for linear pixel data, like `texture2ddecoder-wasm`'s block
+ * decoders: rows stay in the order Unity stores them, bottom row first, and
+ * no console layout (Xbox 360 byte order, Switch swizzle) is undone.
+ * `decodeTexture2D` does both, and returns the top row first.
  *
  * Only the first `width * height` pixels are read, so image data holding
  * further mip levels is fine.
