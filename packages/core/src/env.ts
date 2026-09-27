@@ -7,7 +7,11 @@ import { resolvePPtr, type PPtr, type PPtrResolution } from "./classes/PPtr.js";
 import { gunzip } from "./codec/inflate.js";
 import { UnsupportedError } from "./errors.js";
 import { ObjectReader } from "./serialized/ObjectReader.js";
-import { readSerializedFile, type SerializedFile } from "./serialized/SerializedFile.js";
+import {
+  baseName,
+  readSerializedFile,
+  type SerializedFile,
+} from "./serialized/SerializedFile.js";
 
 /**
  * How deep containers may nest before the input is refused.
@@ -265,11 +269,6 @@ function keep(name: string, data: Uint8Array, type: FileType, out: Collected): v
     out.serialized.push({ name: baseName(name), file, objects });
   }
   out.files.push({ path: name, data });
-}
-
-/** Last path component, splitting on `/` and `\` like .NET `Path.GetFileName`. */
-function baseName(path: string): string {
-  return path.slice(Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")) + 1);
 }
 
 /**
