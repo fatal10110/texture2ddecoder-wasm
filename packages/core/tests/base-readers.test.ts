@@ -363,3 +363,56 @@ test("throws CorruptError when an object ends before m_Name's length", () => {
   const reader = synthetic(new Uint8Array(2), BuildTarget.StandaloneWindows64, ...PLAYER_6000);
   assert.throws(() => readNamedObject(reader), CorruptError);
 });
+
+// --- m_Name's length: strict, unlike readAlignedString (#129) ------------------------
+
+/**
+ * A player file, where `m_Name` is the object's first field, and an editor
+ * one, where it follows the 2018.3+ EditorExtension header.
+ */
+const NAME_AT: { label: string; platform: BuildTarget; header: Field[] }[] = [
+  { label: "player", platform: BuildTarget.StandaloneWindows64, header: [] },
+  {
+    label: "NoTarget",
+    platform: BuildTarget.NoTarget,
+    header: [["u32", 0], ["i32", 0], ["i64", 0n], ["i32", 0], ["i64", 0n], ["i32", 0], ["i64", 0n]],
+  },
+];
+
+for (const { label, platform, header } of NAME_AT) {
+  const at = bytesOf(header).length;
+  /** The error `readNamedObject` must throw for an `m_Name` byte count of `length`. */
+  const refuses = (length: number, why: string) => () => {
+    // Four bytes after the count: the lenient read would return "" and go on.
+    const bytes = bytesOf([...header, ["i32", length], ["i32", 0]]);
+    const reader = synthetic(bytes, platform, ...PLAYER_6000);
+    const message = `TextAsset ${reader.pathId} m_Name byte count ${length} at offset ${at} ${why}`;
+    assert.throws(
+      () => readNamedObject(reader),
+      (err: unknown) => err instanceof CorruptError && err.message === message,
+    );
+  };
+
+  test(`${label}: a negative m_Name length throws CorruptError, not ""`, refuses(-1, "is negative"));
+  test(
+    `${label}: an m_Name length past the object's end throws CorruptError, not ""`,
+    refuses(5, "exceeds the 4 bytes left"),
+  );
+}
+
+test("a bad m_Name length in a class ClassID does not name: the error gives the class id", () => {
+  const { sf, info } = textAsset();
+  const bytes = bytesOf([["i32", -1]]);
+  const reader = new ObjectReader(bytes, sf, {
+    ...info,
+    classId: 9999,
+    byteStart: 0,
+    byteSize: bytes.length,
+  });
+  assert.throws(
+    () => readNamedObject(reader),
+    (err: unknown) =>
+      err instanceof CorruptError &&
+      err.message === `class 9999 ${reader.pathId} m_Name byte count -1 at offset 0 is negative`,
+  );
+});

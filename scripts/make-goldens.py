@@ -13,7 +13,9 @@ Per fixture (keyed by its path under fixtures/bundles/):
                 plus, for a file holding a Texture2D, `textures`: the sha256 of
                 its image data and of UnityPy's RGBA decode, rows as stored  (#31)
 Plus `synthetic`: UnityPy's RGBA for generated block data in the formats no
-editor on hand writes (ATC, signed EAC - #32).
+editor on hand writes (ATC, signed EAC - #32); `platform`: the same for the
+console layouts no editor on hand builds (Switch swizzle, Xbox 360 byte swap),
+in both row orders; and `deswizzle`: UnityPy's Switch deswizzle alone (#33).
 
 Normalization (plan section 5), applied by walking the type tree next to the
 value so the node type decides, not the Python type:
@@ -40,8 +42,9 @@ import warnings
 import UnityPy
 from UnityPy import config
 from UnityPy.exceptions import UnityVersionFallbackWarning
-from UnityPy.enums import BuildTarget
+from UnityPy.enums import BuildTarget, TextureFormat
 from UnityPy.export.Texture2DConverter import get_image_from_texture2d, parse_image_data
+from UnityPy.helpers import TextureSwizzler
 from UnityPy.helpers.TypeTreeHelper import (
     TypeTreeConfig,
     get_ref_type_node,
@@ -127,6 +130,52 @@ SYNTHETIC = [
     ("ATC_RGBA8", 36, 16, 8, 16),
     ("EAC_R_SIGNED", 42, 16, 8, 8),
     ("EAC_RG_SIGNED", 44, 16, 8, 16),
+]
+# Console layouts no fixture editor can build (#33): none has the Switch or
+# Xbox 360 module. UnityPy decodes synthetic_bytes(name) of each as that
+# platform's texture instead; see platform_goldens(). The sizes are not
+# multiples of the Switch padding, so the crop back to the texture's size runs.
+#
+# BC1 colour blocks (DXT1, and the colour half of DXT5) whose c0 <= c1 are where
+# UnityPy's Pillow parts ways with Texture2DDecoder (this library's, and
+# AssetStudio's and K0lb3's, which agree with it). Verdicts (#131):
+#   DXT1 index 3: AssetStudio, opaque black. Pillow gives transparent black,
+#     but Unity's DXT1 has no alpha.
+#   DXT5 colour: Pillow is right. The spec decodes it as though c0 > c1
+#     always, and Texture2DDecoder's 3-colour mode is a known defect, to be
+#     fixed in texture2ddecoder-wasm (#137), not pinned here.
+# The fixtures' DXT data has no such block (#32), random bytes do. So the DXT
+# inputs get every colour block's c0 > c1, by setting the top bit of c0's high
+# byte and clearing c1's (`four_color`, mirrored by `fourColor` in the texture
+# tests): each entry is (block stride, index of c0's high byte, index of c1's),
+# as stored, so swapped for Xbox 360. With that, every decoder agrees on every
+# pixel.
+PLATFORM = [
+    # name, BuildTarget, TextureFormat, width, height, log2 of Switch GOBs per block, four_color
+    ("Switch RGBA32", BuildTarget.Switch, 4, 20, 10, 1, None),
+    ("Switch RGB24", BuildTarget.Switch, 3, 12, 6, 2, None),
+    ("Switch ARGB4444", BuildTarget.Switch, 2, 24, 8, 1, None),
+    ("Switch DXT1", BuildTarget.Switch, 10, 36, 20, 3, (8, 1, 3)),
+    ("Switch DXT5", BuildTarget.Switch, 12, 16, 16, 4, (16, 9, 11)),
+    ("Switch BC5", BuildTarget.Switch, 27, 8, 40, 2, None),
+    ("XBOX360 DXT1", BuildTarget.XBOX360, 10, 16, 8, None, (8, 0, 2)),
+    ("XBOX360 DXT5", BuildTarget.XBOX360, 12, 16, 8, None, (16, 8, 10)),
+]
+# UnityPy's Switch deswizzle on its own, one case per texel shape of its
+# TEXTURE_FORMAT_BLOCK_SIZE_MAP (#33); see deswizzle_goldens().
+DESWIZZLE = [
+    # name, texel width, texel height (pixels per 16 bytes), width, height, GOBs per block
+    ("16x1", 16, 1, 40, 9, 2),
+    ("8x1", 8, 1, 24, 8, 4),
+    ("4x1", 4, 1, 20, 10, 2),
+    ("1x1", 1, 1, 5, 3, 2),
+    ("8x4", 8, 4, 36, 20, 8),
+    ("4x4", 4, 4, 16, 16, 16),
+    ("5x5", 5, 5, 30, 12, 2),
+    ("6x6", 6, 6, 30, 30, 4),
+    ("8x8", 8, 8, 40, 72, 2),
+    ("10x10", 10, 10, 50, 20, 2),
+    ("12x12", 12, 12, 60, 36, 32),
 ]
 
 
@@ -393,6 +442,88 @@ def synthetic_goldens() -> dict:
     return out
 
 
+def four_color(data: bytes, stride: int, c0_high: int, c1_high: int) -> bytes:
+    """`data` with c0 > c1 in every BC1 colour block; see PLATFORM."""
+    out = bytearray(data)
+    for block in range(0, len(out), stride):
+        out[block + c0_high] |= 0x80
+        out[block + c1_high] &= 0x7F
+    return bytes(out)
+
+
+def platform_goldens() -> dict:
+    """UnityPy's RGBA for console texture layouts no editor on hand builds (#33).
+
+    `parse_image_data` with the platform, and for Switch a 12-byte
+    `m_PlatformBlob` whose bytes 8-11 hold log2 of the GOBs per block (the
+    only bytes UnityPy reads), over `synthetic_bytes(name)`: the whole padded
+    first level for Switch, the first level for Xbox 360, in 4-colour BC1
+    blocks for DXT (`four_color`, see PLATFORM). Both row orders are
+    recorded: `rgbaSha256` as stored (`flip=False`, like every other texture
+    golden) and `rgbaTopDownSha256` (`flip=True`).
+    """
+    out = {}
+    for name, platform, fmt, width, height, gobs_log2, four in PLATFORM:
+        blob = None
+        size = (width // 4) * (height // 4) * (8 if fmt == 10 else 16)
+        if gobs_log2 is not None:
+            blob = [0] * 8 + list(struct.pack("<I", gobs_log2))
+            gobs = TextureSwizzler.get_switch_gobs_per_block(blob)
+            # Switch stores RGB24 as RGBA32, which is what UnityPy decodes it as.
+            unpacked = TextureFormat.RGBA32 if fmt == TextureFormat.RGB24 else TextureFormat(fmt)
+            texel = TextureSwizzler.TEXTURE_FORMAT_BLOCK_SIZE_MAP[unpacked]
+            padded = TextureSwizzler.get_padded_texture_size(width, height, *texel, gobs)
+            size = (padded[0] // texel[0]) * (padded[1] // texel[1]) * 16
+        data = synthetic_bytes(name, size)
+        if four is not None:
+            data = four_color(data, *four)
+        args = (data, width, height, fmt, (0, 0, 0, 0), platform, blob)
+        out[name] = {
+            "platform": int(platform),
+            "format": fmt,
+            "width": width,
+            "height": height,
+            "platformBlob": None if blob is None else bytes(blob).hex(),
+            "fourColor": None if four is None else list(four),
+            "inputSize": len(data),
+            "inputSha256": sha256(data),
+            "rgbaSha256": sha256(parse_image_data(*args, flip=False).convert("RGBA").tobytes()),
+            "rgbaTopDownSha256": sha256(
+                parse_image_data(*args, flip=True).convert("RGBA").tobytes()
+            ),
+        }
+    return out
+
+
+def deswizzle_goldens() -> dict:
+    """UnityPy's Switch deswizzle of `synthetic_bytes(name)`, for each texel shape (#33).
+
+    The texture's size is padded as UnityPy pads it, and the input is exactly
+    the padded level, so the output is every byte moved and none added.
+    """
+    out = {}
+    for name, texel_width, texel_height, width, height, gobs in DESWIZZLE:
+        padded = TextureSwizzler.get_padded_texture_size(
+            width, height, texel_width, texel_height, gobs
+        )
+        size = (padded[0] // texel_width) * (padded[1] // texel_height) * 16
+        data = synthetic_bytes(f"deswizzle {name}", size)
+        moved = TextureSwizzler.deswizzle(data, *padded, texel_width, texel_height, gobs)
+        out[name] = {
+            "texelWidth": texel_width,
+            "texelHeight": texel_height,
+            "width": width,
+            "height": height,
+            "gobsPerBlock": gobs,
+            "paddedWidth": padded[0],
+            "paddedHeight": padded[1],
+            "inputSize": len(data),
+            "inputSha256": sha256(data),
+            "outputSha256": sha256(bytes(moved)),
+        }
+    return out
+
+
 def raw_bytes(name: str, entry) -> bytes:
     """The node's bytes exactly as stored in the container.
 
@@ -521,6 +652,8 @@ def main() -> None:
         goldens["fixtures"][key] = read_with_fallback(path)
         print(f"  {key:<48} {len(goldens['fixtures'][key]['files'])} files")
     goldens["synthetic"] = synthetic_goldens()
+    goldens["platform"] = platform_goldens()
+    goldens["deswizzle"] = deswizzle_goldens()
 
     GOLDENS.write_text(to_json(goldens) + "\n")
     print(f"\n{len(goldens['fixtures'])} goldens -> {GOLDENS.relative_to(ROOT)}")
