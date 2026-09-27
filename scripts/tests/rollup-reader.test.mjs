@@ -61,12 +61,12 @@ const BUILTIN = new Set([...builtinModules, ...builtinModules.map((m) => `node:$
  * Packages whose `src/` must import at least one declared dependency. Without
  * this, the dist/ row below passes on an empty list: nothing to look for, so
  * nothing can be found inlined. core imports fflate and lzma1, texture imports
- * core (#31) and texture2ddecoder-wasm (#32). node's `src/` is still
- * `export {}` until #43, so its row asserts
- * the list is empty instead: the day node imports a declared dep, that row
- * fails until node is added here, so it cannot quietly stay vacuous.
+ * core (#31) and texture2ddecoder-wasm (#32), node imports core (#43). A
+ * package left out of this set gets its row asserting the list is empty
+ * instead: the day it imports a declared dep, that row fails until it is added
+ * here, so it cannot quietly stay vacuous.
  */
-const IMPORTS_DECLARED = new Set(["core", "texture"]);
+const IMPORTS_DECLARED = new Set(["core", "texture", "node"]);
 
 // Runs after `npm run build` (root `verify` order, and each package's `pretest`).
 for (const pkg of ["core", "texture", "node"]) {

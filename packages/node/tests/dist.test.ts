@@ -15,12 +15,12 @@ test("emits dist/index.mjs, dist/index.cjs and dist/index.d.ts", () => {
   }
 });
 
-test("the ESM entry point loads via import()", async () => {
-  assert.ok(await import(dist("index.mjs")));
+test("the ESM entry point exports loadPath via import()", async () => {
+  assert.equal(typeof (await import(dist("index.mjs"))).loadPath, "function");
 });
 
-test("the CJS entry point loads via require()", () => {
-  assert.ok(require(dist("index.cjs")));
+test("the CJS entry point exports loadPath via require()", () => {
+  assert.equal(typeof require(dist("index.cjs")).loadPath, "function");
 });
 
 test("the published tarball holds dist, LICENSE and NOTICE only", () => {
