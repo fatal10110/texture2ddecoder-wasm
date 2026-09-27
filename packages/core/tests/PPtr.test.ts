@@ -223,6 +223,35 @@ test("a same-file pointer stays in its own file when another loaded file shares 
   }
 });
 
+test("an external two loaded files answer to resolves into the first one loaded", () => {
+  // Both editors' shared bundles hold a CAB of the same name, with different
+  // ids: 2019.4's TextAsset id is not in 6000's, while both have the
+  // AssetBundle at path id 1.
+  const main = "editor/2019.4.41f2/lz4/main";
+  const shared19 = "editor/2019.4.41f2/lz4/shared";
+
+  for (const [first, second, format] of [
+    [shared19, SHARED, 21],
+    [SHARED, shared19, 22],
+  ] as const) {
+    const env = loadFixtures(main, first, second);
+    const behaviour = only(env, ClassID.MonoBehaviour);
+    const { textRef } = dump<MonoBehaviourDump>(main, MAIN_CAB, behaviour.pathId);
+
+    const bundle = found(env.resolve({ m_FileID: 1, m_PathID: 1n }, behaviour));
+    assert.equal(bundle.type, ClassID.AssetBundle);
+    assert.equal(bundle.format, format, `${first} was loaded first`);
+
+    // Only the first file is looked in; the second one is never a fallback.
+    const text = env.resolve(pptr(textRef), behaviour);
+    if (format === 21) {
+      assert.equal(found(text).format, 21);
+    } else {
+      assert.deepEqual(text, { status: "objectNotFound", fileName: SHARED_CAB });
+    }
+  }
+});
+
 test("refuses to resolve from an object another env loaded", () => {
   const behaviour = only(loadFixtures(MAIN), ClassID.MonoBehaviour);
   const env = loadFixtures(MAIN);
