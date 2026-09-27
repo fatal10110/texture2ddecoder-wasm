@@ -1,4 +1,6 @@
 // Ported from AssetStudio/ObjectReader.cs (MIT, © Perfare / RazTools / Razviar)
+// Ported from AssetStudio/Math/XForm.cs (MIT, © Perfare / RazTools / Razviar)
+// Ported from AssetStudio/EndianBinaryReader.cs (MIT, © Perfare / RazTools / Razviar)
 
 import { CorruptError } from "../errors.js";
 import { BinaryReader } from "../io/BinaryReader.js";

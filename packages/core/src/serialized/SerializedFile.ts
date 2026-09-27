@@ -3,6 +3,7 @@
 // Ported from AssetStudio/ObjectInfo.cs (MIT, © Perfare / RazTools / Razviar)
 // Ported from AssetStudio/FileIdentifier.cs (MIT, © Perfare / RazTools / Razviar)
 // Ported from AssetStudio/LocalSerializedObjectIdentifier.cs (MIT, © Perfare / RazTools / Razviar)
+// Ported from AssetStudio/BuildType.cs (MIT, © Perfare / RazTools / Razviar)
 
 import { CorruptError, UnsupportedError } from "../errors.js";
 import { BinaryReader } from "../io/BinaryReader.js";
