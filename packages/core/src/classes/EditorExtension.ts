@@ -49,8 +49,10 @@ export interface EditorExtension extends UnityObject {
  *
  * @param reader the object's reader, rewound first and left just past these
  *   fields
- * @throws {UnsupportedError} for an editor file older than Unity 3.4, or one
- *   whose version is unknown (all zeros): no type tree data says what it holds
+ * @throws {UnsupportedError} of kind `"Unity version"`, with the file's own
+ *   `unityVersion` as `found`, for an editor file whose version is unknown
+ *   (`[0, 0, 0, 0]`: stripped, or a loose file below format 7) or older than
+ *   3.4, where no type tree data says what it holds
  * @throws {CorruptError} when the object is too short for these fields
  */
 export function readEditorExtension(reader: ObjectReader): EditorExtension {
@@ -58,6 +60,16 @@ export function readEditorExtension(reader: ObjectReader): EditorExtension {
   if (reader.platform !== BuildTarget.NoTarget) return base;
 
   const { version } = reader;
+  // Rule for version-gated class readers (#36): an unknown version must not
+  // fall through to the oldest branch, so refuse it.
+  if (version.every((part) => part === 0)) {
+    throw new UnsupportedError(
+      "Unity version",
+      reader.unityVersion,
+      `object ${reader.pathId}: an editor file's prefab pointers depend on the Unity version, ` +
+        "and this file does not record one",
+    );
+  }
   if (atLeast(version, 2018, 3)) {
     return {
       ...base,
@@ -79,9 +91,9 @@ export function readEditorExtension(reader: ObjectReader): EditorExtension {
   }
   if (atLeast(version, 3, 4)) return { ...base, m_ExtensionPtr: readPPtr(reader) };
   throw new UnsupportedError(
-    "editor object header",
-    version.join("."),
-    `object ${reader.pathId}: no known EditorExtension layout before Unity 3.4`,
+    "Unity version",
+    reader.unityVersion,
+    `object ${reader.pathId}: no known layout for an editor file's prefab pointers before 3.4`,
   );
 }
 

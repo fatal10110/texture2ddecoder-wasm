@@ -110,6 +110,7 @@ for (const name of TYPED_FIXTURES) {
       for (const [pathId, { value }] of Object.entries(sf.typetrees)) {
         const reader = readers.get(pathId);
         assert.ok(reader, `${path} has no object ${pathId}`);
+        assert.equal(reader.unityVersion, sf.unityVersion);
         checkObject(reader, sf, value as Record<string, unknown>);
       }
     }
@@ -167,6 +168,8 @@ for (const name of STRIPPED_FIXTURES) {
       const reader = byPathId.get(pathId);
       assert.ok(reader, `${path} has no object ${pathId}`);
       assert.equal(reader.serializedType?.nodes, null, "the file has a type tree after all");
+      // Suffix included: a file built without type trees says so in it.
+      assert.equal(reader.unityVersion, golden(name).serialized![path]!.unityVersion);
       if (checkObject(reader, sf, value as Record<string, unknown>)) named++;
     }
     assert.ok(named > 0, "no NamedObject was checked");
@@ -196,19 +199,21 @@ function textAsset(): { sf: SerializedFile; info: SerializedFile["objects"][numb
 
 /**
  * A reader over `bytes` for a file built for `platform` by Unity `unity` in
- * SerializedFile `format`; the caller keeps the two consistent.
+ * SerializedFile `format`; the caller keeps the two consistent. `text` is the
+ * version string the file holds.
  */
 function synthetic(
   bytes: Uint8Array,
   platform: BuildTarget,
   format: number,
   unity: UnityVersion,
+  text = unity.slice(0, 3).join("."),
 ): ObjectReader {
   const { sf, info } = textAsset();
   const file: SerializedFile = {
     ...sf,
     header: { ...sf.header, version: format },
-    unityVersion: unity.slice(0, 3).join("."),
+    unityVersion: text,
     version: unity,
     targetPlatform: platform,
   };
@@ -285,18 +290,39 @@ for (const { unity, format, pointers } of LAYOUTS) {
   });
 }
 
-for (const unity of [[3, 3, 0, 1], [0, 0, 0, 0]] as const) {
-  test(`NoTarget, Unity ${unity.join(".")}: no known layout, so UnsupportedError`, () => {
-    const reader = synthetic(bytesOf([["u32", 0], ["str", "x"]]), BuildTarget.NoTarget, 7, unity);
+/**
+ * Editor files whose header layout is unknown. Per the class-reader rule on
+ * #36, the refusal is kind "Unity version" with the file's own string: an
+ * all-zero version comes from a stripped file (`"0.0.0"`) or a loose file
+ * below format 7 (`"2.5.0f5"`, #98).
+ */
+const REFUSED: { text: string; unity: UnityVersion; format: number; hint: string }[] = [
+  { text: "0.0.0", unity: [0, 0, 0, 0], format: 22, hint: "does not record one" },
+  { text: "2.5.0f5", unity: [0, 0, 0, 0], format: 6, hint: "does not record one" },
+  { text: "3.3.0f1", unity: [3, 3, 0, 1], format: 8, hint: "before 3.4" },
+];
+
+for (const { text, unity, format, hint } of REFUSED) {
+  test(`NoTarget, Unity "${text}" at ${unity.join(".")}: UnsupportedError("Unity version")`, () => {
+    const bytes = bytesOf([["u32", 0], ["str", "x"]]);
+    const reader = synthetic(bytes, BuildTarget.NoTarget, format, unity, text);
     assert.throws(
       () => readNamedObject(reader),
       (err: unknown) =>
         err instanceof UnsupportedError &&
-        err.found === unity.join(".") &&
-        err.message.includes(`object ${reader.pathId}`),
+        err.kind === "Unity version" &&
+        err.found === text &&
+        err.message.includes(`object ${reader.pathId}`) &&
+        err.message.includes(hint),
     );
   });
 }
+
+test("a player file at an all-zero version still reads: it has no pointers to gate", () => {
+  const bytes = bytesOf([["str", "stripped"], ["i32", 0]]);
+  const reader = synthetic(bytes, BuildTarget.StandaloneWindows64, 22, [0, 0, 0, 0], "0.0.0");
+  assert.deepEqual(readNamedObject(reader), { m_Name: "stripped" });
+});
 
 test("NoTarget, 2018.3+: two pointers are not enough (upstream reads only two)", () => {
   const bytes = bytesOf([

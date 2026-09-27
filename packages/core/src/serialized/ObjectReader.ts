@@ -51,6 +51,8 @@ export class ObjectReader extends BinaryReader {
   readonly format: number;
   /** Unity version that wrote the file (upstream `version`). */
   readonly version: UnityVersion;
+  /** The Unity version exactly as the file holds it (`"0.0.0"` when stripped). */
+  readonly unityVersion: string;
   /** Platform the file was built for (upstream `platform`). */
   readonly platform: BuildTarget;
   /** The file's `[SerializeReference]` types, for {@link readTypeTree}. */
@@ -79,6 +81,7 @@ export class ObjectReader extends BinaryReader {
     this.serializedType = info.serializedType;
     this.format = file.header.version;
     this.version = file.version;
+    this.unityVersion = file.unityVersion;
     this.platform = file.targetPlatform;
     this.refTypes = file.refTypes;
   }
