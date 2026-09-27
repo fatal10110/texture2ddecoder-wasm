@@ -325,12 +325,18 @@ sprites (#34).
   `sheet_b` every way a packer can, packed forced on, since no fixture
   editor's packer writes Rotate90. Both oracles agree on every crop and on
   FlipHorizontal, FlipVertical and Rotate180. Two cases carry the verdict:
-  - **Tight meshes** (`tightOracleNote`, on the 13 sprites per editor whose
-    mesh is more than 4 vertices): UnityPy copies the mesh's triangles out of
-    the texture by their UVs (`render_sprite_mesh`); AssetStudio cuts the
-    rectangle and clears what its triangles do not cover, filled by
-    ImageSharp.Drawing without antialiasing. **Verdict: AssetStudio.** Its
-    blend also clears the colour of every pixel whose alpha is 0.
+  - **Tight meshes** (`tightOracleNote`): the two oracles part in two ways.
+    - UnityPy copies the mesh's triangles out of the texture by their UVs
+      (`render_sprite_mesh`); AssetStudio cuts the rectangle and clears what
+      its triangles do not cover, filled by ImageSharp.Drawing without
+      antialiasing. They differ wherever the mesh is more than the sprite's
+      4-vertex rectangle.
+    - AssetStudio's DestOut blend clears the colour of every pixel whose
+      alpha is 0; UnityPy keeps it.
+
+    So the note is on every tight sprite whose mesh has more than 4 vertices
+    (13 per editor) or whose crop has a pixel of alpha 0 (none of today's
+    4-vertex ones). **Verdict: AssetStudio.**
   - **Rotate90** (`rotations["4"].oracleNote`): UnityPy turns with PIL's
     `ROTATE_270`, AssetStudio with ImageSharp's `Rotate(270)`, which turns the
     other way. The two oracles are **not independent** here. UnityPy's

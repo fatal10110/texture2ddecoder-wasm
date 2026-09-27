@@ -12829,7 +12829,7 @@
               "tightWidth": 34,
               "tightHeight": 40,
               "tightRgbaSha256": "482e8162042ad89aca1a31f6111dd8e55ad4e2365ea4cdd87d389c656a3f6a7f",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "-2437713550006495630": {
               "name": "sheet_d",
@@ -12840,7 +12840,7 @@
               "tightWidth": 36,
               "tightHeight": 34,
               "tightRgbaSha256": "7716de4e1a3996c9e03ae3d21c7e13093aabbb3915502c93498021248a26cb09",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "-2509535143661592855": {
               "name": "r_a",
@@ -12858,7 +12858,7 @@
               "tightWidth": 40,
               "tightHeight": 36,
               "tightRgbaSha256": "60a60756efd5fb1d55461dda4aeae15892d7a5c9640ee14f39754f8db5fa9efe",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "-4269679966971541068": {
               "name": "p_tri5",
@@ -12869,7 +12869,7 @@
               "tightWidth": 32,
               "tightHeight": 32,
               "tightRgbaSha256": "15ec8e9ed352ff6bb1d557c669803db12dd68fd6a5578d41a8f90762605282b3",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "-6695221779743322404": {
               "name": "p_bar2",
@@ -12900,7 +12900,7 @@
               "tightWidth": 32,
               "tightHeight": 32,
               "tightRgbaSha256": "d6c5b3d229f93303d90a78ece528eae2ca0e1f6a22fb2135c9b156d36caf7b02",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "2105071273470220239": {
               "name": "p_margin",
@@ -12911,7 +12911,7 @@
               "tightWidth": 28,
               "tightHeight": 28,
               "tightRgbaSha256": "71885548b7941d3aa29a397a64a2ef1af15855ebdd19e660bd5556c7d1505d03",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "3268598796671328263": {
               "name": "p_ell3",
@@ -12922,7 +12922,7 @@
               "tightWidth": 32,
               "tightHeight": 40,
               "tightRgbaSha256": "4d4dff338112ee63cf1d47519f0191ec66bc9ba16504659ef3186151c5c568e6",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "3340896496816470437": {
               "name": "p_tri4",
@@ -12933,7 +12933,7 @@
               "tightWidth": 32,
               "tightHeight": 32,
               "tightRgbaSha256": "98f8d681a97b23991247d7165ad835bbcc704617bda993d9ef2a979fbeeaf9ed",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "3597950327003123056": {
               "name": "p_bar",
@@ -12954,7 +12954,7 @@
               "tightWidth": 40,
               "tightHeight": 32,
               "tightRgbaSha256": "a85411b4e2d188a090647b822b226f2ef4d77ba2eba7c9f587e0e3eec635c5fa",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "3730752262518394451": {
               "name": "p_wide",
@@ -12975,7 +12975,7 @@
               "tightWidth": 40,
               "tightHeight": 32,
               "tightRgbaSha256": "281fe20f2ec98f3ca544ce4d278cb64ae996937c0f3e0651e329e4ad86634bd7",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "4906317238790552104": {
               "name": "r_b",
@@ -12993,7 +12993,7 @@
               "tightWidth": 36,
               "tightHeight": 36,
               "tightRgbaSha256": "2756647f38a4e583ab12f601bf5325638cee2cfb8d5b28010d9c771ec81ffa92",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "5199425751004511571": {
               "name": "p_tri",
@@ -13004,7 +13004,7 @@
               "tightWidth": 36,
               "tightHeight": 36,
               "tightRgbaSha256": "008803e76d7f1abed04da80b75bdbd87586c6568ae574e8d28335cc5dd985acb",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "5914312708322152466": {
               "name": "p_tri3",
@@ -13015,7 +13015,7 @@
               "tightWidth": 32,
               "tightHeight": 40,
               "tightRgbaSha256": "cfc78cb8c227a7872bdd3fe7762adfb9c06766914fa4faaf984fbc7cba503891",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "6019223944814553310": {
               "name": "sheet_c",
@@ -13066,7 +13066,7 @@
                   "width": 9,
                   "height": 12,
                   "rgbaSha256": "679aaafbde0bdf18021b5f2f5f462f7e5b904557e813b8913dd5d9483e32a5e8",
-                  "oracleNote": "Rotate90: UnityPy turns the crop with PIL's ROTATE_270, AssetStudio with ImageSharp's Rotate(270), the other way round (its comment names System.Drawing's Rotate270FlipNone, which turns as ImageSharp does). No fixture editor's packer writes Rotate90. Verdict: AssetStudio - see #34"
+                  "oracleNote": "Rotate90: UnityPy turns the crop with PIL's ROTATE_270, AssetStudio with ImageSharp's Rotate(270), the other way round. Not independent oracles: UnityPy's SpriteHelper.py keeps Perfare's System.Drawing Rotate270FlipNone as a comment beside ROTATE_270, a mistranslation of that call, which turns as ImageSharp does. No fixture editor's packer writes Rotate90, so the direction is unverified against Unity (#160). Verdict: AssetStudio - see #34"
                 }
               }
             }
@@ -40818,7 +40818,7 @@
               "tightWidth": 40,
               "tightHeight": 32,
               "tightRgbaSha256": "a85411b4e2d188a090647b822b226f2ef4d77ba2eba7c9f587e0e3eec635c5fa",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "-2046293773917337472": {
               "name": "p_tri4",
@@ -40829,7 +40829,7 @@
               "tightWidth": 32,
               "tightHeight": 32,
               "tightRgbaSha256": "98f8d681a97b23991247d7165ad835bbcc704617bda993d9ef2a979fbeeaf9ed",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "-2325357963565405524": {
               "name": "sheet_a",
@@ -40850,7 +40850,7 @@
               "tightWidth": 34,
               "tightHeight": 40,
               "tightRgbaSha256": "575a80f87490b1d14d2ea67d1af3e345f07b5b679150f35c9ef4b3e7dea03077",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "-3365422925715208524": {
               "name": "p_wide",
@@ -40871,7 +40871,7 @@
               "tightWidth": 36,
               "tightHeight": 36,
               "tightRgbaSha256": "2756647f38a4e583ab12f601bf5325638cee2cfb8d5b28010d9c771ec81ffa92",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "-4053741968931027470": {
               "name": "p_bar2",
@@ -40892,7 +40892,7 @@
               "tightWidth": 32,
               "tightHeight": 40,
               "tightRgbaSha256": "cfc78cb8c227a7872bdd3fe7762adfb9c06766914fa4faaf984fbc7cba503891",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "-5579874255579696064": {
               "name": "r_a",
@@ -40910,7 +40910,7 @@
               "tightWidth": 32,
               "tightHeight": 32,
               "tightRgbaSha256": "d6c5b3d229f93303d90a78ece528eae2ca0e1f6a22fb2135c9b156d36caf7b02",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "-6125264258281089226": {
               "name": "p_margin",
@@ -40921,7 +40921,7 @@
               "tightWidth": 28,
               "tightHeight": 28,
               "tightRgbaSha256": "a44e9fbdb6ea0d46854d21e6ed270da406b25e6b658e15ad2abf4929ae1021f0",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "-6722672711659504330": {
               "name": "p_tri",
@@ -40932,7 +40932,7 @@
               "tightWidth": 36,
               "tightHeight": 36,
               "tightRgbaSha256": "008803e76d7f1abed04da80b75bdbd87586c6568ae574e8d28335cc5dd985acb",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "-7577322847973354110": {
               "name": "sheet_c",
@@ -40953,7 +40953,7 @@
               "tightWidth": 32,
               "tightHeight": 40,
               "tightRgbaSha256": "7beaa24fb8830281ed49891c80a78088caa6d403b1de7866cd1469607d80080e",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "3224528706117267220": {
               "name": "p_ell",
@@ -40964,7 +40964,7 @@
               "tightWidth": 40,
               "tightHeight": 32,
               "tightRgbaSha256": "fa9b51779bcf7d006f293d82b9c0452c335b7e9210b05efea2fe9cf6999f45b6",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "3751328083539606621": {
               "name": "p_tri5",
@@ -40975,7 +40975,7 @@
               "tightWidth": 32,
               "tightHeight": 32,
               "tightRgbaSha256": "15ec8e9ed352ff6bb1d557c669803db12dd68fd6a5578d41a8f90762605282b3",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "6652841704280603340": {
               "name": "sheet_d",
@@ -40986,7 +40986,7 @@
               "tightWidth": 36,
               "tightHeight": 34,
               "tightRgbaSha256": "7716de4e1a3996c9e03ae3d21c7e13093aabbb3915502c93498021248a26cb09",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             },
             "7211013793186106065": {
               "name": "p_bar",
@@ -41037,7 +41037,7 @@
                   "width": 9,
                   "height": 12,
                   "rgbaSha256": "679aaafbde0bdf18021b5f2f5f462f7e5b904557e813b8913dd5d9483e32a5e8",
-                  "oracleNote": "Rotate90: UnityPy turns the crop with PIL's ROTATE_270, AssetStudio with ImageSharp's Rotate(270), the other way round (its comment names System.Drawing's Rotate270FlipNone, which turns as ImageSharp does). No fixture editor's packer writes Rotate90. Verdict: AssetStudio - see #34"
+                  "oracleNote": "Rotate90: UnityPy turns the crop with PIL's ROTATE_270, AssetStudio with ImageSharp's Rotate(270), the other way round. Not independent oracles: UnityPy's SpriteHelper.py keeps Perfare's System.Drawing Rotate270FlipNone as a comment beside ROTATE_270, a mistranslation of that call, which turns as ImageSharp does. No fixture editor's packer writes Rotate90, so the direction is unverified against Unity (#160). Verdict: AssetStudio - see #34"
                 }
               }
             },
@@ -41050,7 +41050,7 @@
               "tightWidth": 40,
               "tightHeight": 36,
               "tightRgbaSha256": "60a60756efd5fb1d55461dda4aeae15892d7a5c9640ee14f39754f8db5fa9efe",
-              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+              "tightOracleNote": "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs (render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the mesh is more than the sprite's rectangle. They also differ on every pixel of alpha 0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. Verdict: AssetStudio - see #34"
             }
           }
         }

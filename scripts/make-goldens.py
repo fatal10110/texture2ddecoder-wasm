@@ -115,13 +115,17 @@ SPRITE_TIGHT_NOTE = (
     "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs "
     "(render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles "
     "do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the "
-    "mesh is more than the sprite's rectangle. Verdict: AssetStudio - see #34"
+    "mesh is more than the sprite's rectangle. They also differ on every pixel of alpha "
+    "0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. "
+    "Verdict: AssetStudio - see #34"
 )
 SPRITE_ROTATE90_NOTE = (
     "Rotate90: UnityPy turns the crop with PIL's ROTATE_270, AssetStudio with ImageSharp's "
-    "Rotate(270), the other way round (its comment names System.Drawing's "
-    "Rotate270FlipNone, which turns as ImageSharp does). No fixture editor's packer "
-    "writes Rotate90. Verdict: AssetStudio - see #34"
+    "Rotate(270), the other way round. Not independent oracles: UnityPy's SpriteHelper.py "
+    "keeps Perfare's System.Drawing Rotate270FlipNone as a comment beside ROTATE_270, a "
+    "mistranslation of that call, which turns as ImageSharp does. No fixture editor's "
+    "packer writes Rotate90, so the direction is unverified against Unity (#160). "
+    "Verdict: AssetStudio - see #34"
 )
 # TextureFormat -> where UnityPy's RGBA knowingly differs from AssetStudio's
 # converter, the behavior source of truth (plan section 6: the verdict is
@@ -560,7 +564,8 @@ def sprite_golden(obj) -> dict:
     SpritePackingRotation value.
 
     `tightOracleNote` marks a tight image of a mesh that is more than the
-    sprite's 4-vertex rectangle, and `rotations["4"]` has an `oracleNote`:
+    sprite's 4-vertex rectangle, or of a crop with any pixel of alpha 0, and
+    `rotations["4"]` has an `oracleNote`:
     there UnityPy and AssetStudio differ (SPRITE_TIGHT_NOTE,
     SPRITE_ROTATE90_NOTE).
     """
@@ -582,7 +587,10 @@ def sprite_golden(obj) -> dict:
             out["tightWidth"] = width
             out["tightHeight"] = height
             out["tightRgbaSha256"] = sha256(tight)
-            if sprite.m_RD.m_VertexData.m_VertexCount != 4:
+            # More than the rectangle's 4 vertices, or a pixel of alpha 0 in the
+            # crop: either way the two oracles part (SPRITE_TIGHT_NOTE).
+            transparent = any(data[i] == 0 for i in range(3, len(data), 4))
+            if sprite.m_RD.m_VertexData.m_VertexCount != 4 or transparent:
                 out["tightOracleNote"] = SPRITE_TIGHT_NOTE
     if sprite.m_Name == ROTATED_SPRITE:
         out["rotations"] = {}
