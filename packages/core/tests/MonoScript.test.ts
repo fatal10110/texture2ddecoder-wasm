@@ -198,8 +198,37 @@ test("every cut through a field throws CorruptError", () => {
 test("a string's length past the object's end throws CorruptError, not an empty string", () => {
   const { bytes } = build(["str m_Name", "i32 m_ExecutionOrder", "hash m_PropertiesHash"]);
   const reader = synthetic(FROM, withTail(bytes, 40, 0, 0, 0, 0x41), [2020, 3, 30, 1]);
-  assert.throws(() => readMonoScript(reader), /m_ClassName of 40 bytes at offset \d+ runs past/);
+  assert.throws(
+    () => readMonoScript(reader),
+    /MonoScript -?\d+ m_ClassName byte count 40 at offset \d+ exceeds the 1 bytes left/,
+  );
 });
+
+// Unity 2018.2+: m_AssemblyName is the last field, so a negative count on it,
+// or on m_Namespace before an empty m_AssemblyName, leaves no bytes for the end
+// check to catch.
+for (const field of ["m_ClassName", "m_Namespace", "m_AssemblyName"]) {
+  test(`a negative ${field} length throws CorruptError, not an empty string`, () => {
+    const head = build(V5_HEAD).bytes;
+    const str = (text: string) => {
+      const data = new TextEncoder().encode(text);
+      const out = [...new Uint8Array(Int32Array.of(data.length).buffer), ...data];
+      while (out.length % 4) out.push(0);
+      return out;
+    };
+    const NEG = [0xff, 0xff, 0xff, 0xff];
+    const fields = {
+      m_ClassName: [...NEG, ...str(""), ...str("")],
+      m_Namespace: [...str("A"), ...NEG, ...str("")],
+      m_AssemblyName: [...str("A"), ...str(""), ...NEG],
+    }[field]!;
+    const reader = synthetic(FROM, withTail(head, ...fields), [2020, 3, 30, 1]);
+    assert.throws(
+      () => readMonoScript(reader),
+      new RegExp(`${field} byte count -1 at offset \\d+ is negative`),
+    );
+  });
+}
 
 test("bytes left after the last field throw CorruptError", () => {
   const reader = synthetic(FROM, withTail(FROM.bytes, 0, 0, 0, 0), [6000, 3, 25, 1]);

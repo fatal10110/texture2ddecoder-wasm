@@ -168,14 +168,25 @@ test("a negative m_Script byte count throws CorruptError", () => {
   new DataView(bytes.buffer).setInt32(12, -1, true);
   assert.throws(
     () => readTextAsset(synthetic(FROM, bytes, [6000, 3, 25, 1])),
-    /m_Script byte count -1 at offset 12 is negative/,
+    new RegExp(`TextAsset ${FROM.info.pathId} m_Script byte count -1 at offset 12 is negative`),
   );
 });
 
 test("m_PathName's length past the object's end throws CorruptError, not an empty path", () => {
   const { bytes } = build(NEW);
   const reader = synthetic(FROM, withTail(bytes, 9, 0, 0, 0, 0x61), [5, 6, 7, 1]);
-  assert.throws(() => readTextAsset(reader), /m_PathName of 9 bytes at offset \d+ runs past/);
+  assert.throws(
+    () => readTextAsset(reader),
+    /TextAsset -?\d+ m_PathName byte count 9 at offset \d+ exceeds the 1 bytes left/,
+  );
+});
+
+test("a negative m_PathName length throws CorruptError, not an empty path", () => {
+  const { bytes } = build(NEW);
+  for (const unity of [[5, 6, 7, 1], [0, 0, 0, 0]] as UnityVersion[]) {
+    const reader = synthetic(FROM, withTail(bytes, 0xff, 0xff, 0xff, 0xff), unity);
+    assert.throws(() => readTextAsset(reader), /m_PathName byte count -1 at offset \d+ is negative/);
+  }
 });
 
 test("bytes left after the last field throw CorruptError", () => {

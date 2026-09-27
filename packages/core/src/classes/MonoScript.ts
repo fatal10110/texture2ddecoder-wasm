@@ -4,7 +4,7 @@ import { CorruptError, UnsupportedError } from "../errors.js";
 import { BuildTarget } from "../serialized/BuildTarget.js";
 import type { ObjectReader } from "../serialized/ObjectReader.js";
 import { readNamedObject, type NamedObject } from "./NamedObject.js";
-import { readStringField } from "./TextAsset.js";
+import { readStringField } from "./strings.js";
 import { atLeast } from "./version.js";
 
 /**
@@ -55,8 +55,8 @@ export interface MonoScript extends NamedObject {
  *   `unityVersion` as `found`, when the version is unknown (`[0, 0, 0, 0]`:
  *   stripped, or a loose file below format 7), since the fields depend on it;
  *   of kind `"build target"` for an editor file
- * @throws {CorruptError} when the object ends early, a string's length runs
- *   past its end, or bytes are left over after the last field
+ * @throws {CorruptError} when the object ends early, a string's byte count is
+ *   negative or runs past its end, or bytes are left over after the last field
  */
 export function readMonoScript(reader: ObjectReader): MonoScript {
   const { version } = reader;

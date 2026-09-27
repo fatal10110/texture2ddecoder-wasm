@@ -7,7 +7,7 @@ import { BuildTarget } from "../serialized/BuildTarget.js";
 import type { ObjectReader } from "../serialized/ObjectReader.js";
 import { readEditorExtension, type EditorExtension } from "./EditorExtension.js";
 import { readPPtr, type PPtr } from "./PPtr.js";
-import { readStringField } from "./TextAsset.js";
+import { readStringField } from "./strings.js";
 
 /**
  * The header of a `MonoBehaviour`, the fields Unity writes before the
@@ -45,7 +45,7 @@ export interface MonoBehaviour extends EditorExtension {
  *   `m_Name` and its padding, where the script's fields start
  * @throws {UnsupportedError} of kind `"build target"` for an editor file
  * @throws {CorruptError} when the object ends inside the header, or
- *   `m_Name`'s length runs past its end
+ *   `m_Name`'s byte count is negative or runs past its end
  */
 export function readMonoBehaviour(reader: ObjectReader): MonoBehaviour {
   if (reader.platform === BuildTarget.NoTarget) {

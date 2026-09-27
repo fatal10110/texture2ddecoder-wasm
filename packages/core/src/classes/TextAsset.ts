@@ -5,6 +5,7 @@ import { BinaryReader } from "../io/BinaryReader.js";
 import type { ObjectReader } from "../serialized/ObjectReader.js";
 import { readCount } from "../serialized/TypeTree.js";
 import { readNamedObject, type NamedObject } from "./NamedObject.js";
+import { readStringField } from "./strings.js";
 import { atLeast } from "./version.js";
 
 /**
@@ -40,13 +41,14 @@ export interface TextAsset extends NamedObject {
  * @param reader the object's reader, rewound first and left at its end
  * @throws {UnsupportedError} for an editor file with no known header layout,
  *   as `readNamedObject` does
- * @throws {CorruptError} when the object ends early, the `m_Script` byte count
- *   is negative or runs past the object's end, `m_PathName`'s length runs past
- *   it, or bytes are left over after the last field
+ * @throws {CorruptError} when the object ends early, the `m_Script` or
+ *   `m_PathName` byte count is negative or runs past the object's end, or bytes
+ *   are left over after the last field
  */
 export function readTextAsset(reader: ObjectReader): TextAsset {
   const base = readNamedObject(reader);
-  const m_Script = reader.readBytes(readCount(reader, "m_Script byte"));
+  const scriptBytes = readCount(reader, `TextAsset ${reader.pathId} m_Script byte`);
+  const m_Script = reader.readBytes(scriptBytes);
   reader.align();
   const out: TextAsset = { ...base, m_Script };
 
@@ -81,28 +83,4 @@ export function readTextAsset(reader: ObjectReader): TextAsset {
 export function textAssetString(textAsset: Pick<TextAsset, "m_Script">): string {
   const bytes = textAsset.m_Script;
   return new BinaryReader(bytes).readString(bytes.length);
-}
-
-/**
- * `readAlignedString` for a class reader's field, except that a length past
- * the object's end throws: upstream reads it as `""`, and so would return a
- * truncated object as a whole one. Internal to the class readers.
- *
- * @param reader the object's reader, left past the string and its padding
- * @param owner the class, for the error message
- * @param field the field, for the error message
- * @throws {CorruptError} when the length prefix, or the length it gives, runs
- *   past the object's end
- */
-export function readStringField(reader: ObjectReader, owner: string, field: string): string {
-  const at = reader.position;
-  const length = reader.readInt32();
-  if (length > reader.remaining) {
-    throw new CorruptError(
-      `${owner} ${reader.pathId} ${field} of ${length} bytes at offset ${at} ` +
-        `runs past the ${reader.remaining} bytes left`,
-    );
-  }
-  reader.position = at;
-  return reader.readAlignedString();
 }

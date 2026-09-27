@@ -150,5 +150,17 @@ test("every cut through the header throws CorruptError", () => {
 test("m_Name's length past the object's end throws CorruptError, not an empty name", () => {
   const { bytes } = build(LAYOUT.slice(0, 4));
   const reader = synthetic(FROM, withTail(bytes, 12, 0, 0, 0, 0x64), [6000, 3, 25, 1]);
-  assert.throws(() => readMonoBehaviour(reader), /m_Name of 12 bytes at offset 28 runs past/);
+  assert.throws(
+    () => readMonoBehaviour(reader),
+    /MonoBehaviour -?\d+ m_Name byte count 12 at offset 28 exceeds the 1 bytes left/,
+  );
+});
+
+test("a negative m_Name length throws CorruptError, not an empty name", () => {
+  // The script's fields follow, so no end check would catch it.
+  const { bytes } = build(LAYOUT.slice(0, 4));
+  const reader = synthetic(FROM, withTail(bytes, 0xff, 0xff, 0xff, 0xff, 7, 0, 0, 0), [
+    6000, 3, 25, 1,
+  ]);
+  assert.throws(() => readMonoBehaviour(reader), /m_Name byte count -1 at offset 28 is negative/);
 });
