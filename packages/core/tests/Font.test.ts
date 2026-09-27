@@ -83,22 +83,42 @@ test("the Font checks cover formats 21 and 22, typed, notypetree and version-str
   );
 });
 
-test("a dynamic font's 0x0 Font Texture: fields as the golden, read() refuses it (#118)", () => {
+test("a dynamic font's 0x0 Font Texture: fields as the golden, read() has empty imageData", () => {
+  const seen: string[] = [];
   for (const name of FIXTURES.filter((n) => !n.includes("/stripped/"))) {
+    // objectsOf walks env.objects of a load(), as a caller reading every Texture2D does.
     const [texture, ...more] = objectsOf(name, ClassID.Texture2D);
     assert.ok(texture && more.length === 0);
-    const { reader, dump } = texture;
+    const { reader, dump, file } = texture;
     const fields = readTexture2D(reader);
     assert.equal(fields.m_Name, "Font Texture");
     assert.deepEqual(goldenForm(goldenTree(name, ClassID.Texture2D), fields), dump);
+    assert.equal(fields.m_Width, 0);
+    assert.equal(fields.m_Height, 0);
     // Neither inline data nor a .resS: no texture golden either (make-goldens.py).
+    assert.equal(fields["image data"].length, 0);
+    assert.equal(fields.m_StreamData?.path, "");
     const sf = Object.values(golden(typedTwin(name)).serialized!)[0]!;
     assert.equal(sf.textures, undefined);
-    assert.throws(
-      () => reader.read<Texture2DData>(),
-      (err: unknown) => err instanceof CorruptError && /has no image data/.test(err.message),
-    );
+
+    // Not corrupt (#139): read() is the fields, with the empty inline data as imageData.
+    const { imageData, platform, ...rest } = reader.read<Texture2DData>();
+    assert.deepEqual(rest, fields);
+    assert.ok(imageData instanceof Uint8Array);
+    assert.equal(imageData.length, 0);
+    // Still a view into the SerializedFile, never a copy (R7).
+    assert.equal(imageData.buffer, file.buffer);
+    assert.equal(platform, reader.platform);
+    seen.push(name.split("/").slice(1, 3).join(" "));
   }
+  assert.deepEqual(seen.sort(), [
+    "2019.4.41f2 lz4",
+    "2019.4.41f2 lz4-notypetree",
+    "2020.3.30f1 lz4",
+    "2020.3.30f1 lz4-notypetree",
+    "6000.3.25f1 lz4",
+    "6000.3.25f1 lz4-notypetree",
+  ]);
 });
 
 // --- layouts of Unity's type trees ---------------------------------------------------

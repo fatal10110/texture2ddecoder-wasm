@@ -256,7 +256,7 @@ export class ObjectReader extends BinaryReader {
    *   finds bytes left after its last field, or the type tree read does not
    *   end exactly at `byteSize`; when a `Texture2D`'s `m_StreamData.offset` is
    *   2^53 or above, or the resource range runs past the end of its file; when
-   *   a `Texture2D` has no image data, neither inline nor in a resource file;
+   *   a `Texture2D` of non-zero size has no image data, inline or in a resource file;
    *   and whatever else {@link readTypeTree} throws, such as for a malformed
    *   type tree or an undeclared `[SerializeReference]` type
    */
