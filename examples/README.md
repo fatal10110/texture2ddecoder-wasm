@@ -69,7 +69,9 @@ Chromium (`npx playwright install chromium`). It checks:
   `fixtures/goldens.json`. `decodeTexture2D` returns the top row first, and the
   goldens hash Unity's bottom-up rows, so the test reverses the rows before it
   hashes. The DXT1 texture is also read back from the canvas.
-- The reader modules load in the Worker only, never on the page. Animation
-  frames keep coming from the file pick to the drawn texture.
+- The reader modules load in the Worker only, never on the page: a Worker
+  starts, and the page's own resource timeline has no `/npm/` module. That is
+  the responsiveness proof (D4); the fixtures are too small for a timing check
+  to tell a Worker from the main thread.
 
 CI runs it in the `decoder` job, the only job that builds the WASM.

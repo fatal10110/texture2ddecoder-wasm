@@ -1,6 +1,6 @@
 // Smoke test of examples/cdn.html (#35, plan §5): a bundle picked in the page
 // is read in a Worker and its Texture2D drawn to the canvas, from plain static
-// hosting with no COOP/COEP, while the page keeps painting frames.
+// hosting with no COOP/COEP.
 //
 // The packages come from serve.mjs (`?local`), this repo's builds behind a
 // stand-in for jsDelivr's `/+esm`: the reader packages are not on npm until
@@ -32,8 +32,6 @@ function reverseRows(rgba: Uint8Array, width: number): Uint8Array {
 
 /** What the init script records in the page. */
 interface Smoke {
-  /** `requestAnimationFrame` timestamps, from the start. */
-  frames: number[];
   /** Every `ImageData` the page put on a canvas, as it was passed. */
   images: { width: number; height: number; data: number[] }[];
 }
@@ -66,13 +64,8 @@ async function expectLastImage(page: Page, texture: GoldenTexture): Promise<numb
 
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
-    const smoke: Smoke = { frames: [], images: [] };
+    const smoke: Smoke = { images: [] };
     window.smoke = smoke;
-    const tick = (time: number) => {
-      smoke.frames.push(time);
-      requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
     // Record the pixels as the page hands them over: reading the canvas back
     // would not give them exactly, since canvases store alpha premultiplied.
     const put = CanvasRenderingContext2D.prototype.putImageData;
@@ -105,10 +98,8 @@ test("cdn.html reads a bundle in a Worker and draws its Texture2D", async ({ pag
   // initTexture still loads the WASM.
   const lz4 = "editor/6000.3.25f1/lz4/texture";
   const checker = goldenTexture(lz4, "checker");
-  const start = await page.evaluate(() => performance.now());
   await page.setInputFiles("#file", fixturePath(lz4));
   await expect(page.locator("#caption")).toHaveText("checker: 4 x 4");
-  const end = await page.evaluate(() => performance.now());
 
   await test.step("the objects are listed", async () => {
     const objects = Object.values(GOLDENS[lz4]!.objects).flat();
@@ -127,23 +118,16 @@ test("cdn.html reads a bundle in a Worker and draws its Texture2D", async ({ pag
     expect(size).toEqual([4, 4]);
   });
 
-  await test.step("the reader runs in the Worker, the page keeps painting (D4)", async () => {
+  // D4's point is that the sync parse never runs on the page's thread. With
+  // fixtures this small a frame-timing check could not fail either way, so
+  // the proof is structural: a Worker ran, and the page loaded no package.
+  await test.step("the reader runs in the Worker, not on the page (D4)", async () => {
     expect(workers.some((url) => new URL(url).pathname === "/examples/cdn-worker.js")).toBe(true);
     // The page's own resource timeline: nothing of the packages is loaded on the main thread.
     const mainThread = await page.evaluate(() =>
       performance.getEntriesByType("resource").map((entry) => entry.name),
     );
     expect(mainThread.filter((url) => new URL(url).pathname.startsWith("/npm/"))).toEqual([]);
-    // From picking the file to the drawn texture - Worker start, module and
-    // WASM loading, parse, decode - frames kept coming.
-    const frames = await page.evaluate(
-      ({ from, to }) => window.smoke.frames.filter((time) => time >= from && time <= to),
-      { from: start, to: end },
-    );
-    expect(frames.length).toBeGreaterThan(0);
-    const times = [start, ...frames, end];
-    const longestGap = Math.max(...times.slice(1).map((time, i) => time - times[i]!));
-    expect(longestGap).toBeLessThan(250);
   });
 
   await test.step("block formats decode through the WASM in the Worker", async () => {
