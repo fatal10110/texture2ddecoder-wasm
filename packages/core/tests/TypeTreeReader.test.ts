@@ -195,6 +195,20 @@ test("ObjectReader.readTypeTree() is readTypeTree(), from the object's first byt
   assert.equal(reader.position, reader.byteSize);
 });
 
+test("plan §3 end to end: load() -> env.objects -> obj.readTypeTree() equals the golden", () => {
+  for (const name of ["editor/2019.4.41f2/lz4/shared", "editor/6000.3.25f1/lz4/shared"]) {
+    const env = load([{ name, data: loadFixture(name) }]);
+    const obj = env.objects.find((o) => o.type === ClassID.TextAsset);
+    assert.ok(obj, `${name}: no TextAsset in env.objects`);
+    const dump = Object.values(golden(name).serialized!)
+      .map((s) => s.typetrees[String(obj.pathId)])
+      .find((d) => d !== undefined);
+    assert.ok(dump, `${name}: no golden dump for ${obj.pathId}`);
+    // A TextAsset has only strings, which the §5 normalization leaves as they are.
+    assert.deepEqual(obj.readTypeTree(), dump.value, name);
+  }
+});
+
 // --- value shapes ---------------------------------------------------------------
 
 /** The `main` MonoBehaviour's fields that the shape tests look at. */
