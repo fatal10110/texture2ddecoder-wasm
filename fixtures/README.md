@@ -293,7 +293,9 @@ sprites yet; M3 adds the rest.
   inline image data and no `.resS`. UnityPy then looks for a resource file
   named `""` and fails, and there is nothing to hash or decode, so
   `make-goldens.py` gives such a Texture2D no texture golden (#41). Its type
-  tree is still dumped.
+  tree is still dumped. This library deliberately differs from the oracle
+  here: `obj.read()` gives it an empty `imageData` and `decodeTexture2D` a 0x0
+  image (maintainer decision on #139); AssetStudio also hands back 0 bytes.
 
 ## Regenerating
 

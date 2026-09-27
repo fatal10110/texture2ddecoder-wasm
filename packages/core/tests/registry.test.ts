@@ -25,7 +25,7 @@ import { objectBytes, synthetic } from "./class-readers.js";
 /**
  * Fixtures holding a Texture2D with image data, per their (or their typed
  * twin's) texture goldens. A dynamic font's 0x0 "Font Texture" has none, so no
- * golden (#41); `Font.test.ts` checks that `read()` refuses it.
+ * golden (#41); `Font.test.ts` checks that `read()` gives it empty `imageData` (#139).
  */
 const TEXTURE_FIXTURES = fixtureNames().filter((name) => textureGoldens(name).size > 0);
 
@@ -296,9 +296,13 @@ test("non-empty inline image data wins over a non-empty m_StreamData.path", () =
   assert.equal(sha256(data.imageData), want.imageSha256);
 });
 
-test("no image data, neither inline nor in a .resS, throws CorruptError (R9)", () => {
-  // Decided on PR #118, as UnityPy raises: the .resS-backed Texture2D with
-  // its m_StreamData.path emptied, so both sources are empty.
+/**
+ * The .resS-backed Texture2D of `editor/6000.3.25f1/lz4/texture` with its
+ * m_StreamData.path emptied, so neither source holds image data, and its
+ * m_Width and m_Height set to `size` when given. A reader not built by
+ * `load()`, which only matters for a non-empty path.
+ */
+function withoutImageData6000(size?: [number, number]): ObjectReader {
   const name = "editor/6000.3.25f1/lz4/texture";
   const node = loadName(name).files.find((f) => golden(name).serialized![f.path])!;
   const sf = readSerializedFile(node.data);
@@ -306,24 +310,62 @@ test("no image data, neither inline nor in a .resS, throws CorruptError (R9)", (
   const info = sf.objects.find((o) => o.classId === ClassID.Texture2D)!;
   const object = node.data.subarray(info.byteStart, info.byteStart + info.byteSize);
   const streamed = new ObjectReader(node.data, sf, info);
-  const { m_StreamData, "image data": inline } = readTexture2D(streamed);
+  const { m_StreamData, "image data": inline, m_Width, m_Height } = readTexture2D(streamed);
   assert.equal(inline.length, 0);
   // The object ends with the path: an Int32 length, the bytes, padding to 4.
   const pathBytes = 4 + Math.ceil(new TextEncoder().encode(m_StreamData!.path).length / 4) * 4;
   const bytes = Uint8Array.from([...object.subarray(0, -pathBytes), 0, 0, 0, 0]);
+  if (size) {
+    // m_Width and m_Height are adjacent Int32s; the pair occurs once in the object.
+    const view = new DataView(bytes.buffer);
+    const at = [...Array(bytes.length - 7).keys()].filter(
+      (i) => view.getInt32(i, true) === m_Width && view.getInt32(i + 4, true) === m_Height,
+    );
+    assert.equal(at.length, 1, `m_Width, m_Height = ${m_Width}, ${m_Height} found at ${at}`);
+    view.setInt32(at[0]!, size[0], true);
+    view.setInt32(at[0]! + 4, size[1], true);
+  }
   const reader = new ObjectReader(bytes, sf, { ...info, byteStart: 0, byteSize: bytes.length });
   const texture = readTexture2D(reader);
   assert.equal(texture.m_StreamData?.path, "");
   assert.equal(texture["image data"].length, 0);
+  if (size) assert.deepEqual([texture.m_Width, texture.m_Height], size);
+  return reader;
+}
+
+test("no image data, neither inline nor in a .resS, throws CorruptError (R9)", () => {
+  // Decided on PR #118, as UnityPy raises, for a texture that has pixels
+  // (narrowed by #139): the .resS-backed Texture2D with its path emptied.
+  const reader = withoutImageData6000();
+  const { m_Width, m_Height } = readTexture2D(reader);
+  assert.ok(m_Width > 0 && m_Height > 0);
 
   assert.throws(
     () => reader.read(),
     (err: unknown) =>
       err instanceof CorruptError &&
       err.message ===
-        `Texture2D ${info.pathId} has no image data, neither inline nor in a .resS ` +
+        `Texture2D ${reader.pathId} has no image data, neither inline nor in a .resS ` +
           "(image data is empty and m_StreamData.path names no file)",
   );
+});
+
+test("0 pixels wide or high and no image data: read() gives empty imageData (#139)", () => {
+  // Hand-built 0xN, Nx0 and 0x0 from the same object; the fixture Font
+  // Textures (0x0) are checked in Font.test.ts.
+  const sizes: [number, number][] = [[0, 16], [16, 0], [0, 0]];
+  for (const size of sizes) {
+    const reader = withoutImageData6000(size);
+    const data = reader.read<Texture2DData>();
+    assert.deepEqual([data.m_Width, data.m_Height], size);
+    assert.deepEqual(withoutImageData(data), readTexture2D(reader));
+    assert.equal(data.imageData.length, 0, `${size}`);
+    // The empty inline data itself: a view, never a copy (R7).
+    assert.equal(data.imageData, data["image data"]);
+    assert.equal(data.platform, reader.platform);
+  }
+  // 1 x 1 has a pixel to store, so it is refused like the fixture's own size.
+  assert.throws(() => withoutImageData6000([1, 1]).read(), CorruptError);
 });
 
 /**
