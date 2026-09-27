@@ -420,12 +420,15 @@ const SPRITE_LAYOUTS: { unity: UnityVersion; buildType?: string; fields: Field[]
   { unity: [5, 4, 1, 2], buildType: "p", fields: sprite({ ...V5_3, mesh: V5_4_MESH }) },
   { unity: [5, 4, 1, 3], buildType: "p", fields: sprite({ ...V5_4_1P3, mesh: V5_4_MESH }) },
   { unity: [5, 4, 2, 1], fields: sprite({ ...V5_4_1P3, mesh: V5_4_MESH }) },
-  // atlasRectOffset: 5.4.6+, 5.5.3+ and 5.6+ (TPK; upstream: 5.6+).
+  // atlasRectOffset: 5.4.6+, 5.5.3+ and 5.6+ (TPK; upstream: 5.6+). 5.4.5 and
+  // 5.5.2 are the last releases without it.
+  { unity: [5, 4, 5, 1], fields: sprite({ ...V5_4_1P3, mesh: V5_4_MESH }) },
   {
     unity: [5, 4, 6, 1],
     fields: sprite({ ...V5_4_1P3, mesh: V5_4_MESH, atlasRectOffset: true }),
   },
   { unity: [5, 5, 0, 1], fields: sprite({ ...V5_4_1P3, mesh: V5_4_MESH }) },
+  { unity: [5, 5, 2, 1], fields: sprite({ ...V5_4_1P3, mesh: V5_4_MESH }) },
   {
     unity: [5, 5, 3, 1],
     fields: sprite({ ...V5_4_1P3, mesh: V5_4_MESH, atlasRectOffset: true }),
