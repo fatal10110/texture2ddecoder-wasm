@@ -116,9 +116,11 @@ export interface Texture2D extends Texture {
  * @param reader the object's reader, rewound first and left at its end
  * @throws {UnsupportedError} for an unknown Unity version or an editor file,
  *   as `readTexture` does
- * @throws {CorruptError} when the object ends early, a length or count runs
- *   past its end, `m_StreamData.offset` is 2^53 or above, or bytes are left
- *   over after the last field
+ * @throws {CorruptError} when the object ends early, the `m_Name`,
+ *   `m_PlatformBlob` or `image data` byte count is negative or runs past its
+ *   end, the `m_StreamData` path's length runs past its end,
+ *   `m_StreamData.offset` is 2^53 or above, or bytes are left over after the
+ *   last field
  */
 export function readTexture2D(reader: ObjectReader): Texture2D {
   const base = readTexture(reader);

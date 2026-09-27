@@ -45,9 +45,9 @@ export interface TextAsset extends NamedObject {
  *   `unityVersion` as `found`, for a Unity version below 3.4, or `[0, 0, 0, 0]`
  *   in a file below format 7; for an editor file with no known header layout,
  *   as `readNamedObject` does
- * @throws {CorruptError} when the object ends early, the `m_Script` or
- *   `m_PathName` byte count is negative or runs past the object's end, or bytes
- *   are left over after the last field
+ * @throws {CorruptError} when the object ends early, the `m_Name`, `m_Script`
+ *   or `m_PathName` byte count is negative or runs past the object's end, or
+ *   bytes are left over after the last field
  */
 export function readTextAsset(reader: ObjectReader): TextAsset {
   const { version } = reader;
