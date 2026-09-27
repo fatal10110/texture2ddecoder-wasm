@@ -45,7 +45,8 @@ export interface Texture extends NamedObject {
  *   `unityVersion` as `found`, when the version is unknown (`[0, 0, 0, 0]`:
  *   stripped, or a loose file below format 7), since every field past `m_Name`
  *   depends on it; of kind `"build target"` for an editor file
- * @throws {CorruptError} when the object is too short for these fields
+ * @throws {CorruptError} when the object is too short for these fields, or
+ *   `m_Name`'s byte count is negative or runs past the object's end
  */
 export function readTexture(reader: ObjectReader): Texture {
   const { version } = reader;
