@@ -272,7 +272,7 @@ test('Unity "0.0.0": format 22 has 2020.1\'s layout, format 21 2019.2\'s', () =>
   }
 });
 
-test('Unity "0.0.0": an object that does not fit its format\'s layout is refused, not corrupt', () => {
+test('Unity "0.0.0": a misfit for its format\'s layout is refused, not corrupt', () => {
   // #36 as amended on #136: the layout is inferred from the format.
   const v2019 = build(L2019_2).bytes;
   const v2020 = build(L2020_1).bytes;
