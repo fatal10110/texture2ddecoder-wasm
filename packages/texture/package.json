@@ -1,6 +1,6 @@
 {
   "name": "unity-asset-reader-texture",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Texture2D and Sprite decoding to RGBA for unity-asset-reader.",
   "license": "MIT AND Apache-2.0",
   "main": "dist/index.cjs",
@@ -37,7 +37,7 @@
     "texture2ddecoder-wasm": "^1.2.2"
   },
   "peerDependencies": {
-    "unity-asset-reader": "*"
+    "unity-asset-reader": "^1"
   },
   "devDependencies": {
     "unity-asset-reader": "*"
