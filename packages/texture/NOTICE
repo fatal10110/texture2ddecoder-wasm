@@ -11,8 +11,12 @@ AssetStudio -- https://github.com/Razviar/assetstudio (MIT)
   Source of truth for AssetBundle, SerializedFile, TypeTree and class layout,
   for the plain texture format conversion (Texture2DConverter.cs, Half.cs),
   for which block or Crunch decoder each texture format goes to
-  (Texture2DConverter.cs), for the Xbox 360 byte swap (Texture2DConverter.cs)
-  and for the vertical flip (Texture2DExtensions.cs).
+  (Texture2DConverter.cs), for the Xbox 360 byte swap (Texture2DConverter.cs),
+  for the vertical flip (Texture2DExtensions.cs), and for sprites: the crop,
+  the packing rotation and the tight-mesh mask (SpriteHelper.cs, Mesh.cs).
+  The mask's triangle fill reproduces the behaviour of the ImageSharp.Drawing
+  version AssetStudio uses (Six Labors, Apache-2.0); it is reimplemented, and
+  no ImageSharp code is copied.
 
 UnityPy -- https://github.com/K0lb3/UnityPy (MIT)
   Copyright (c) K0lb3
