@@ -1,9 +1,11 @@
 // Ported from AssetStudio/SerializedFile.cs (MIT, © Perfare / RazTools / Razviar)
 // Ported from AssetStudio/SerializedType.cs (MIT, © Perfare / RazTools / Razviar)
 // Ported from AssetStudio/TypeTreeNode.cs (MIT, © Perfare / RazTools / Razviar)
+// Ported from AssetStudio/TypeTree.cs (MIT, © Perfare / RazTools / Razviar)
 
 import { CorruptError } from "../errors.js";
 import { BinaryReader } from "../io/BinaryReader.js";
+import { commonString } from "./CommonString.js";
 import { SerializedFileFormatVersion as V } from "./FormatVersion.js";
 
 /** Size of a `Hash128` (script id, old type hash). */
@@ -240,13 +242,9 @@ function readTypeTreeBlob(
 /**
  * Resolve a blob string reference: an offset into the file's own string
  * buffer, or - with the high bit set - into Unity's built-in common strings.
- *
- * ponytail: a common-string reference resolves to upstream's fallback for an
- * unknown one, the offset as text, until the `CommonString` table is ported
- * (#23). Only node names are affected, and nothing reads them before #23.
  */
 function readBlobString(buffer: Uint8Array, value: number): string {
-  if ((value & COMMON_STRING_FLAG) !== 0) return String(value & 0x7fffffff);
+  if ((value & COMMON_STRING_FLAG) !== 0) return commonString(value & 0x7fffffff);
   if (value > buffer.length) {
     throw new CorruptError(
       `type tree string offset ${value} is past the end of the ${buffer.length}-byte buffer`,
