@@ -158,3 +158,59 @@ test("a blob node offset past its string buffer throws CorruptError", () => {
     CorruptError,
   );
 });
+
+// --- the pre-5.0 inline layout --------------------------------------------------
+
+/** A pre-blob (format 8) node written depth-first, as Unity stores it. */
+interface LegacyNode {
+  type: string;
+  name: string;
+  children?: LegacyNode[];
+}
+
+/** A format-8 `m_Types` entry: class id, then the inline tree, nothing after. */
+function legacyType(root: LegacyNode): Uint8Array {
+  const bytes: number[] = [];
+  const i32 = (v: number): void => {
+    const b = new Uint8Array(4);
+    new DataView(b.buffer).setInt32(0, v, true);
+    bytes.push(...b);
+  };
+  const str = (v: string): void => {
+    bytes.push(...new TextEncoder().encode(v), 0);
+  };
+  const write = (node: LegacyNode): void => {
+    str(node.type);
+    str(node.name);
+    // byteSize, index, typeFlags, version, metaFlag
+    for (const v of [-1, 0, 0, 1, 0]) i32(v);
+    i32(node.children?.length ?? 0);
+    for (const child of node.children ?? []) write(child);
+  };
+  i32(1); // classId: Object
+  write(root);
+  return Uint8Array.from(bytes);
+}
+
+test("the inline layout returns to a sibling after a nested subtree", () => {
+  const data = legacyType({
+    type: "Root",
+    name: "Base",
+    children: [
+      { type: "A", name: "a", children: [{ type: "A1", name: "a1" }] },
+      { type: "B", name: "b" },
+    ],
+  });
+  const reader = new BinaryReader(data, "little");
+  const type = readSerializedType(reader, 8, true, false);
+  assert.deepEqual(
+    type.nodes!.map((n) => [n.level, n.type, n.name]),
+    [
+      [0, "Root", "Base"],
+      [1, "A", "a"],
+      [2, "A1", "a1"],
+      [1, "B", "b"],
+    ],
+  );
+  assert.equal(reader.remaining, 0);
+});
