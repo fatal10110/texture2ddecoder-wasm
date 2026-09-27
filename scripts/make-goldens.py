@@ -156,18 +156,20 @@ def normalize(node, value, sf):
     raise SystemExit(f"cannot normalize {typ} {node.m_Name}: {type(value).__name__}")
 
 
-def count_v1_entries(tail: bytes, node, obj, sf) -> int | None:
-    """Entries in the bytes UnityPy left unread, read with UnityPy's own read_value.
+def count_v1_entries(raw: bytes, unread: int, node, obj, sf) -> int | None:
+    """Entries in the last `unread` bytes of `raw`, read with UnityPy's own read_value.
 
     Returns how many v1 registry entries come before the Terminus sentinel,
-    or None unless the tail is exactly those entries plus the sentinel.
+    or None unless those bytes are exactly the entries plus the sentinel.
     """
     registries = [c for c in node.m_Children if c.m_Type == "ManagedReferencesRegistry"]
     entries = [c for r in registries for c in r.m_Children if c.m_Type == "ReferencedObject"]
     entry = entries[0] if len(entries) == 1 else None
     if entry is None:
         return None
-    reader = EndianBinaryReader(tail, endian=obj.reader.endian)
+    # Over the whole object, so alignment is relative to the object as in UnityPy.
+    reader = EndianBinaryReader(raw, endian=obj.reader.endian)
+    reader.Position = len(raw) - unread
     # Inside the host's registry, as UnityPy is when it reads the first entry.
     config = TypeTreeConfig(True, sf, True)
     count = 0
@@ -179,7 +181,7 @@ def count_v1_entries(tail: bytes, node, obj, sf) -> int | None:
                 continue
             typ = item.get("type", {})
             if (typ.get("class"), typ.get("ns"), typ.get("asm")) == REGISTRY_V1_TERMINUS_TYPE:
-                return count if reader.Position == len(tail) else None
+                return count if reader.Position == len(raw) else None
             ref_node = get_ref_type_node(item, sf)
             if ref_node is not None:
                 read_value(ref_node, reader, config)
@@ -208,7 +210,7 @@ def dump_typetree(name: str, obj, sf) -> dict:
         raw = obj.get_raw_data()
         more = None
         if unread >= len(REGISTRY_V1_TERMINUS) and raw.endswith(REGISTRY_V1_TERMINUS):
-            more = count_v1_entries(bytes(raw[len(raw) - unread :]), node, obj, sf)
+            more = count_v1_entries(bytes(raw), unread, node, obj, sf)
         if more is None:
             raise SystemExit(f"{name} pathId {obj.path_id}: read_typetree failed: {error}")
         value = obj.read_typetree(check_read=False)
