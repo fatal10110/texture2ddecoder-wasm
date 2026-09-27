@@ -8,6 +8,7 @@ import { ClassID } from "../serialized/ClassID.js";
 import type { ObjectReader } from "../serialized/ObjectReader.js";
 import { baseName } from "../serialized/SerializedFile.js";
 import { readTypeTree, type TypeTreeObject } from "../serialized/TypeTreeReader.js";
+import { readAssetBundle, type AssetBundle } from "./AssetBundle.js";
 import { readTexture2D, type Texture2D } from "./Texture2D.js";
 import { readMonoBehaviour, type MonoBehaviour } from "./MonoBehaviour.js";
 import { readMonoScript, type MonoScript } from "./MonoScript.js";
@@ -51,6 +52,7 @@ export type MonoBehaviourData = MonoBehaviour & { [field: string]: unknown };
  */
 export type ObjectData =
   | Texture2DData
+  | AssetBundle
   | TextAsset
   | MonoScript
   | MonoBehaviourData
@@ -73,6 +75,7 @@ type ClassReader = (reader: ObjectReader, resources: ResourceReader | undefined)
  */
 const CLASS_READERS: ReadonlyMap<number, ClassReader> = new Map<number, ClassReader>([
   [ClassID.Texture2D, readTexture2DData],
+  [ClassID.AssetBundle, readAssetBundle],
   [ClassID.TextAsset, readTextAsset],
   [ClassID.MonoScript, readMonoScript],
   [ClassID.MonoBehaviour, readMonoBehaviourData],

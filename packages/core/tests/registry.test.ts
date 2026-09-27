@@ -34,6 +34,19 @@ const TYPED = fixtureNames().filter((name) => {
   return files.length > 0 && files.every((sf) => sf.enableTypeTree);
 });
 const NO_TYPE_TREE = fixtureNames().filter((name) => name.includes("/lz4-notypetree/"));
+/**
+ * Classes whose `read()` never goes through the type tree. A MonoBehaviour's
+ * does when the file has one (#39), so it is not listed.
+ */
+const HARDCODED: ReadonlySet<number> = new Set([
+  ClassID.Texture2D,
+  ClassID.AssetBundle,
+  ClassID.TextAsset,
+  ClassID.MonoScript,
+]);
+/** Whether a fixture holds an object of a class without a hardcoded reader. */
+const hasOthers = (name: string): boolean =>
+  Object.values(golden(name).objects).some((objs) => objs.some((o) => !HARDCODED.has(o.classId)));
 
 const loadName = (name: string): Env => load([{ name, data: loadFixture(name) }]);
 
@@ -131,10 +144,7 @@ test("a typed Texture2D is still read by the hardcoded reader, not its type tree
 
 // --- the readTypeTree() fallback ----------------------------------------------------
 
-/** Classes whose `read()` never goes through the type tree. */
-const HARDCODED = new Set<number>([ClassID.Texture2D, ClassID.TextAsset, ClassID.MonoScript]);
-
-for (const name of TYPED) {
+for (const name of TYPED.filter(hasOthers)) {
   test(`${name}: read() of a class without a reader is the readTypeTree() result`, () => {
     // A typed MonoBehaviour is among them: its read() is the whole type tree (#39).
     const others = loadName(name).objects.filter((o) => !HARDCODED.has(o.type));
@@ -161,7 +171,7 @@ test("read() of a TextAsset equals the oracle's dump", () => {
 
 // --- refusals ---------------------------------------------------------------------
 
-for (const name of NO_TYPE_TREE) {
+for (const name of NO_TYPE_TREE.filter(hasOthers)) {
   test(`${name}: read() of a class without a reader or type tree throws UnsupportedError`, () => {
     const others = loadName(name).objects.filter(
       (o) => !HARDCODED.has(o.type) && o.type !== ClassID.MonoBehaviour,
