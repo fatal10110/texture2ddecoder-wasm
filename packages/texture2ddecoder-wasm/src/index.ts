@@ -1,9 +1,13 @@
 // Global module cache
 let globalWasmModule: any = null;
 
-// Detect environment
+// Detect environment. A Web Worker (dedicated, shared or module) has no `window` and no
+// `document`, only `WorkerGlobalScope`; it loads the glue like the main thread does. The
+// emscripten glue (ENVIRONMENT=web,worker,node) tests the same global for its worker mode.
+const isWorker =
+  typeof (globalThis as { WorkerGlobalScope?: unknown }).WorkerGlobalScope !== "undefined";
 const isBrowser =
-  typeof window !== "undefined" && typeof window.document !== "undefined";
+  (typeof window !== "undefined" && typeof window.document !== "undefined") || isWorker;
 const isNode =
   typeof process !== "undefined" &&
   process.versions != null &&
@@ -13,7 +17,7 @@ const isNode =
  * Load WASM module factory function
  * 
  * In Node.js: Always uses the fixed package structure (ignores wasmPath)
- * In Browser: Uses wasmPath to locate the JS glue code
+ * In Browser (main thread or Web Worker): Uses wasmPath to locate the JS glue code
  */
 async function loadWasmModuleFactory(wasmPath?: string): Promise<any> {
   if (isNode) {
@@ -76,7 +80,7 @@ async function loadWasmModuleFactory(wasmPath?: string): Promise<any> {
         "Or copy WASM files: npx texture2ddecoder-copy-wasm public/wasm"
     );
   } else {
-    throw new Error("Unsupported environment (not browser or Node.js)");
+    throw new Error("Unsupported environment (not browser, Web Worker or Node.js)");
   }
 }
 
@@ -85,7 +89,8 @@ async function loadWasmModuleFactory(wasmPath?: string): Promise<any> {
  *
  * @param options - Initialization options
  * @param options.wasmPath - Path to WASM files directory or .js file
- *                           NOTE: Only used in browser environments. Ignored in Node.js.
+ *                           NOTE: Only used in browser environments (main thread and
+ *                           Web Workers), where it is required. Ignored in Node.js.
  *                           In Node.js, the package structure is fixed after npm install.
  * @param options.locateFile - Custom function to locate WASM binary files (advanced use)
  *                              Overrides the default Emscripten path resolution.
@@ -94,7 +99,7 @@ async function loadWasmModuleFactory(wasmPath?: string): Promise<any> {
  * // Node.js - auto-initialization (no parameters needed):
  * await initialize();
  *
- * // Browser - simple path (recommended):
+ * // Browser or Web Worker - simple path (recommended):
  * await initialize({ wasmPath: '/wasm' });
  *
  * // Browser - with CDN:
