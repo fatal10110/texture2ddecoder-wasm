@@ -1,13 +1,18 @@
 // Ported from AssetStudio/CommonString.cs (MIT, © Perfare / RazTools / Razviar)
+// Ported from UnityPy/helpers/Tpk.py (MIT, © K0lb3)
 
 /**
  * Unity's built-in string buffer, which type tree blobs index into instead of
  * their own buffer when an offset has the high bit set. Keyed by offset: the
  * strings are laid end to end, each followed by a NUL.
  *
- * ponytail: upstream's table, which ends at `Hash128`; newer editors add five
- * more (1169 `RenderingLayerMask` to 1226 `LoadableSceneId`) that read as
- * their offset until #90 decides whether to go past upstream.
+ * AssetStudio's table ends at `Hash128`. The entries after it were added by
+ * newer editors (2022.3 and Unity 6) and come from UnityPy's TPK common
+ * strings, the golden oracle, so a node that references one of them gets the
+ * name UnityPy gives it. Like UnityPy the table is not gated on the editor
+ * version: a file only references offsets its own editor wrote, and offsets
+ * never move. The one rename, 1209 `LoadableReference` in UnityPy's 6000.5a8
+ * snapshot, reads as the later `LoadableObjectId`, as it does in UnityPy.
  */
 const COMMON_STRINGS: ReadonlyMap<number, string> = new Map([
   [0, "AABB"],
@@ -119,6 +124,12 @@ const COMMON_STRINGS: ReadonlyMap<number, string> = new Map([
   [1138, "m_PrefabAsset"],
   [1152, "FileSize"],
   [1161, "Hash128"],
+  // Not in AssetStudio: newer editors, as UnityPy 1.25.3 lists them.
+  [1169, "RenderingLayerMask"],
+  [1188, "fixed_array"],
+  [1200, "EntityId"],
+  [1209, "LoadableObjectId"],
+  [1226, "LoadableSceneId"],
 ]);
 
 /**
