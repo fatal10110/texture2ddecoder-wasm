@@ -79,6 +79,8 @@ export class ObjectReader extends BinaryReader {
    * `buildType === "p"`, `IsAlpha` is `buildType === "a"`.
    */
   readonly buildType: string;
+  /** The Unity version exactly as the file holds it (`"0.0.0"` when stripped). */
+  readonly unityVersion: string;
   /** Platform the file was built for (upstream `platform`). */
   readonly platform: BuildTarget;
   /** The file's `[SerializeReference]` types, for {@link readTypeTree}. */
@@ -108,6 +110,7 @@ export class ObjectReader extends BinaryReader {
     this.format = file.header.version;
     this.version = file.version;
     this.buildType = file.buildType;
+    this.unityVersion = file.unityVersion;
     this.platform = file.targetPlatform;
     this.refTypes = file.refTypes;
   }
