@@ -1,15 +1,15 @@
 # AGENTS.md
 
-npm-workspaces monorepo (repo will be renamed to `unity-asset-reader`): a shared parser core, feature packages on top, and the existing texture decoder as a standalone package. The decoder lives in `packages/texture2ddecoder-wasm/`; the reader packages are scaffolded by M0 (#7).
+npm-workspaces monorepo (repo will be renamed to `unity-asset-reader`): a shared parser core, feature packages on top, and the texture decoder as a standalone package. All four packages ship under one version, released together (plan D7). The decoder lives in `packages/decoder/`.
 
 | Package | Path | State | What |
 |---|---|---|---|
-| `texture2ddecoder-wasm` | `packages/texture2ddecoder-wasm/` | published, stable | WASM bindings (emscripten, C++ submodule `texture2ddecoder/`) decoding BC/ETC/PVRTC/ASTC/ATC/Crunch textures to **BGRA**. Node + browser. |
 | `unity-asset-reader` | `packages/core/` | in development | **Shared core.** Browser-first Unity AssetBundle parser, isomorphic and sync. TS hand-ported from AssetStudio (MIT). No WASM, no workspace deps. |
-| `unity-asset-reader-texture` | `packages/texture/` | in development | Texture2D / Sprite → RGBA. Depends on core (peer) and `texture2ddecoder-wasm`. |
+| `unity-asset-reader-texture` | `packages/texture/` | in development | Texture2D / Sprite → RGBA. Depends on core (peer) and `unity-asset-reader-decoder`. |
 | `unity-asset-reader-node` | `packages/node/` | in development | Node adapter: `loadPath()`, dir scan, sidecars. Depends on core (peer). |
+| `unity-asset-reader-decoder` | `packages/decoder/` | stable (formerly `texture2ddecoder-wasm`) | WASM bindings (emscripten, C++ submodule `texture2ddecoder/`) decoding BC/ETC/PVRTC/ASTC/ATC/Crunch textures to **BGRA**. Node + browser. |
 
-Dependencies point one way: feature packages → core. Core and `texture2ddecoder-wasm` import nothing from the repo. Do not change `packages/texture2ddecoder-wasm/` unless the task says so; it must keep building, passing and publishing the same tarball.
+Dependencies point one way: feature packages → core. Core and `unity-asset-reader-decoder` import nothing from the repo. Do not change `packages/decoder/` unless the task says so; it must keep its public API and tarball file set, and keep building and passing.
 
 ## Read before you work
 
@@ -18,7 +18,7 @@ Dependencies point one way: feature packages → core. Core and `texture2ddecode
 | Architecture, locked decisions D1–D9, layout, milestones, test strategy | [docs/unity-asset-reader-plan.md](docs/unity-asset-reader-plan.md) |
 | **Rules you will be reviewed against** (hard rules R1–R14, design, code style, tests, git/PR format) | [docs/unity-asset-reader-rules.md](docs/unity-asset-reader-rules.md) |
 | Dev setup, branch/commit conventions, root package standards | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| Decoder package API and usage | [README.md](packages/texture2ddecoder-wasm/README.md), [QUICK_START.md](packages/texture2ddecoder-wasm/QUICK_START.md), [BUNDLER_GUIDE.md](packages/texture2ddecoder-wasm/BUNDLER_GUIDE.md) |
+| Decoder package API and usage | [README.md](packages/decoder/README.md), [QUICK_START.md](packages/decoder/QUICK_START.md), [BUNDLER_GUIDE.md](packages/decoder/BUNDLER_GUIDE.md) |
 | What to build | GitHub issues: `gh issue view <N>`. Epics: M0 #6 · M1 #10 · M2 #21 · M3 #28 · M4 #36 · M5 #42 · M6+ #46 |
 
 The plan wins over everything else. If an issue, the rules, or this file contradicts it, stop and say so instead of picking a side.
@@ -48,7 +48,7 @@ One package: `npm run build -w unity-asset-reader`, `npm test -w unity-asset-rea
 Decoder WASM (`build:wasm` needs Docker, skip it unless C++/bindings changed):
 
 ```bash
-npm run build:wasm -w texture2ddecoder-wasm && npm test -w texture2ddecoder-wasm
+npm run build:wasm -w unity-asset-reader-decoder && npm test -w unity-asset-reader-decoder
 ```
 
 Tests: `tsx --test`, no frameworks. Style: TS strict, 2 spaces, double quotes, semicolons, JSDoc on exports.

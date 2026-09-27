@@ -6,10 +6,10 @@ repository root: each published package carries its own LICENSE and NOTICE,
 and those per-package files are the authoritative notices for what ships in
 that package's tarball:
 
-  packages/core/NOTICE                   unity-asset-reader
-  packages/texture/NOTICE                unity-asset-reader-texture
-  packages/node/NOTICE                   unity-asset-reader-node
-  packages/texture2ddecoder-wasm/LICENSE texture2ddecoder-wasm
+  packages/core/NOTICE       unity-asset-reader
+  packages/texture/NOTICE    unity-asset-reader-texture
+  packages/node/NOTICE       unity-asset-reader-node
+  packages/decoder/LICENSE   unity-asset-reader-decoder
 
 They say which package uses which upstream, and for what. Runtime npm
 dependencies are not inlined into any package's dist/ (plan section 2, #71),
@@ -45,8 +45,8 @@ ImageSharp.Drawing -- https://github.com/SixLabors/ImageSharp.Drawing
 
 texture2ddecoder -- https://github.com/K0lb3/texture2ddecoder (MIT)
   Copyright (c) K0lb3
-  The C++ decoders that packages/texture2ddecoder-wasm compiles to WASM
+  The C++ decoders that packages/decoder compiles to WASM
   (git submodule). They derive in turn from AssetStudio (ATC, BCn),
   Ishotihadus/mikunyan (ASTC, ETC, PVRTC), Maratyszcza/FP16 (MIT),
   BinomialLLC/crunch (public domain) and Unity-Technologies/crunch (zlib);
-  see packages/texture2ddecoder-wasm/LICENSE and the individual source files.
+  see packages/decoder/LICENSE and the individual source files.

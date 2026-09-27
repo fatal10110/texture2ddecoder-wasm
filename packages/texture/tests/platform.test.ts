@@ -33,7 +33,7 @@ import { deswizzle, switchLayout, xbox360Swap } from "../src/platform.js";
 
 // Same rule as decode.test.ts: decode tests skip without the WASM, except where
 // the CI job that builds it sets REQUIRE_WASM=1 (#119).
-const WASM = "texture2ddecoder-wasm/wasm/texture2ddecoder.wasm";
+const WASM = "decoder/wasm/texture2ddecoder.wasm";
 const skip = existsSync(fileURLToPath(new URL(`../../${WASM}`, import.meta.url)))
   ? false
   : `packages/${WASM} not built (npm run build:wasm)`;

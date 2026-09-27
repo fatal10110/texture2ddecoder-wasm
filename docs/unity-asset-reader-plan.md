@@ -1,6 +1,6 @@
 # Plan: browser-first Unity AssetBundle reader (TS + WASM leaf codecs)
 
-Working name: `unity-asset-reader`. Monorepo (npm workspaces): a shared parser core plus feature packages; the existing `texture2ddecoder-wasm` is one of the packages (D7, D8). License: MIT, except `unity-asset-reader-texture`, which is `MIT AND Apache-2.0` (see the 2026-09-27b revision). Source of truth for behavior: Razviar/assetstudio (MIT). Secondary reference + golden oracle: UnityPy (MIT).
+Working name: `unity-asset-reader`. Monorepo (npm workspaces): a shared parser core plus feature packages; the texture decoder, `unity-asset-reader-decoder`, is one of the packages (D7, D8). All packages share one version. License: MIT, except `unity-asset-reader-texture`, which is `MIT AND Apache-2.0` (see the 2026-09-27b revision). Source of truth for behavior: Razviar/assetstudio (MIT). Secondary reference + golden oracle: UnityPy (MIT).
 
 Checkable rules derived from this plan: [unity-asset-reader-rules.md](unity-asset-reader-rules.md). Workflows: `.claude/skills/{implement-issue,review-implementation,fix-pr-comments}`.
 
@@ -10,12 +10,12 @@ Checkable rules derived from this plan: [unity-asset-reader-rules.md](unity-asse
 |---|---|---|
 | D1 | **Port from AssetStudio (MIT). Do not fork, copy from, or import `@arkntools/unity-js` anywhere — including tests.** | unity-js is **AGPL-3.0**. A fork forces AGPL on the package and on every web app that ships it. AssetStudio, UnityPy and all chosen deps are MIT. This is a derivative port, not clean-room: keep Perfare / RazTools / Razviar (and UnityPy, where consulted) copyright notices in `LICENSE`/`NOTICE`. One exception to MIT-only sources: the texture package's sprite tight-mesh fill is derived from ImageSharp.Drawing (Apache-2.0), shipped with attribution and `LICENSE-APACHE` (#34). |
 | D2 | TS parser, WASM only for leaf **C/C++** codecs. **No C# is ever compiled to WASM** (no Blazor / .NET-wasm / NativeAOT-LLVM / IL2CPP output). AssetStudio C# is a read-only behavior reference, hand-ported to TS. | Parsing is byte shuffling; WASM boundary = copies, no gain. A .NET runtime in WASM = multi-MB download + own GC, kills CDN drop-in. WASM inputs allowed: `texture2ddecoder` (C++), fallback `LzmaDec.c` (C), M6 `acl` (C++), `libvorbis` (C), `spirv-cross` (C++). |
-| D3 | Core is isomorphic: zero `node:*`, zero DOM. Input = `Uint8Array`. | "Works in browser same as texture2ddecoder-wasm". |
+| D3 | Core is isomorphic: zero `node:*`, zero DOM. Input = `Uint8Array`. | "Works in browser same as the texture decoder". |
 | D4 | Core parse path is **sync**. Only `initialize()` and texture decode are async. | Matches existing lib; avoids async colouring the whole reader. Consequence: big bundles block the calling thread — docs and `examples/cdn.html` run the reader in a **Worker**. |
 | D5 | No image encoding in core. Output `{ data: Uint8Array /*RGBA*/, width, height }`. | Kills Jimp/ImageSharp class of deps. Browser → `ImageData`; Node → caller's choice. |
 | D6 | Single-threaded WASM only. No pthreads/SharedArrayBuffer. | pthreads force COOP/COEP headers → breaks drop-in CDN use. |
-| D7 | **Several npm packages around one shared core.** `unity-asset-reader` (dir `packages/core`) is the isomorphic parser and the only place parsing lives. Feature packages depend on it and never on each other's internals: `unity-asset-reader-texture` (`packages/texture`), `unity-asset-reader-node` (`packages/node`), M6 items each get their own (`-mesh`, `-audio`, ...). `texture2ddecoder-wasm` (`packages/texture2ddecoder-wasm`) is a standalone leaf: it depends on nothing in the repo and keeps its npm name, API and 1.x version line. | A user who only unpacks bundles does not install WASM; a user who only decodes textures keeps using `texture2ddecoder-wasm` alone. Heavy M6 codecs (ACL, vorbis, spirv-cross) never bloat the core. Separate packages also make `texture2ddecoder-wasm` a normal `dependency` of the texture package instead of an optional-peer workaround. Reader packages version in lockstep with each other; `texture2ddecoder-wasm` versions independently. Names are final at first publish (#45); if an npm org is available, `@unity-asset-reader/{core,texture,node}` is the alternative. |
-| D8 | **One git repo, npm workspaces, everything under `packages/`; repo gets renamed afterwards.** Root `package.json` is `private`, `"workspaces": ["packages/*"]`, and holds only shared dev tooling and scripts. The existing package **moves** from repo root to `packages/texture2ddecoder-wasm/` together with its submodule, `wasm_bindings.cpp`, `scripts/`, `examples/`, tests and README. Plain npm workspaces only: no lerna / nx / turbo / changesets. | Issues, CI and scaffolding already here. Workspaces link the packages in dev (no `file:..`), give one lockfile and one `npm ci`. The move is mechanical but touches the submodule path, `build-wasm.sh` paths and the npm publish dir, so it is its own M0 issue with a hard check: `npm pack --dry-run` file list of `texture2ddecoder-wasm` identical before and after. `docs/` stays at repo root (GitHub Pages serves from it). GitHub redirects old repo URLs after rename; update `repository.url` (and add `repository.directory`) in every `package.json` then. |
+| D7 | **Several npm packages around one shared core.** `unity-asset-reader` (dir `packages/core`) is the isomorphic parser and the only place parsing lives. Feature packages depend on it and never on each other's internals: `unity-asset-reader-texture` (`packages/texture`), `unity-asset-reader-node` (`packages/node`), M6 items each get their own (`-mesh`, `-audio`, ...). `unity-asset-reader-decoder` (`packages/decoder`) is a standalone leaf: it depends on nothing in the repo and keeps the public API it had as `texture2ddecoder-wasm` (see the 2026-09-27c revision). **All packages version in lockstep:** one version for all of them, starting at 1.0.0, released together even when only one changed. | A user who only unpacks bundles does not install WASM; a user who only decodes textures installs `unity-asset-reader-decoder` alone. Heavy M6 codecs (ACL, vorbis, spirv-cross) never bloat the core. Separate packages also make the decoder a normal `dependency` of the texture package instead of an optional-peer workaround. One version means a user never has to work out which decoder goes with which reader. Names are final at first publish (#45); if an npm org is available, `@unity-asset-reader/{core,texture,node,decoder}` is the alternative. |
+| D8 | **One git repo, npm workspaces, everything under `packages/`; repo gets renamed afterwards.** Root `package.json` is `private`, `"workspaces": ["packages/*"]`, and holds only shared dev tooling and scripts. The existing decoder package **moved** from repo root to `packages/` together with its submodule, `wasm_bindings.cpp`, `scripts/`, `examples/`, tests and README (#55); its folder is `packages/decoder` since #174. Plain npm workspaces only: no lerna / nx / turbo / changesets. | Issues, CI and scaffolding already here. Workspaces link the packages in dev (no `file:..`), give one lockfile and one `npm ci`. The move is mechanical but touches the submodule path, `build-wasm.sh` paths and the npm publish dir, so it is its own M0 issue with a hard check: `npm pack --dry-run` file list of the decoder identical before and after (the #174 rename kept that check). `docs/` stays at repo root (GitHub Pages serves from it). GitHub redirects old repo URLs after rename; update `repository.url` (and add `repository.directory`) in every `package.json` then. |
 | D9 | 64-bit integers: **always `bigint`** for SInt64/UInt64 typetree fields and pathIDs. File offsets/sizes stay `number` with a `> 2^53` guard throw. | Typetrees carry int64 everywhere (every PPtr). "number when safe" gives a value whose type depends on its magnitude. Ship a documented JSON replacer (`bigint → string`). |
 
 ## 1. Dependencies (all MIT, all browser-safe, all sync)
@@ -24,7 +24,7 @@ Runtime deps of `packages/core` unless the note names another package. Between w
 
 | Need | Dep | Note |
 |---|---|---|
-| Block texture decode + Crunch | `texture2ddecoder-wasm` (workspace package) | regular `dependency` of `unity-asset-reader-texture` only; core never imports it. Outputs **BGRA** → swap to RGBA (M3). |
+| Block texture decode + Crunch | `unity-asset-reader-decoder` (workspace package) | regular `dependency` of `unity-asset-reader-texture` only; core never imports it. Outputs **BGRA** → swap to RGBA (M3). |
 | LZ4 / LZ4HC block | none — ~40 LOC in `packages/core/src/codec/lz4.ts` | port `AssetStudio/LZ4/LZ4.cs`. LZ4HC decodes identically; no separate path or fixture. |
 | LZMA | `lzma1` (pure TS) — **decided**, see M1 spike #13 | Two stream shapes, see M1. Correct on both; ~10 MB/s, under the original 20 MB/s bar. Kept anyway: it is sync, zero-dep and browser-safe, so core stays WASM-free. WASM fallback deferred to M6 (#69), to be built only if real bundles make this hurt. |
 | gzip/zlib | `fflate` | 8KB, sync (native `DecompressionStream` is async → violates D4) |
@@ -55,18 +55,18 @@ packages/
       env.ts     resource resolver (.resS / .resource lookup across loaded files)
       index.ts
     tests/
-  texture/              npm: unity-asset-reader-texture  isomorphic; deps: core (peer), texture2ddecoder-wasm
-    src/         convert.ts (plain formats) decode.ts (→ texture2ddecoder-wasm) sprite.ts index.ts
+  texture/              npm: unity-asset-reader-texture  isomorphic; deps: core (peer), unity-asset-reader-decoder
+    src/         convert.ts (plain formats) decode.ts (→ unity-asset-reader-decoder) sprite.ts index.ts
     tests/
   node/                 npm: unity-asset-reader-node     Node only; deps: core (peer)
     src/         index.ts   fs + dir scan + sidecar resolution
     tests/
-  texture2ddecoder-wasm/  npm: texture2ddecoder-wasm     moved from repo root as is; standalone
+  decoder/              npm: unity-asset-reader-decoder  standalone WASM texture decoder
     src/ tests/ scripts/ examples/ texture2ddecoder/ (submodule) wasm_bindings.cpp
 examples/               cdn.html, vite/   (reader examples; use core + texture together)
 ```
 
-What belongs in core: anything two packages need, and anything that reads Unity bytes into fields (so `classes/Texture2D.ts` and `classes/Sprite.ts` live in core; turning their bytes into pixels lives in `texture`). What does not: WASM, pixel conversion, `fs`, anything with a heavy or optional dependency. `texture2ddecoder-wasm` shares no code with core today; if a second WASM package appears (LZMA fallback, M6 — #69), its emscripten loader is extracted then, not before.
+What belongs in core: anything two packages need, and anything that reads Unity bytes into fields (so `classes/Texture2D.ts` and `classes/Sprite.ts` live in core; turning their bytes into pixels lives in `texture`). What does not: WASM, pixel conversion, `fs`, anything with a heavy or optional dependency. The decoder shares no code with core today; if a second WASM package appears (LZMA fallback, M6 — #69), its emscripten loader is extracted then, not before.
 
 Every reader package builds ESM + CJS + types through `rollup.reader.mjs`. `core` and `texture` use `resolve({ browser: true })` with **no** node builtins in `external`; only `node` may externalize them.
 
@@ -75,7 +75,7 @@ Every reader package builds ESM + CJS + types through `rollup.reader.mjs`. `core
 - A dep is never both inlined in `dist/` and installed beside it. No second copy, and a security fix in a decompressor that eats untrusted bytes (`fflate`, `lzma1` — #14, #15) reaches consumers through `npm update`, not through a republish of this package.
 - No per-dep NOTICE obligation: we distribute no copy of their code. The `fflate` stanza added by #68 is dropped.
 - Consumers dedupe and tree-shake the dep themselves.
-- A bare specifier in `dist/` means CDN use needs an import map or a CDN ESM endpoint (`/+esm`, esm.sh) — still zero bundler, so M3's `examples/cdn.html` criterion stands. `unity-asset-reader-texture` needs one regardless, since `texture2ddecoder-wasm` is external either way; this makes it one pattern to document instead of two. A separate bundled `dist/*.bundle.mjs` CDN build was rejected: it doubles the published output and keeps the NOTICE chore it was meant to avoid. Revisit only if a real CDN consumer cannot use an import map.
+- A bare specifier in `dist/` means CDN use needs an import map or a CDN ESM endpoint (`/+esm`, esm.sh) — still zero bundler, so M3's `examples/cdn.html` criterion stands. `unity-asset-reader-texture` needs one regardless, since `unity-asset-reader-decoder` is external either way; this makes it one pattern to document instead of two. A separate bundled `dist/*.bundle.mjs` CDN build was rejected: it doubles the published output and keeps the NOTICE chore it was meant to avoid. Revisit only if a real CDN consumer cannot use an import map.
 - An undeclared import is **not** caught by the build: npm hoists root devDependencies and symlinks workspace siblings into the root `node_modules`, so rollup resolves them and inlines them silently. Only a package absent from `node_modules` fails (`UNRESOLVED_IMPORT`). The guard is a test — `scripts/tests/rollup-reader.test.mjs` fails `npm run verify` when a reader package's `src/` imports something its `package.json` does not declare — with `check:browser` covering the R14 half at source level.
 
 ## 3. Public API (target)
@@ -84,7 +84,7 @@ Every reader package builds ESM + CJS + types through `rollup.reader.mjs`. `core
 import { load } from 'unity-asset-reader'
 import { initTexture, decodeTexture2D } from 'unity-asset-reader-texture'
 
-await initTexture({ wasmPath: '/wasm' })                // once; passthrough to texture2ddecoder-wasm
+await initTexture({ wasmPath: '/wasm' })                // once; passthrough to unity-asset-reader-decoder
 
 const env = load([{ name: 'a.bundle', data: u8 }, { name: 'a.resS', data: u8b }])
 for (const obj of env.objects) {
@@ -101,13 +101,13 @@ obj.readTypeTree()  // generic JS object for any class with an embedded typetree
 Each milestone = shippable npm prerelease. "Port" lists the AssetStudio files that define behavior.
 
 ### M0 — Monorepo skeleton + browser guard (1 d)
-- **First: convert the repo to npm workspaces and move the existing package** to `packages/texture2ddecoder-wasm/` (D8): `git mv` incl. the submodule, fix `build-wasm.sh` / `copy-wasm.js` paths, private root `package.json`. No source or API change. Check: `npm pack --dry-run` file list identical before/after; its `build:rollup` and tests still pass.
+- **First: convert the repo to npm workspaces and move the existing package** to `packages/` (D8; `packages/decoder` since #174): `git mv` incl. the submodule, fix `build-wasm.sh` / `copy-wasm.js` paths, private root `package.json`. No source or API change. Check: `npm pack --dry-run` file list identical before/after; its `build:rollup` and tests still pass.
 - Scaffold `packages/core`, `packages/texture`, `packages/node` (§2) on `tsconfig.base.json` + `rollup.reader.mjs`; empty modules, one smoke test each.
-- Root scripts: `build` (all TS builds, no Docker), `test` (reader packages; `texture2ddecoder-wasm` tests join only when its `wasm/` output exists, since that needs Docker), `check:browser`, and `verify` = all of them + the no-C# guard. One command for humans, agents and CI.
+- Root scripts: `build` (all TS builds, no Docker), `test` (reader packages; the decoder's tests join only when its `wasm/` output exists, since that needs Docker), `check:browser`, and `verify` = all of them + the no-C# guard. One command for humans, agents and CI.
 - CI: one workflow running `npm ci && npm run verify` at the root.
 - CI guard (D2): `git ls-files '*.cs' '*.csproj' '*.sln'` must be empty — no C# in the repo, so none can reach a WASM build.
-- CI guard: `esbuild --bundle --platform=browser` on the `core` and `texture` entries must succeed with **no** node-builtin resolution (`texture2ddecoder-wasm` marked external). This is the whole browser-safety test; cheap and catches every regression.
-- Done when: `npm ci && npm run verify` is green at the root; every reader package emits `dist/index.{mjs,cjs,d.ts}`; `texture2ddecoder-wasm` tarball unchanged by the move.
+- CI guard: `esbuild --bundle --platform=browser` on the `core` and `texture` entries must succeed with **no** node-builtin resolution (the decoder marked external). This is the whole browser-safety test; cheap and catches every regression.
+- Done when: `npm ci && npm run verify` is green at the root; every reader package emits `dist/index.{mjs,cjs,d.ts}`; decoder tarball unchanged by the move.
 
 ### M1 — Unpack (layers 1–2) (3–4 d)
 - **First task: golden harness (#20).** Every later "Done when" depends on it. See §5.
@@ -133,8 +133,8 @@ Each milestone = shippable npm prerelease. "Port" lists the AssetStudio files th
 
 ### M3 — Textures + sprites (4–5 d)
 - Split: class readers (`Texture2D`, `Texture`, `StreamingInfo`, `Sprite`, `SpriteAtlas`) and the resource resolver go to `packages/core`; everything that produces pixels goes to `packages/texture`.
-- Port: `Classes/Texture2D.cs`, `Texture.cs`, `StreamingInfo` + `ResourceReader.cs` (→ `env.ts`), `Texture2DConverter.cs` (plain formats in TS: Alpha8, RGB24, RGBA32, ARGB32, BGRA32, RGB565, ARGB/RGBA4444, R16, R/RG/RGBA Half+Float, RGB9e5, YUY2; block + Crunch → `texture2ddecoder-wasm`), platform swaps (Switch/XBOX360 byte-swap), vertical flip.
-- **Channel order:** `texture2ddecoder-wasm` and AssetStudio's converter both produce BGRA. Public output is RGBA (D5) → one in-place R/B swap after block decode (#32); plain-format converters write RGBA directly. Goldens are hashed post-swap.
+- Port: `Classes/Texture2D.cs`, `Texture.cs`, `StreamingInfo` + `ResourceReader.cs` (→ `env.ts`), `Texture2DConverter.cs` (plain formats in TS: Alpha8, RGB24, RGBA32, ARGB32, BGRA32, RGB565, ARGB/RGBA4444, R16, R/RG/RGBA Half+Float, RGB9e5, YUY2; block + Crunch → `unity-asset-reader-decoder`), platform swaps (Switch/XBOX360 byte-swap), vertical flip.
+- **Channel order:** the decoder and AssetStudio's converter both produce BGRA. Public output is RGBA (D5) → one in-place R/B swap after block decode (#32); plain-format converters write RGBA directly. Goldens are hashed post-swap.
 - **TextureFormat ids** follow Unity's own numbering (UnityCsReference `GraphicsEnums.cs`), not the Razviar fork's shifted `R16_Alt = 66`; decided on PR #113, recorded on #28.
 - Then: `Sprite.cs`, `SpriteAtlas.cs`, `SpriteHelper.cs` (crop, rotate/flip packing; tight-mesh mask = optional flag, polygon fill in TS).
 - Done when: RGBA output hash-equal to golden pixels for one fixture per format family; `examples/cdn.html` renders a texture from a bundle with zero bundler, reader running in a Worker, proven against this repo's builds behind a local `/+esm` stand-in. The live jsDelivr path needs the 1.0 publish and is checked in M5 (#150).
@@ -147,7 +147,7 @@ Each milestone = shippable npm prerelease. "Port" lists the AssetStudio files th
 
 ### M5 — node adapter package + 1.0 (1–2 d)
 - `packages/node`: `loadPath(fileOrDir)`: fs read, dir scan, split-file (`.split0..n`) merge, sidecar `.resS/.resource` lookup. Port only that slice of `AssetsManager.cs` / `ImportHelper.cs`.
-- README (incl. tested format-version range, Worker guidance, bigint JSON replacer), QUICK_START, bundler guide (reuse existing lib's docs structure). Root README becomes the package index. Publish 1.0 of `unity-asset-reader`, `-texture`, `-node` in lockstep (`npm publish -w`); `texture2ddecoder-wasm` is not republished unless it changed.
+- README (incl. tested format-version range, Worker guidance, bigint JSON replacer), QUICK_START, bundler guide (reuse existing lib's docs structure). Root README becomes the package index. Publish 1.0.0 of all four packages — `unity-asset-reader`, `-texture`, `-node` and `-decoder` — in lockstep (`npm publish -w`); from then on they always share one version and are released together.
 
 ### M6+ — On demand, each independent
 Each item that brings a decoder or writer ships as its own package on top of core (D7); only the class field readers it needs are added to core.
@@ -219,3 +219,5 @@ Revision 2026-09-26 (#81, #82): M2 fixtures are editor-built with 2019.4.41f2 (S
 Revision 2026-09-27 (#35, PR #151): M3's `examples/cdn.html` criterion no longer requires jsDelivr. The reader packages are first published in M5 (#45), so M3 proves the page against this repo's builds behind `examples/serve.mjs`, a local stand-in for jsDelivr's `/+esm`; the live jsDelivr check is #150, in M5.
 
 Revision 2026-09-27b (#34, PR #156): the texture package's optional sprite tight-mesh fill is derived from ImageSharp.Drawing v1.0.0-beta15 (Apache-2.0, Six Labors), kept by maintainer decision because it makes the mask match AssetStudio pixel-for-pixel. `unity-asset-reader-texture` therefore declares `"license": "MIT AND Apache-2.0"` and ships `LICENSE-APACHE` plus a `NOTICE` stanza; the derived code carries a per-file Apache-2.0 header. Core, node and `texture2ddecoder-wasm` stay MIT. D1 notes the exception.
+
+Revision 2026-09-27c (#174, maintainer decision): every package ships under **one version**, and the decoder is renamed so the family starts together at **1.0.0**. `texture2ddecoder-wasm` becomes `unity-asset-reader-decoder` (folder `packages/decoder`) at 1.0.0 with its public API unchanged; only the npm name and version change. The reader packages are 1.0.0 too, and all four are released together from now on. `texture2ddecoder-wasm` stays at 1.2.2 on npm; after the first publish the maintainer deprecates it with a pointer to the new name (not done from the repo). Reverses D7's "keeps its npm name, API and 1.x version line" and "versions independently", D8's `packages/texture2ddecoder-wasm/` path, and R13's "keeps its npm name". D7, D8, §1, §2, M0, M3 and M5 now name the new package.

@@ -1,6 +1,6 @@
 // Browser-safety and dependency-direction guard (R4, R14).
 //
-//   node scripts/check-browser.mjs [core|texture|texture2ddecoder-wasm ...]
+//   node scripts/check-browser.mjs [core|texture|decoder ...]
 //
 // With no arguments every guarded package is checked. Exits 1 and prints every
 // problem found, so a red run says what to fix.
@@ -9,16 +9,16 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** Reader packages (core and feature packages), as import specifiers. */
+/** Packages of this repo (core, feature packages, decoder), as import specifiers. */
 const READER = /^unity-asset-reader(-[\w-]+)?(\/|$)/;
-/** A subpath of a reader package: a deep import, never allowed (R14). */
+/** A subpath of one of them: a deep import, never allowed (R14). */
 const READER_DEEP = /^unity-asset-reader(-[\w-]+)?\//;
 
 /** What each package is held to. `browser`: bundle for browsers. `noReader`: R14. */
 export const PACKAGES = {
   core: { browser: true, noReader: true },
   texture: { browser: true, noReader: false },
-  "texture2ddecoder-wasm": { browser: false, noReader: true },
+  decoder: { browser: false, noReader: true },
 };
 
 // Preceded by `.` or a word char means a property or a longer name (`ArrayBuffer`).
@@ -95,7 +95,7 @@ export async function checkPackage(root, { browser, noReader }) {
   for (const file of files) {
     for (const spec of importSpecifiers(readFileSync(file, "utf8"))) {
       if (READER_DEEP.test(spec)) problems.push(`${file}: deep import "${spec}" (R14: public entry points only)`);
-      else if (noReader && READER.test(spec)) problems.push(`${file}: imports "${spec}" (R14: core/decoder import no reader package)`);
+      else if (noReader && READER.test(spec)) problems.push(`${file}: imports "${spec}" (R14: core/decoder import no workspace package)`);
     }
   }
 
@@ -110,7 +110,11 @@ export async function checkPackage(root, { browser, noReader }) {
         format: "esm",
         write: false,
         logLevel: "silent",
-        external: ["unity-asset-reader", "texture2ddecoder-wasm", "texture2ddecoder-wasm/*"],
+        external: [
+          "unity-asset-reader",
+          "unity-asset-reader-decoder",
+          "unity-asset-reader-decoder/*",
+        ],
       });
       const out = outputFiles.map((f) => f.text).join("\n");
       for (const re of NODE_GLOBALS) {

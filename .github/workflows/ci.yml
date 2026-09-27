@@ -45,7 +45,7 @@ jobs:
           # The decoder job also runs the texture package's decode tests (#119) and the
           # examples/ smoke test (#35), so it runs for what they build from: core, texture,
           # fixtures, the reader build config and the examples.
-          if echo "$files" | grep -qE '^(packages/(texture2ddecoder-wasm|core|texture)/|fixtures/|examples/|\.github/|package(-lock)?\.json$|tsconfig[^/]*\.json$|rollup\.reader\.mjs$)'; then
+          if echo "$files" | grep -qE '^(packages/(decoder|core|texture)/|fixtures/|examples/|\.github/|package(-lock)?\.json$|tsconfig[^/]*\.json$|rollup\.reader\.mjs$)'; then
             echo "decoder=true" >> "$GITHUB_OUTPUT"
           else
             echo "decoder=false" >> "$GITHUB_OUTPUT"
@@ -89,7 +89,7 @@ jobs:
       - run: npm ci
       - run: npm run build:wasm
       - run: npm run build:rollup
-      - run: npm test -w texture2ddecoder-wasm
+      - run: npm test -w unity-asset-reader-decoder
       - run: npm run build -w unity-asset-reader
       # REQUIRE_WASM=1: a missing WASM fails decode.test.ts instead of skipping it.
       - run: npm test -w unity-asset-reader-texture

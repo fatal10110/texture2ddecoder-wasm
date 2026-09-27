@@ -35,7 +35,7 @@ npm ci && npm run verify
 git ls-files '*.cs' '*.csproj' '*.sln'
 ```
 
-Second command must print nothing (`verify` runs it too; rerun it by hand so the review does not trust the script). `packages/texture2ddecoder-wasm/` touched → also run `npm test -w texture2ddecoder-wasm` with `wasm/` built. Any failure is a blocker; record the exact failing output.
+Second command must print nothing (`verify` runs it too; rerun it by hand so the review does not trust the script). `packages/decoder/` touched → also run `npm test -w unity-asset-reader-decoder` with `wasm/` built. Any failure is a blocker; record the exact failing output.
 
 ## 3. Check the issue was actually implemented
 
@@ -63,7 +63,7 @@ Walk the Hard rules table R1–R14 one ID at a time, then the design, style and 
 - **R8:** `package.json` diff - any dependency not in plan §1.
 - **R9:** `return null` / empty result where the input is unsupported.
 - **Scope:** files or features the issue did not ask for; abstractions with a single implementation; options nobody requested. Say what to delete.
-- **R13:** changes under `packages/texture2ddecoder-wasm/` that the issue does not call for.
+- **R13:** changes under `packages/decoder/` that the issue does not call for.
 - **R14:** core importing a workspace package, a feature package listing core as `dependency` instead of `peerDependency`, deep imports into another package's `src/`.
 
 ## 5. Compare with upstream

@@ -1,28 +1,27 @@
 # Changelog
 
-This repo publishes two release lines. Each has its own section below, newest version first.
+Every package in this repo ships under one version. Newest version first.
 How to cut a release is in [RELEASING.md](RELEASING.md).
 
 ## Versioning policy
 
-- **Reader packages** (`unity-asset-reader`, `unity-asset-reader-texture`,
-  `unity-asset-reader-node`) version in **lockstep**: all three always carry the same version and
-  are published together, even when only one of them changed. A feature package's
-  `peerDependency` on `unity-asset-reader` is `^<major>` (for 1.x: `^1`), so any core of the same
-  major works with it.
-- **`texture2ddecoder-wasm`** versions independently on its own 1.x line. It is published only
-  when it changed since its last npm version, never just because the reader packages are released.
-- Both lines follow [semver](https://semver.org/). For the reader packages the public API is what
-  each package's `dist/index.d.ts` exports. A breaking change to any one of them bumps the major of
-  all three, and the peer range moves with it.
-- Changes that are not on npm yet collect under a `### <next version> - Unreleased` heading in
-  the right section. The release replaces `Unreleased` with the publish date.
+- All four packages (`unity-asset-reader`, `unity-asset-reader-texture`,
+  `unity-asset-reader-node` and `unity-asset-reader-decoder`) version in **lockstep**: they always
+  carry the same version and are published together, even when only one of them changed. A
+  feature package's `peerDependency` on `unity-asset-reader` is `^<major>` (for 1.x: `^1`), so
+  any core of the same major works with it; the texture package's `dependency` on
+  `unity-asset-reader-decoder` stays within the same major.
+- Versions follow [semver](https://semver.org/). The public API is what each package's
+  `dist/index.d.ts` exports; for the decoder also its `wasm/` file names and the
+  `texture2ddecoder-copy-wasm` command. A breaking change to any one of them bumps the major of
+  all four, and the ranges move with it.
+- Changes that are not on npm yet collect under a `## <next version> - Unreleased` heading. The
+  release replaces `Unreleased` with the publish date.
 
-## Reader packages
+## 1.0.0 - Unreleased
 
-### 1.0.0 - Unreleased
-
-First release of `unity-asset-reader`, `unity-asset-reader-texture` and `unity-asset-reader-node`.
+First release of `unity-asset-reader`, `unity-asset-reader-texture` and `unity-asset-reader-node`,
+and of the texture decoder under its new name, `unity-asset-reader-decoder`.
 
 `unity-asset-reader` (core; isomorphic, synchronous, no WASM):
 
@@ -45,8 +44,8 @@ First release of `unity-asset-reader`, `unity-asset-reader-texture` and `unity-a
 `unity-asset-reader-texture` (peer: `unity-asset-reader@^1`):
 
 - `initTexture()` and `decodeTexture2D()`: Texture2D to RGBA, for the plain formats in TypeScript
-  and the block and Crunch formats through `texture2ddecoder-wasm`, with platform byte swaps and
-  the vertical flip.
+  and the block and Crunch formats through `unity-asset-reader-decoder`, with platform byte swaps
+  and the vertical flip.
 - `decodeSprite()`: crops a Sprite out of its texture or atlas, with optional tight-mesh masking.
 - `convertPlain()` for the uncompressed formats without the decoder.
 
@@ -55,16 +54,21 @@ First release of `unity-asset-reader`, `unity-asset-reader-texture` and `unity-a
 - `loadPath(fileOrDir)`: loads a file or a directory tree from disk, merges `.split0..n` parts and
   picks up `.resS`/`.resource` sidecars.
 
-## texture2ddecoder-wasm
+`unity-asset-reader-decoder` (formerly `texture2ddecoder-wasm`):
 
-### 1.2.3 - Unreleased
+- Renamed from `texture2ddecoder-wasm`, and its version joins the other packages at 1.0.0 (#174).
+  The API is unchanged: same exports, `initialize()`, decode functions, `wasm/` files and
+  `texture2ddecoder-copy-wasm` command. To migrate, install `unity-asset-reader-decoder`, import
+  from it instead, and point CDN URLs at `unity-asset-reader-decoder@1`. `texture2ddecoder-wasm`
+  stays at 1.2.2 on npm and gets no further releases.
+- Changes since `texture2ddecoder-wasm` 1.2.2:
+  - BC3 (DXT5) colour blocks decode in 4-colour mode, as the S3TC spec requires. Before, blocks
+    with `c0 <= c1` came out with index 3 black (#137).
+  - `initialize()` works inside a Web Worker; it used to throw "Unsupported environment" there
+    (#149).
+  - `build:wasm` uses `emscripten/emsdk:4.0.7` pinned by digest, the toolchain of 1.2.2 (#57).
 
-- BC3 (DXT5) colour blocks decode in 4-colour mode, as the S3TC spec requires. Before, blocks with
-  `c0 <= c1` came out with index 3 black (#137).
-- `initialize()` works inside a Web Worker; it used to throw "Unsupported environment" there
-  (#149).
-- `build:wasm` uses `emscripten/emsdk:4.0.7` pinned by digest, the toolchain of 1.2.2 (#57).
+## texture2ddecoder-wasm 1.2.2 and earlier
 
-### 1.2.2 and earlier
-
-See the [GitHub releases](https://github.com/fatal10110/texture2ddecoder-wasm/releases).
+Released under the old name, on their own version line. See the
+[GitHub releases](https://github.com/fatal10110/texture2ddecoder-wasm/releases).

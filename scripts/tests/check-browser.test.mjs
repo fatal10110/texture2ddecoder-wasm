@@ -45,7 +45,12 @@ test("ArrayBuffer and property names are not node globals", async () => {
   assert.deepEqual(await checkPackage(pkg("false-pos", src), rules), []);
 });
 
-for (const spec of ["unity-asset-reader", "unity-asset-reader-texture", "unity-asset-reader/x"]) {
+for (const spec of [
+  "unity-asset-reader",
+  "unity-asset-reader-texture",
+  "unity-asset-reader-decoder",
+  "unity-asset-reader/x",
+]) {
   test(`core importing "${spec}" fails (R14)`, async () => {
     const problems = await checkPackage(pkg(`r-${spec.replace("/", "_")}`, `import "${spec}";\nexport {};\n`), rules);
     assert.match(problems.join("\n"), /R14/);
@@ -59,7 +64,7 @@ test("texture may import the core, and it stays external", async () => {
 
 test("decoder package is dependency-checked without a browser bundle", async () => {
   const root = pkg("decoder", 'import "fs";\nimport "unity-asset-reader";\nexport {};\n');
-  const problems = await checkPackage(root, PACKAGES["texture2ddecoder-wasm"]);
+  const problems = await checkPackage(root, PACKAGES.decoder);
   assert.equal(problems.length, 1);
   assert.match(problems[0], /R14/);
 });

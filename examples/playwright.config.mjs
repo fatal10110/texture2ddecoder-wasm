@@ -2,7 +2,7 @@
 // served by serve.mjs with this repo's builds standing in for jsDelivr.
 //
 //   npm run build && npm run test:smoke          (needs the WASM in
-//   packages/texture2ddecoder-wasm/wasm/ and a Playwright Chromium)
+//   packages/decoder/wasm/ and a Playwright Chromium)
 import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 8135;

@@ -123,8 +123,8 @@ for (const [pkg, readme] of Object.entries(PACKAGE_READMES)) {
 
 // #44 comment: the decoder README moved into packages/ with #55, where a
 // relative CONTRIBUTING.md link has no file behind it.
-test("texture2ddecoder-wasm README links CONTRIBUTING.md through the repo URL", () => {
-  const readme = "packages/texture2ddecoder-wasm/README.md";
+test("decoder README links CONTRIBUTING.md through the repo URL", () => {
+  const readme = "packages/decoder/README.md";
   const targets = links(read(readme)).filter((t) => t.includes("CONTRIBUTING"));
   assert.ok(targets.length > 0, `${readme} no longer links CONTRIBUTING.md`);
   for (const target of targets) {

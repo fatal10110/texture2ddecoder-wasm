@@ -20,8 +20,8 @@ Used by humans and by the `.claude/skills/` workflows (`implement-issue`, `revie
 | R10 | Public texture output is RGBA. Block decoders return BGRA, so swap once after decode. | D5. |
 | R11 | No third-party game data committed, ever. Fixtures are built with our own Unity projects. | Licensing. |
 | R12 | Goldens come from the oracle (UnityPy, `scripts/make-goldens.py`), never from this library's own output. | A golden produced by the code under test proves nothing. |
-| R13 | `packages/texture2ddecoder-wasm` keeps its npm name, public API and tarball contents, and keeps building and passing. Reader work never touches it unless the issue says so. | D7/D8. It is published and stable; the monorepo move must be invisible to its users. |
-| R14 | Dependency direction: feature packages → `unity-asset-reader` (core, as `peerDependency`). Core imports no workspace package. `texture2ddecoder-wasm` imports no workspace package. No deep imports across packages (`unity-asset-reader/src/...`); only public entry points. | D7. A shared core only works if there is exactly one copy of it and nothing reaches around its API. |
+| R13 | `packages/decoder` (`unity-asset-reader-decoder`) keeps its public API (exports, `initialize()`, the decode functions, `wasm/` layout and file names, the `texture2ddecoder-copy-wasm` command) and its tarball file set, and keeps building and passing. Only its `name` and `version` changed with the rename (#174); its version moves in lockstep with the other packages. Reader work never touches it unless the issue says so. | D7/D8. It is the stable, formerly `texture2ddecoder-wasm` package; the rename must cost its users nothing but the new name. |
+| R14 | Dependency direction: feature packages → `unity-asset-reader` (core, as `peerDependency`). Core imports no workspace package. `unity-asset-reader-decoder` imports no workspace package. No deep imports across packages (`unity-asset-reader/src/...`); only public entry points. | D7. A shared core only works if there is exactly one copy of it and nothing reaches around its API. |
 
 ## Design rules (a violation needs a reason in the PR)
 
@@ -56,11 +56,12 @@ Used by humans and by the `.claude/skills/` workflows (`implement-issue`, `revie
 npm ci && npm run verify
 ```
 
-From the repo root. `verify` = build every package (TS only, no Docker) + test + `check:browser` + the no-C# guard (`git ls-files '*.cs' '*.csproj' '*.sln'` prints nothing). If `packages/texture2ddecoder-wasm/` changed, also run its `npm test -w texture2ddecoder-wasm` with `wasm/` built locally (`build:wasm`, needs Docker).
+From the repo root. `verify` = build every package (TS only, no Docker) + test + `check:browser` + the no-C# guard (`git ls-files '*.cs' '*.csproj' '*.sln'` prints nothing). If `packages/decoder/` changed, also run its `npm test -w unity-asset-reader-decoder` with `wasm/` built locally (`build:wasm`, needs Docker).
 
 ## Git and PRs
 
 - Branch from up-to-date `main`: `feature/<issue>-<slug>`, `fix/<issue>-<slug>`, `docs/<issue>-<slug>`.
 - Commits: imperative subject ≤ 50 chars, optional `type:` prefix (`feat:`, `fix:`, `docs:`, `test:`, `chore:`), body explains why. One logical change per commit.
 - One issue per PR. PR body contains `Closes #<issue>`, an Acceptance table (criterion → test or evidence), the verification output summary, and a **Deviations** section (write "None" if none).
+- Versions: all four packages carry one version and are released together (plan D7). A bump changes all four `package.json` files at once; `scripts/tests/release.test.mjs` fails otherwise.
 - Never push to `main`, never force-push a branch under review, never merge your own PR from a skill.
