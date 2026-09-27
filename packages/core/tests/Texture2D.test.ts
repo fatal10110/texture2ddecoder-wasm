@@ -269,88 +269,72 @@ const HEAD_2020 = ["i32 m_Width", "i32 m_Height", "u32 m_CompleteImageSize", "i3
 const LIMIT_2022 = ["bool m_IgnoreMipmapLimit", "align", "str m_MipmapLimitGroupName"];
 const BLOB = ["bytes m_PlatformBlob", "align"];
 
+// Each layout is Unity's from its first version until the next one below.
+const L3_4 = [...HEAD_3, "i32 m_TextureFormat", "bool m_MipMap", "bool m_IsReadable"]
+  .concat(["bool m_ReadAllowed", "align", ...DIMS, ...SETTINGS_OLD, "i32 m_LightmapFormat"])
+  .concat(IMAGE);
+const L3_5 = [...HEAD_3, "i32 m_TextureFormat", "bool m_MipMap", "bool m_IsReadable"]
+  .concat(["bool m_ReadAllowed", "align", ...DIMS, ...SETTINGS_OLD, "i32 m_LightmapFormat"])
+  .concat(["i32 m_ColorSpace", ...IMAGE]);
+const L5_2 = [...HEAD_3, "i32 m_TextureFormat", "i32 m_MipCount", "bool m_IsReadable"]
+  .concat(["bool m_ReadAllowed", "align", ...DIMS, ...SETTINGS_OLD, "i32 m_LightmapFormat"])
+  .concat(["i32 m_ColorSpace", ...IMAGE]);
+const L5_3 = [...L5_2, ...STREAM_32];
+const L5_5 = [...HEAD_3, "i32 m_TextureFormat", "i32 m_MipCount", "bool m_IsReadable", "align"]
+  .concat([...DIMS, ...SETTINGS_OLD, "i32 m_LightmapFormat", "i32 m_ColorSpace"])
+  .concat([...IMAGE, ...STREAM_32]);
+const L2017_1 = [...HEAD_3, "i32 m_TextureFormat", "i32 m_MipCount", "bool m_IsReadable", "align"]
+  .concat([...TAIL_2017, ...IMAGE, ...STREAM_32]);
+const L2017_3 = ["str m_Name", ...FALLBACK, "align", ...HEAD_3.slice(1), "i32 m_TextureFormat"]
+  .concat(["i32 m_MipCount", "bool m_IsReadable", "align", ...TAIL_2017, ...IMAGE])
+  .concat(STREAM_32);
+const L2018_2 = ["str m_Name", ...FALLBACK, "align", ...HEAD_3.slice(1), "i32 m_TextureFormat"]
+  .concat(["i32 m_MipCount", "bool m_IsReadable", ...STREAMING, ...TAIL_2017, ...IMAGE])
+  .concat(STREAM_32);
+const L2019_3 = ["str m_Name", ...FALLBACK, "align", ...HEAD_3.slice(1), "i32 m_TextureFormat"]
+  .concat(["i32 m_MipCount", "bool m_IsReadable", "bool m_IgnoreMasterTextureLimit"])
+  .concat([...STREAMING, ...TAIL_2017, ...IMAGE, ...STREAM_32]);
+const L2019_4_9 = ["str m_Name", ...FALLBACK, "align", ...HEAD_3.slice(1), "i32 m_TextureFormat"]
+  .concat(["i32 m_MipCount", "bool m_IsReadable", "bool m_IgnoreMasterTextureLimit"])
+  .concat(["bool m_IsPreProcessed", ...STREAMING, ...TAIL_2017, ...IMAGE, ...STREAM_32]);
+const L2020_1 = ["str m_Name", ...FALLBACK, "align", ...HEAD_2020]
+  .concat(["bool m_IgnoreMasterTextureLimit", ...STREAMING, ...TAIL_2017, ...IMAGE])
+  .concat(STREAM_64);
+const L2020_2 = ["str m_Name", ...FALLBACK, "bool m_IsAlphaChannelOptional", "align", ...HEAD_2020]
+  .concat(["bool m_IgnoreMasterTextureLimit", ...STREAMING, ...TAIL_2017, ...BLOB])
+  .concat([...IMAGE, ...STREAM_64]);
+const L2022_2 = ["str m_Name", ...FALLBACK, "bool m_IsAlphaChannelOptional", "align", ...HEAD_2020]
+  .concat([...LIMIT_2022, ...STREAMING, ...TAIL_2017, ...BLOB, ...IMAGE, ...STREAM_64]);
+const L2023_2 = ["str m_Name", "bool m_IsAlphaChannelOptional", "align", ...HEAD_2020]
+  .concat([...LIMIT_2022, ...STREAMING, ...TAIL_2017, ...BLOB, ...IMAGE, ...STREAM_64]);
+
+/**
+ * Every layout at its first version, and, for each gate, the last minor
+ * release before it still on the previous layout. The 2019.3.0 entry is f5,
+ * the first build whose tree has `m_IgnoreMasterTextureLimit`.
+ */
 const LAYOUTS: { unity: UnityVersion; fields: string[] }[] = [
-  {
-    unity: [3, 4, 0, 1],
-    fields: [...HEAD_3, "i32 m_TextureFormat", "bool m_MipMap", "bool m_IsReadable"]
-      .concat(["bool m_ReadAllowed", "align", ...DIMS, ...SETTINGS_OLD, "i32 m_LightmapFormat"])
-      .concat(IMAGE),
-  },
-  {
-    unity: [3, 5, 0, 1],
-    fields: [...HEAD_3, "i32 m_TextureFormat", "bool m_MipMap", "bool m_IsReadable"]
-      .concat(["bool m_ReadAllowed", "align", ...DIMS, ...SETTINGS_OLD, "i32 m_LightmapFormat"])
-      .concat(["i32 m_ColorSpace", ...IMAGE]),
-  },
-  {
-    unity: [5, 2, 0, 1],
-    fields: [...HEAD_3, "i32 m_TextureFormat", "i32 m_MipCount", "bool m_IsReadable"]
-      .concat(["bool m_ReadAllowed", "align", ...DIMS, ...SETTINGS_OLD, "i32 m_LightmapFormat"])
-      .concat(["i32 m_ColorSpace", ...IMAGE]),
-  },
-  {
-    unity: [5, 3, 0, 1],
-    fields: [...HEAD_3, "i32 m_TextureFormat", "i32 m_MipCount", "bool m_IsReadable"]
-      .concat(["bool m_ReadAllowed", "align", ...DIMS, ...SETTINGS_OLD, "i32 m_LightmapFormat"])
-      .concat(["i32 m_ColorSpace", ...IMAGE, ...STREAM_32]),
-  },
-  {
-    unity: [5, 5, 0, 1],
-    fields: [...HEAD_3, "i32 m_TextureFormat", "i32 m_MipCount", "bool m_IsReadable", "align"]
-      .concat([...DIMS, ...SETTINGS_OLD, "i32 m_LightmapFormat", "i32 m_ColorSpace"])
-      .concat([...IMAGE, ...STREAM_32]),
-  },
-  {
-    unity: [2017, 1, 0, 1],
-    fields: [...HEAD_3, "i32 m_TextureFormat", "i32 m_MipCount", "bool m_IsReadable", "align"]
-      .concat([...TAIL_2017, ...IMAGE, ...STREAM_32]),
-  },
-  {
-    unity: [2017, 3, 0, 1],
-    fields: ["str m_Name", ...FALLBACK, "align", ...HEAD_3.slice(1), "i32 m_TextureFormat"]
-      .concat(["i32 m_MipCount", "bool m_IsReadable", "align", ...TAIL_2017, ...IMAGE])
-      .concat(STREAM_32),
-  },
-  {
-    unity: [2018, 2, 0, 1],
-    fields: ["str m_Name", ...FALLBACK, "align", ...HEAD_3.slice(1), "i32 m_TextureFormat"]
-      .concat(["i32 m_MipCount", "bool m_IsReadable", ...STREAMING, ...TAIL_2017, ...IMAGE])
-      .concat(STREAM_32),
-  },
-  {
-    unity: [2019, 4, 8, 1],
-    fields: ["str m_Name", ...FALLBACK, "align", ...HEAD_3.slice(1), "i32 m_TextureFormat"]
-      .concat(["i32 m_MipCount", "bool m_IsReadable", "bool m_IgnoreMasterTextureLimit"])
-      .concat([...STREAMING, ...TAIL_2017, ...IMAGE, ...STREAM_32]),
-  },
-  {
-    unity: [2019, 4, 9, 1],
-    fields: ["str m_Name", ...FALLBACK, "align", ...HEAD_3.slice(1), "i32 m_TextureFormat"]
-      .concat(["i32 m_MipCount", "bool m_IsReadable", "bool m_IgnoreMasterTextureLimit"])
-      .concat(["bool m_IsPreProcessed", ...STREAMING, ...TAIL_2017, ...IMAGE, ...STREAM_32]),
-  },
-  {
-    unity: [2020, 1, 0, 1],
-    fields: ["str m_Name", ...FALLBACK, "align", ...HEAD_2020]
-      .concat(["bool m_IgnoreMasterTextureLimit", ...STREAMING, ...TAIL_2017, ...IMAGE])
-      .concat(STREAM_64),
-  },
-  {
-    unity: [2020, 2, 0, 1],
-    fields: ["str m_Name", ...FALLBACK, "bool m_IsAlphaChannelOptional", "align", ...HEAD_2020]
-      .concat(["bool m_IgnoreMasterTextureLimit", ...STREAMING, ...TAIL_2017, ...BLOB])
-      .concat([...IMAGE, ...STREAM_64]),
-  },
-  {
-    unity: [2022, 2, 0, 1],
-    fields: ["str m_Name", ...FALLBACK, "bool m_IsAlphaChannelOptional", "align", ...HEAD_2020]
-      .concat([...LIMIT_2022, ...STREAMING, ...TAIL_2017, ...BLOB, ...IMAGE, ...STREAM_64]),
-  },
-  {
-    unity: [2023, 2, 0, 1],
-    fields: ["str m_Name", "bool m_IsAlphaChannelOptional", "align", ...HEAD_2020]
-      .concat([...LIMIT_2022, ...STREAMING, ...TAIL_2017, ...BLOB, ...IMAGE, ...STREAM_64]),
-  },
+  { unity: [3, 4, 0, 1], fields: L3_4 },
+  { unity: [3, 5, 0, 1], fields: L3_5 },
+  { unity: [5, 2, 0, 1], fields: L5_2 },
+  { unity: [5, 3, 0, 1], fields: L5_3 },
+  { unity: [5, 4, 0, 1], fields: L5_3 },
+  { unity: [5, 5, 0, 1], fields: L5_5 },
+  { unity: [5, 6, 0, 1], fields: L5_5 },
+  { unity: [2017, 1, 0, 1], fields: L2017_1 },
+  { unity: [2017, 3, 0, 1], fields: L2017_3 },
+  { unity: [2018, 1, 0, 1], fields: L2017_3 },
+  { unity: [2018, 2, 0, 1], fields: L2018_2 },
+  { unity: [2019, 2, 0, 1], fields: L2018_2 },
+  { unity: [2019, 3, 0, 5], fields: L2019_3 },
+  { unity: [2019, 4, 8, 1], fields: L2019_3 },
+  { unity: [2019, 4, 9, 1], fields: L2019_4_9 },
+  { unity: [2020, 1, 0, 1], fields: L2020_1 },
+  { unity: [2020, 2, 0, 1], fields: L2020_2 },
+  { unity: [2022, 1, 0, 1], fields: L2020_2 },
+  { unity: [2022, 2, 0, 1], fields: L2022_2 },
+  { unity: [2023, 1, 0, 1], fields: L2022_2 },
+  { unity: [2023, 2, 0, 1], fields: L2023_2 },
 ];
 
 /**
