@@ -858,6 +858,19 @@ test("readResource() prefers its own bundle's .resS over a same-named input load
   assert.deepEqual(env.readResource(ref, texture), ress.data);
 });
 
+test("readResource() prefers a loose .resS for a loose SerializedFile over a bundle loaded first", () => {
+  // The caller's own inputs are one container, like files in one directory.
+  const { cab, ress } = textureNodes();
+  const other = buildBundle([{ path: ress.path, data: payload(ress.data.length, 5) }]);
+  const env = load([
+    { name: "other.bundle", data: other },
+    { name: cab.path, data: cab.data },
+    { name: ress.path, data: ress.data },
+  ]);
+  const { texture, ref } = streamedTexture(env);
+  assert.deepEqual(env.readResource(ref, texture), ress.data);
+});
+
 test("readResource() takes the first one loaded when its own container has none", () => {
   const { cab, ress } = textureNodes();
   const first = payload(ress.data.length, 5);
