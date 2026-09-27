@@ -36,9 +36,11 @@ export interface Texture2DData extends Texture2D {
   /**
    * The image data, every mip level, still encoded in `m_TextureFormat`:
    * `image data` when it is not empty, and otherwise `size` bytes of the
-   * resource file `m_StreamData` names. When neither holds anything,
-   * `obj.read()` throws `CorruptError` instead. Either way a view, never a
-   * copy (R7), with the aliasing of the bytes it views.
+   * resource file `m_StreamData` names. When neither holds anything, it is
+   * empty for a texture 0 pixels wide or high (such as the 0x0 "Font Texture"
+   * of every dynamic font), and otherwise `obj.read()` throws `CorruptError`
+   * instead (#139). Always a view, never a copy (R7), with the aliasing of the
+   * bytes it views.
    */
   imageData: Uint8Array;
 }
@@ -59,10 +61,15 @@ export interface Texture2DData extends Texture2D {
 export type MonoBehaviourData = MonoBehaviour & { [field: string]: unknown };
 
 /**
- * What `obj.read()` returns: a hardcoded class reader's result for a class
- * that has one ({@link Texture2DData} for a `Texture2D`, `TextAsset`,
- * `MonoScript`, {@link MonoBehaviourData} for a `MonoBehaviour`, `Material`,
- * `Sprite`, `SpriteAtlas`), and the `readTypeTree()` result for any other class.
+ * What `obj.read()` returns: the result of its class's hardcoded reader when
+ * the class has one, and the `readTypeTree()` result for any other class.
+ * `MonoBehaviour` is the exception: its hardcoded reader reads only the
+ * header, so when the file has a type tree `obj.read()` gives the whole
+ * `readTypeTree()` result instead (see {@link MonoBehaviourData}).
+ *
+ * The classes with a hardcoded reader are the keys of `CLASS_READERS` below,
+ * the one list of them. The members of this union are what those readers
+ * return, plus `TypeTreeObject`; each documents its own shape.
  */
 export type ObjectData =
   | Texture2DData
@@ -148,9 +155,12 @@ export function readObjectData(
  *
  * With neither, upstream hands back 0 bytes; UnityPy raises, and so does this
  * (R9, decided on PR #118), rather than pass an empty image on as a texture.
+ * Except when `m_Width` or `m_Height` is 0 (#139): such a texture has no
+ * pixels to store, and Unity writes one for every dynamic font (its 0x0 "Font
+ * Texture"), so its `imageData` is the empty inline data.
  *
- * @throws {CorruptError} when the inline data is empty and `m_StreamData` is
- *   missing or its `path` is empty
+ * @throws {CorruptError} when the inline data is empty, `m_StreamData` is
+ *   missing or its `path` is empty, and neither `m_Width` nor `m_Height` is 0
  */
 function readTexture2DData(
   reader: ObjectReader,
@@ -161,6 +171,10 @@ function readTexture2DData(
   if (inline.length > 0) return { ...texture, imageData: inline, platform: reader.platform };
   const stream = texture.m_StreamData;
   if (!stream?.path) {
+    // Nothing to store, not corrupt: a dynamic font's 0x0 "Font Texture" (#139).
+    if (texture.m_Width === 0 || texture.m_Height === 0) {
+      return { ...texture, imageData: inline, platform: reader.platform };
+    }
     throw new CorruptError(
       `Texture2D ${reader.pathId} has no image data, neither inline nor in a .resS ` +
         "(image data is empty and m_StreamData.path names no file)",
