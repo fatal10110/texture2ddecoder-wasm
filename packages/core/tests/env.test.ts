@@ -866,6 +866,19 @@ test("readResource() prefers its own bundle's .resS over a same-named input load
   assert.deepEqual(env.readResource(ref, texture), ress.data);
 });
 
+test("readResource() reads a .resource node the same way", () => {
+  // AudioClip's `m_Resource.m_Source` and VideoClip's external resources name
+  // `.resource` files; no fixture holds one, so the node is hand-made.
+  const { cab } = textureNodes();
+  const data = payload(48, 11);
+  const env = load([
+    { name: "audio.bundle", data: buildBundle([cab, { path: `${cab.path}.resource`, data }]) },
+  ]);
+  const { texture } = streamedTexture(env);
+  const ref = { path: `archive:/${cab.path}/${cab.path}.resource`, offset: 8, size: 16 };
+  assert.deepEqual(env.readResource(ref, texture), data.subarray(8, 24));
+});
+
 test("readResource() prefers a loose .resS for a loose SerializedFile over a bundle loaded first", () => {
   // The caller's own inputs are one container, like files in one directory.
   const { cab, ress } = textureNodes();
