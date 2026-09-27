@@ -10,6 +10,7 @@ import {
   readTexture2D,
   TextureFormat,
   UnsupportedError,
+  type Texture2DData,
 } from "unity-asset-reader";
 import {
   golden,
@@ -19,7 +20,7 @@ import {
   syntheticGoldens,
   type GoldenTexture,
 } from "../../../fixtures/helpers.js";
-import { decodeTexture2D, initTexture, type DecodeTexture2DInput } from "../src/decode.js";
+import { decodeTexture2D, initTexture } from "../src/decode.js";
 
 // The WASM half of texture2ddecoder-wasm is built with Docker (`npm run build:wasm`),
 // which the reader CI job does not have; without it only the tests that need no
@@ -36,13 +37,17 @@ before(async () => {
 /** A test that needs the decoder, skipped without it. */
 const wasmTest = (name: string, fn: () => Promise<void>) => test(name, { skip }, fn);
 
+/**
+ * A hand-built input with only the fields decoding reads at run time; the cast
+ * stands for the Texture2D fields it does not need.
+ */
 function texture(
   format: number,
   width: number,
   height: number,
   imageData: Uint8Array,
-): DecodeTexture2DInput {
-  return { m_Width: width, m_Height: height, m_TextureFormat: format, imageData };
+): Texture2DData {
+  return { m_Width: width, m_Height: height, m_TextureFormat: format, imageData } as Texture2DData;
 }
 
 // --- fixtures -------------------------------------------------------------------
@@ -57,27 +62,22 @@ const PLAIN = "editor/6000.3.25f1/plain/textures";
 /** One Texture2D of a fixture, as `decodeTexture2D(obj.read())` gets it, and its golden. */
 interface FixtureTexture {
   fixture: string;
-  input: DecodeTexture2DInput;
+  input: Texture2DData;
   mipCount: number;
   golden: GoldenTexture;
 }
 
-/**
- * Every Texture2D of `fixture`: `readTexture2D`'s fields plus `imageData`,
- * inline or read from its `.resS` node - the shape `obj.read()` returns.
- */
+/** Every Texture2D of `fixture`, as `obj.read()` returns it (plan section 3). */
 function fixtureTextures(fixture: string): FixtureTexture[] {
   const serialized = Object.values(golden(fixture).serialized ?? {});
   const env = load([{ name: fixture, data: loadFixture(fixture) }]);
   return env.objects
     .filter((obj) => obj.type === ClassID.Texture2D)
     .map((obj) => {
-      const tex = readTexture2D(obj);
-      const stream = tex.m_StreamData;
-      const imageData = stream?.path ? env.readResource(stream, obj) : tex["image data"];
+      const input = obj.read<Texture2DData>();
       const g = serialized.map((s) => s.textures?.[String(obj.pathId)]).find((t) => t);
       assert.ok(g, `${fixture}: no texture golden for ${obj.pathId}`);
-      return { fixture, input: { ...tex, imageData }, mipCount: tex.m_MipCount ?? 1, golden: g };
+      return { fixture, input, mipCount: input.m_MipCount ?? 1, golden: g };
     });
 }
 
@@ -119,7 +119,7 @@ function expected(t: FixtureTexture): string {
   return want;
 }
 
-async function decode(input: DecodeTexture2DInput): Promise<Uint8Array> {
+async function decode(input: Texture2DData): Promise<Uint8Array> {
   const out = await decodeTexture2D(input);
   assert.equal(out.width, input.m_Width);
   assert.equal(out.height, input.m_Height);
@@ -386,7 +386,7 @@ test("an object that is not a Texture2D is a TypeError naming what is missing", 
   const env = load([{ name: fixture, data: loadFixture(fixture) }]);
   const text = env.objects.find((o) => o.type === ClassID.TextAsset);
   assert.ok(text);
-  await assert.rejects(decodeTexture2D(text.readTypeTree() as unknown as DecodeTexture2DInput), {
+  await assert.rejects(decodeTexture2D(text.read()), {
     name: "TypeError",
     message:
       "decodeTexture2D: not a Texture2D with image data: m_Width must be a number (missing), " +
@@ -396,6 +396,7 @@ test("an object that is not a Texture2D is a TypeError naming what is missing", 
 });
 
 test("a Texture2D without imageData, or with it as the wrong type, is a TypeError", async () => {
+  // readTexture2D's result (no imageData) is the likely mix-up with obj.read().
   const fields = readTexture2D(
     load([{ name: PLAIN, data: loadFixture(PLAIN) }]).objects.find(
       (o) => o.type === ClassID.Texture2D,
@@ -411,13 +412,13 @@ test("a Texture2D without imageData, or with it as the wrong type, is a TypeErro
     ],
   ];
   for (const [input, problem] of cases) {
-    await assert.rejects(decodeTexture2D(input as DecodeTexture2DInput), {
+    await assert.rejects(decodeTexture2D(input as Texture2DData), {
       name: "TypeError",
       message: `decodeTexture2D: not a Texture2D with image data: ${problem}`,
     });
   }
   for (const input of [null, undefined, 42]) {
-    await assert.rejects(decodeTexture2D(input as unknown as DecodeTexture2DInput), TypeError);
+    await assert.rejects(decodeTexture2D(input as unknown as Texture2DData), TypeError);
   }
 });
 

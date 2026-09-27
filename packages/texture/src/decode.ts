@@ -24,6 +24,7 @@ import {
   unpack_unity_crunch,
 } from "texture2ddecoder-wasm";
 import { CorruptError, TextureFormat, UnsupportedError } from "unity-asset-reader";
+import type { Texture2DData } from "unity-asset-reader";
 import { convertPlain, type RgbaImage } from "./convert.js";
 
 /** Where `initTexture` finds the WASM files; passed to `texture2ddecoder-wasm` as it is. */
@@ -35,33 +36,6 @@ export interface InitTextureOptions {
   wasmPath?: string;
   /** Emscripten's `locateFile`, for the `.wasm` binary; overrides the default lookup. */
   locateFile?: (path: string, prefix: string) => string;
-}
-
-/**
- * What `decodeTexture2D` reads from a Texture2D: the fields of core's
- * `readTexture2D` under Unity's names, plus its resolved image bytes. The
- * object `obj.read()` returns for a Texture2D has this shape; since that
- * return type is the caller's claim, `decodeTexture2D` checks the four
- * required fields at runtime.
- */
-export interface DecodeTexture2DInput {
-  m_Width: number;
-  m_Height: number;
-  /** Unity's `TextureFormat` value, as the file holds it. */
-  m_TextureFormat: number;
-  /**
-   * The image data, inline or read from its `.resS` node: every mip level,
-   * first level first. Only the first level is decoded.
-   */
-  imageData: Uint8Array;
-  /**
-   * Written by Unity 2017.3 to 2023.1. With `m_IsAlphaChannelOptional` it
-   * tells a Unity 2017.3+ texture apart, for DXT1/DXT5 Crunch (see
-   * {@link decodeTexture2D}).
-   */
-  m_DownscaleFallback?: boolean;
-  /** Written by Unity 2020.2 and later; see `m_DownscaleFallback`. */
-  m_IsAlphaChannelOptional?: boolean;
 }
 
 type Decode = (data: Uint8Array, width: number, height: number) => Promise<Uint8Array | null>;
@@ -202,7 +176,11 @@ export async function initTexture(options?: InitTextureOptions): Promise<void> {
  * texture with `m_DownscaleFallback` or `m_IsAlphaChannelOptional` is 2017.3
  * or later. The ETC Crunch formats only exist in Unity's variant.
  *
- * @param texture a Texture2D's fields and image bytes, such as `obj.read()`
+ * @param texture a Texture2D as `obj.read()` returns it. Only `m_Width`,
+ *   `m_Height`, `m_TextureFormat` and `imageData` are required at run time
+ *   (and `m_DownscaleFallback` / `m_IsAlphaChannelOptional` for DXT Crunch,
+ *   see above); they are checked, since `obj.read()`'s type is the caller's
+ *   claim
  * @returns a new RGBA image, `width * height * 4` bytes; `imageData` is not
  *   modified. A texture 0 pixels wide or high gives an empty image.
  * @throws {TypeError} when `texture` is not a Texture2D with image data
@@ -220,7 +198,7 @@ export async function initTexture(options?: InitTextureOptions): Promise<void> {
  * await initTexture();
  * const { data, width, height } = await decodeTexture2D(obj.read());
  */
-export async function decodeTexture2D(texture: DecodeTexture2DInput): Promise<RgbaImage> {
+export async function decodeTexture2D(texture: Texture2DData): Promise<RgbaImage> {
   checkInput(texture);
   if (!initialized) throw new Error(NOT_INITIALIZED);
   const { m_Width: width, m_Height: height, m_TextureFormat: format, imageData } = texture;
@@ -265,7 +243,7 @@ export async function decodeTexture2D(texture: DecodeTexture2DInput): Promise<Rg
  * `obj.read()` is typed by its caller, not checked, so a non-Texture2D can
  * get here; name what is missing rather than decode `undefined`.
  */
-function checkInput(texture: unknown): asserts texture is DecodeTexture2DInput {
+function checkInput(texture: unknown): asserts texture is Texture2DData {
   if (typeof texture !== "object" || texture === null) {
     throw new TypeError(`decodeTexture2D: expected a Texture2D object, got ${texture}`);
   }
@@ -302,7 +280,7 @@ function plain(data: Uint8Array, width: number, height: number, format: number):
 }
 
 /** Upstream `UnpackCrunch`: the first level of a Crunch texture, as block data. */
-async function unpack(texture: DecodeTexture2DInput): Promise<Uint8Array> {
+async function unpack(texture: Texture2DData): Promise<Uint8Array> {
   const format = texture.m_TextureFormat;
   const unity =
     format === TextureFormat.ETC_RGB4Crunched ||
