@@ -6,16 +6,18 @@ import type { Rectf } from "./Font.js";
 import type { Vector2 } from "./Material.js";
 import { readNamedObject, type NamedObject } from "./NamedObject.js";
 import { readPPtr, type PPtr } from "./PPtr.js";
+import type { UnityVersion } from "../serialized/SerializedFile.js";
 import {
+  assumingLayout,
   endOfObject,
   isPatchFrom,
+  layoutVersion,
   readArray,
   readGUID,
   readRectf,
   readSecondaryTextures,
   readVector2,
   readVector4,
-  refuseUnreadable,
   type GUID,
   type SecondarySpriteTexture,
   type Vector4,
@@ -73,23 +75,28 @@ export interface SpriteAtlas extends NamedObject {
  * `spriteInstanceData` to every entry; that layout is only known from
  * pre-release type trees, so it is refused.
  *
+ * A file whose Unity version is unknown (`[0, 0, 0, 0]`) is read as 2019 when
+ * its format is 18 to 21, which only 2019 writes, and refused otherwise, as
+ * `readSprite` does (rule for version-stripped files, #36, as amended).
+ *
  * ponytail: the gates compare release numbers only (see `atLeast`), except
  * the 2017.1 patch-release gate. 2017.2.0b2 to b8 lack `atlasRectOffset`;
  * such a pre-release fails the end-of-object check with a CorruptError.
  *
  * @param reader the object's reader, rewound first and left at its end
  * @throws {UnsupportedError} of kind `"Unity version"`, with the file's own
- *   `unityVersion` as `found`, when the version is unknown (`[0, 0, 0, 0]`),
- *   older than 2017.1, which had no sprite atlases, or 6000.6 and later; of
- *   kind `"build target"` for an editor file (`BuildTarget.NoTarget`), which
- *   stores the atlas' editor settings in between
+ *   `unityVersion` as `found`: when the version is unknown (`[0, 0, 0, 0]`)
+ *   unless the format is 18 to 21, and in those formats when the fields after
+ *   `m_Name` do not fit 2019's layout; older than 2017.1, which had no sprite
+ *   atlases; or 6000.6 and later. Of kind `"build target"` for an editor file
+ *   (`BuildTarget.NoTarget`), which stores the atlas' editor settings in
+ *   between
  * @throws {CorruptError} when the object ends early, a count or string length
  *   is negative or runs past its end, or bytes are left over after the last
- *   field
+ *   field, with the version known; with it unknown, only inside `m_Name`
  */
 export function readSpriteAtlas(reader: ObjectReader): SpriteAtlas {
-  refuseUnreadable(reader, "SpriteAtlas", 2017, 1);
-  const { version } = reader;
+  const version = layoutVersion(reader, "SpriteAtlas", 2017, 1);
   if (atLeast(version, 6000, 6)) {
     throw new UnsupportedError(
       "Unity version",
@@ -100,6 +107,17 @@ export function readSpriteAtlas(reader: ObjectReader): SpriteAtlas {
 
   // Filled in field order, so the keys come out in the order Unity wrote them.
   const out: Partial<SpriteAtlas> & NamedObject = readNamedObject(reader);
+  assumingLayout(reader, "SpriteAtlas", () => readAtlasFields(reader, version, out));
+  // Every required field was set above.
+  return out as SpriteAtlas;
+}
+
+/** Every field of a `SpriteAtlas` after `m_Name`, and the end-of-object check. */
+function readAtlasFields(
+  reader: ObjectReader,
+  version: UnityVersion,
+  out: Partial<SpriteAtlas>,
+): void {
   out.m_PackedSprites = readArray(reader, "SpriteAtlas", "m_PackedSprites", readPPtr);
   out.m_PackedSpriteNamesToIndex = readArray(
     reader,
@@ -109,21 +127,17 @@ export function readSpriteAtlas(reader: ObjectReader): SpriteAtlas {
   );
   out.m_RenderDataMap = readArray(reader, "SpriteAtlas", "m_RenderDataMap", (r) => [
     [readGUID(r), r.readInt64()],
-    readSpriteAtlasData(r),
+    readSpriteAtlasData(r, version),
   ]);
   out.m_Tag = readStringField(reader, "SpriteAtlas", "m_Tag");
   out.m_IsVariant = reader.readUInt8() !== 0;
   reader.align();
   if (atLeast(version, 6000, 5)) out.m_Guid = readGUID(reader);
-
   endOfObject(reader, "SpriteAtlas");
-  // Every required field was set above.
-  return out as SpriteAtlas;
 }
 
 /** Upstream `SpriteAtlasData(ObjectReader)`. */
-function readSpriteAtlasData(reader: ObjectReader): SpriteAtlasData {
-  const { version } = reader;
+function readSpriteAtlasData(reader: ObjectReader, version: UnityVersion): SpriteAtlasData {
   const out: Partial<SpriteAtlasData> = {
     texture: readPPtr(reader),
     alphaTexture: readPPtr(reader),

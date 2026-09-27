@@ -574,29 +574,71 @@ for (const { unity, buildType = "f", fields } of ATLAS_LAYOUTS) {
 // --- refusals ------------------------------------------------------------------------
 
 /**
- * Per the class-reader rule on #36: an all-zero version is refused with the
+ * Per the class-reader rule on #36, as amended: an all-zero version is read
+ * only where the format leaves one layout. Elsewhere it is refused with the
  * file's own version string, from a stripped file (`"0.0.0"`) or a loose file
- * below format 7 (`"2.5.0f5"`, #98). The layouts differ inside the object, so
- * the bytes cannot decide one.
+ * below format 7 (`"2.5.0f5"`, #98).
  */
-for (const text of ["0.0.0", "2.5.0f5"]) {
-  test(`Unity "${text}" at 0.0.0.0: UnsupportedError("Unity version")`, () => {
+for (const [text, format] of [
+  ["0.0.0", 22],
+  ["0.0.0", 17],
+  ["2.5.0f5", 6],
+] as const) {
+  test(`Unity "${text}" at 0.0.0.0 in format ${format}: UnsupportedError("Unity version")`, () => {
     for (const [from, read] of [
       [fromSprite, readSprite],
       [fromAtlas, readSpriteAtlas],
     ] as const) {
-      const reader = synthetic(from, from.bytes, [0, 0, 0, 0], "", { text });
+      const reader = synthetic(from, from.bytes, [0, 0, 0, 0], "", { text, format });
       assert.throws(
         () => read(reader),
         (err: unknown) =>
           err instanceof UnsupportedError &&
           err.kind === "Unity version" &&
           err.found === text &&
-          err.message.includes(`object ${reader.pathId}`),
+          err.message.includes(`object ${reader.pathId}`) &&
+          err.message.includes(`format ${format} file`),
       );
     }
   });
 }
+
+/** The 2019.4 fixture's first Sprite and SpriteAtlas (format 21). */
+const U2019: UnityVersion = [2019, 4, 41, 2];
+const STRIPPED_FROM = [
+  [objectBytes("editor/2019.4.41f2/sprite/sprites", ClassID.Sprite), readSprite],
+  [objectBytes("editor/2019.4.41f2/sprite/sprites", ClassID.SpriteAtlas), readSpriteAtlas],
+] as const;
+
+test('Unity "0.0.0" in a format 18 to 21 file: read as 2019, the one layout they allow', () => {
+  for (const [from, read] of STRIPPED_FROM) {
+    const expected = read(synthetic(from, from.bytes, U2019, "f", { format: 21 }));
+    for (const format of [18, 19, 20, 21]) {
+      const reader = synthetic(from, from.bytes, [0, 0, 0, 0], "", { text: "0.0.0", format });
+      assert.deepEqual(read(reader), expected, `format ${format}`);
+      assert.equal(reader.remaining, 0);
+    }
+  }
+});
+
+test('Unity "0.0.0" in format 21: an object that does not fit 2019\'s layout is refused', () => {
+  const stripped = (from: typeof fromSprite, bytes: Uint8Array) =>
+    synthetic(from, bytes, [0, 0, 0, 0], "", { text: "0.0.0", format: 21 });
+  const notTheLayout = (err: unknown) =>
+    err instanceof UnsupportedError &&
+    err.kind === "Unity version" &&
+    err.found === "0.0.0" &&
+    /does not fit 2019's (Sprite|SpriteAtlas) layout/.test(err.message);
+  for (const [from, read] of STRIPPED_FROM) {
+    // Bytes left over, and a cut after m_Name: not 2019's layout, not "corrupt".
+    assert.throws(() => read(stripped(from, withTail(from.bytes, 0, 0, 0, 0))), notTheLayout);
+    assert.throws(() => read(stripped(from, from.bytes.subarray(0, 40))), notTheLayout);
+    // A cut inside m_Name, which every layout starts with, is still corrupt.
+    assert.throws(() => read(stripped(from, from.bytes.subarray(0, 6))), CorruptError);
+  }
+  // 6000.3's Sprite (bone guids, m_ScriptableObjects) does not read as 2019's.
+  assert.throws(() => readSprite(stripped(fromSprite, fromSprite.bytes)), notTheLayout);
+});
 
 test("a version before the class is refused: Sprite before 4.3, SpriteAtlas before 2017.1", () => {
   const refused = (err: unknown) =>
