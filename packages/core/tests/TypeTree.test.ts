@@ -102,6 +102,19 @@ test("commonString looks up Unity's built-in strings by offset", () => {
   assert.equal(commonString(1161), "Hash128");
 });
 
+// Past AssetStudio's table: newer editors, with the names UnityPy 1.25.3 gives them.
+for (const [offset, name] of [
+  [1169, "RenderingLayerMask"],
+  [1188, "fixed_array"],
+  [1200, "EntityId"],
+  [1209, "LoadableObjectId"],
+  [1226, "LoadableSceneId"],
+] as const) {
+  test(`commonString resolves ${offset} to UnityPy's ${name}`, () => {
+    assert.equal(commonString(offset), name);
+  });
+}
+
 test("commonString falls back to the offset as text, like upstream", () => {
   assert.equal(commonString(1), "1"); // inside "AABB", not the start of a string
   // Past the end of every known table: UnityPy's last entry, 1226, is 16 bytes.
@@ -139,6 +152,15 @@ test("a blob node resolves high-bit offsets through the common strings", () => {
   assert.deepEqual(
     type.nodes!.map((n) => [n.type, n.name]),
     [["MonoBehaviour", "Base"]],
+  );
+});
+
+test("a blob node resolves a common string newer than AssetStudio's table", () => {
+  const data = blobType(0x80000000 + 1200, 0x80000000 + 55, "");
+  const type = readSerializedType(new BinaryReader(data, "little"), 22, true, false);
+  assert.deepEqual(
+    type.nodes!.map((n) => [n.type, n.name]),
+    [["EntityId", "Base"]],
   );
 });
 
