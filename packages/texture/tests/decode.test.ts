@@ -24,12 +24,12 @@ import {
 } from "../../../fixtures/helpers.js";
 import { decodeTexture2D, initTexture } from "../src/decode.js";
 
-// The WASM half of texture2ddecoder-wasm is built with Docker (`npm run build:wasm`),
+// The WASM half of unity-asset-reader-decoder is built with Docker (`npm run build:wasm`),
 // which the reader CI job does not have; without it only the tests that need no
 // decoder run (see scripts/test-decoder.mjs for the same rule). The CI job that
 // builds the WASM sets REQUIRE_WASM=1, so there a missing WASM fails the run
 // instead of silently skipping the decode tests (#119).
-const WASM = "texture2ddecoder-wasm/wasm/texture2ddecoder.wasm";
+const WASM = "decoder/wasm/texture2ddecoder.wasm";
 const skip = existsSync(fileURLToPath(new URL(`../../${WASM}`, import.meta.url)))
   ? false
   : `packages/${WASM} not built (npm run build:wasm)`;
@@ -616,13 +616,13 @@ test("a Texture2D without imageData, or with it as the wrong type, is a TypeErro
 
 // --- dependency direction ------------------------------------------------------------
 
-test("core imports neither texture2ddecoder-wasm nor the texture package (R14)", () => {
+test("core imports neither unity-asset-reader-decoder nor the texture package (R14)", () => {
   const src = fileURLToPath(new URL("../../core/src", import.meta.url));
   const files = readdirSync(src, { recursive: true, encoding: "utf8" });
   const ts = files.filter((f) => f.endsWith(".ts"));
   assert.ok(ts.length > 10);
   for (const file of ts) {
     const text = readFileSync(join(src, file), "utf8");
-    assert.doesNotMatch(text, /["']texture2ddecoder-wasm|["']unity-asset-reader-texture/, file);
+    assert.doesNotMatch(text, /["']unity-asset-reader-decoder|["']unity-asset-reader-texture/, file);
   }
 });

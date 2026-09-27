@@ -35,7 +35,7 @@
     "browser"
   ],
   "dependencies": {
-    "texture2ddecoder-wasm": "^1.2.2"
+    "unity-asset-reader-decoder": "^1.0.0"
   },
   "peerDependencies": {
     "unity-asset-reader": "^1"

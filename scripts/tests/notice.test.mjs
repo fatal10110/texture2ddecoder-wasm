@@ -21,7 +21,7 @@ test("root NOTICE names every upstream of the per-package NOTICE files", () => {
     assert.ok(named.length > 0, `packages/${pkg}/NOTICE lists no upstream`);
     for (const url of named) {
       // The decoder is a workspace package, not an upstream; the root NOTICE
-      // points at its LICENSE instead.
+      // points at its LICENSE instead. Its URL is this repo's until the rename (plan D8).
       if (url.endsWith("/fatal10110/texture2ddecoder-wasm")) continue;
       assert.ok(rootUpstreams.has(url), `root NOTICE is missing ${url} (packages/${pkg}/NOTICE)`);
     }
@@ -34,7 +34,7 @@ test("root NOTICE points at every per-package notice file", () => {
     "packages/core/NOTICE",
     "packages/texture/NOTICE",
     "packages/node/NOTICE",
-    "packages/texture2ddecoder-wasm/LICENSE",
+    "packages/decoder/LICENSE",
   ]) {
     assert.ok(rootNotice.includes(path), `root NOTICE does not mention ${path}`);
   }

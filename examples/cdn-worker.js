@@ -3,30 +3,28 @@
 //
 // Import maps do not reach into Workers, so the packages are imported from
 // jsDelivr's `/+esm` endpoint, which rewrites their bare imports (`fflate`,
-// `unity-asset-reader`, `texture2ddecoder-wasm`, ...) to CDN URLs as well.
+// `unity-asset-reader`, `unity-asset-reader-decoder`, ...) to CDN URLs as well.
 
 // cdn.html starts this file as `cdn-worker.js?local` when the page was opened
 // with `?local`: the packages then come from `node examples/serve.mjs`, which
 // serves this repo's own builds under /npm/<name>/+esm.
 const LOCAL = new URL(import.meta.url).searchParams.has("local");
 const CDN = "https://cdn.jsdelivr.net/npm";
-// unity-asset-reader and unity-asset-reader-texture are published in lockstep (#45).
-const READER_VERSION = "1.0.0";
-// The texture package depends on texture2ddecoder-wasm ^1.2.2; the WASM comes from the same line.
-const DECODER_VERSION = "1";
+// All the packages share one version and are published together (#174), so the
+// WASM comes from the decoder release that goes with the reader packages.
+const VERSION = "1.0.0";
 
 /** Base URL of a package: jsDelivr, or the local stand-in (which ignores versions). */
 const packageUrl = (name, version) => (LOCAL ? `/npm/${name}` : `${CDN}/${name}@${version}`);
 
-// Needs texture2ddecoder-wasm 1.2.3 or later: 1.2.2's initialize() refuses to
-// run in a Worker (#149).
+// The decoder's initialize() has run in a Worker since #149.
 const ready = (async () => {
   const [reader, texture] = await Promise.all([
-    import(`${packageUrl("unity-asset-reader", READER_VERSION)}/+esm`),
-    import(`${packageUrl("unity-asset-reader-texture", READER_VERSION)}/+esm`),
+    import(`${packageUrl("unity-asset-reader", VERSION)}/+esm`),
+    import(`${packageUrl("unity-asset-reader-texture", VERSION)}/+esm`),
   ]);
   await texture.initTexture({
-    wasmPath: `${packageUrl("texture2ddecoder-wasm", DECODER_VERSION)}/wasm`,
+    wasmPath: `${packageUrl("unity-asset-reader-decoder", VERSION)}/wasm`,
   });
   return { ...reader, ...texture };
 })();
