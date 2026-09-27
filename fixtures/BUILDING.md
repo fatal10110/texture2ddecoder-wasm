@@ -409,3 +409,53 @@ Build with `-executeMethod BuildPlainTextures.Build` (same command as section
 UnityPy 1.25.3 decodes only 8 of the 17 formats, and 2 of those differently
 from AssetStudio; the goldens record which (`oracleError`, `oracleNote`), see
 [`README.md`](README.md#oracle-notes).
+
+## 7. The `stripped` bundles (#104)
+
+Two bundles per editor, built with **6000.3.25f1** and **2020.3.30f1** only:
+`stripped/lz4` and `stripped/uncompressed`. Each holds `hello.txt` (the
+section 1 file, byte-exact) and is built with `AssetBundleStripUnityVersion`.
+Unity then writes `"0.0.0"` as the bundle header's `unityRevision` and as the
+SerializedFile's editor version. 6000.3.25f1 also sets archive flag 0x200
+(`BlockInfoNeedPaddingAtStart`, flags `0x243`), the bit an editor before
+2020.3.34 wrote for encryption. 2020.3.30f1 does not set it (`0x43`), so its
+pair is the control.
+
+Any project will do. The committed bundles came from fresh ones holding only
+`Assets/Fixtures/strip/hello.txt` and `Assets/Editor/BuildStripped.cs`:
+
+```csharp
+using System.IO;
+using UnityEditor;
+using UnityEngine;
+
+// One TextAsset, built with AssetBundleStripUnityVersion, so the UnityFS header's
+// unityRevision is "0.0.0" (#104).
+public static class BuildStripped
+{
+    public static void Build()
+    {
+        Emit("lz4", BuildAssetBundleOptions.ChunkBasedCompression);
+        Emit("uncompressed", BuildAssetBundleOptions.UncompressedAssetBundle);
+    }
+
+    static void Emit(string name, BuildAssetBundleOptions opts)
+    {
+        var dir = Path.Combine("Build", "stripped-" + name);
+        Directory.CreateDirectory(dir);
+        var builds = new[] { new AssetBundleBuild { assetBundleName = name, assetNames = new[] { "Assets/Fixtures/strip/hello.txt" } } };
+        var m = BuildPipeline.BuildAssetBundles(dir, builds, opts | BuildAssetBundleOptions.AssetBundleStripUnityVersion,
+                                                BuildTarget.StandaloneWindows64);
+        if (m == null) throw new System.Exception("build failed: stripped " + name);
+        Debug.Log("FIXTURE-OK stripped " + name + " -> " + dir);
+    }
+}
+```
+
+Build with `-executeMethod BuildStripped.Build` (same command as section 2).
+The log must hold two `FIXTURE-OK stripped` lines. Copy only
+`Build/stripped-lz4/lz4` and `Build/stripped-uncompressed/uncompressed` to
+`fixtures/bundles/editor/<editor version>/stripped/`, then rerun
+`make-goldens.py`. UnityPy has to be told the editor for these bundles. The
+script takes it from the folder name and records an `oracleNote`
+([`README.md`](README.md#oracle-notes)).

@@ -170,15 +170,17 @@ test("an object with a class id outside ClassID keeps its number", () => {
 
 // --- build type -----------------------------------------------------------------
 
-test("the build type is f for every editor-built fixture, stripped-suffix ones included", () => {
+test("the build type is f wherever a fixture names its editor, and empty if stripped", () => {
   let suffixed = 0;
   for (const name of SERIALIZED_FIXTURES) {
     for (const path of Object.keys(golden(name).serialized!)) {
       const data = node(name, path);
       const sf = readSerializedFile(data);
       if (sf.unityVersion.includes("\n")) suffixed++;
-      assert.equal(sf.buildType, "f", `${name} ${path}`);
-      for (const r of readers(data)) assert.equal(r.buildType, "f");
+      // A version-stripped fixture (#104) names no editor, so no release type.
+      const want = golden(name).serialized![path]!.unityVersion === "0.0.0" ? "" : "f";
+      assert.equal(sf.buildType, want, `${name} ${path}`);
+      for (const r of readers(data)) assert.equal(r.buildType, want);
     }
   }
   assert.ok(suffixed > 0, "no fixture carries the typetree-stripped suffix");

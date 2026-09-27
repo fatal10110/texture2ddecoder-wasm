@@ -20,6 +20,19 @@ const UNITYFS_FIXTURES = [
   "lzma.bundle",
 ];
 
+/**
+ * Editor builds with AssetBundleStripUnityVersion, so the revision is "0.0.0"
+ * (#104). 6000.3.25f1 sets 0x200 as block padding (flags 0x243); 2020.3.30f1
+ * predates that and does not set it (0x43), so it shows the change is confined
+ * to the bit. Their goldens are UnityPy told the real editor, see the notes.
+ */
+const STRIPPED_FIXTURES = [
+  "editor/6000.3.25f1/stripped/lz4",
+  "editor/6000.3.25f1/stripped/uncompressed",
+  "editor/2020.3.30f1/stripped/lz4",
+  "editor/2020.3.30f1/stripped/uncompressed",
+];
+
 /** The pre-version-6 layout: one LZMA fixture, two stored ones (v3 and v2). */
 const LEGACY_FIXTURES = ["unityweb-lzma.bundle", "unityraw.bundle", "unityraw-v2.bundle"];
 
@@ -38,6 +51,16 @@ for (const name of UNITYFS_FIXTURES) {
     assert.equal(header.unityVersion, expected.unityVersion);
     assert.equal(header.unityRevision, expected.unityRevision);
     assert.equal(header.size, loadFixture(name).length);
+  });
+}
+
+for (const name of STRIPPED_FIXTURES) {
+  test(`unpacks the version-stripped ${name} byte-identically to the golden`, () => {
+    const { header, files } = readBundle(loadFixture(name));
+    assert.equal(header.unityRevision, golden(name).unityRevision);
+    assert.equal(header.unityRevision, "0.0.0");
+    assert.equal(header.flags, name.startsWith("editor/6000.") ? 0x243 : 0x43);
+    assertMatchesGolden(name, files);
   });
 }
 
@@ -165,8 +188,24 @@ interface BundleOptions {
    * to recognise, so the tests set this by hand rather than deriving it.
    */
   padHeader?: boolean;
-  /** Archive flags; 0x40 (blocks and directory info combined) by default. */
+  /**
+   * Archive flags; 0x40 (blocks and directory info combined) by default. A
+   * compression type of 2 or 3 in the low six bits stores the blocks info as
+   * LZ4 (see {@link lz4Literals}).
+   */
   flags?: number;
+  /**
+   * Bytes written right after the header, before its padding: where a bundle
+   * encrypted by an editor before 2020.3.34 keeps its key block (UnityPy
+   * `ArchiveStorageDecryptor`, AssetStudio `ReadUnityCN`).
+   */
+  keyBlock?: Uint8Array;
+  /**
+   * Whether the data blocks start on a 16-byte boundary. Defaults to whether
+   * `flags` sets 0x200, which is what 0x200 means from 2020.3.34 / 2021.3.2 /
+   * 2022.1.1 on; an older, encrypted bundle sets the bit without the padding.
+   */
+  padBlocks?: boolean;
   blocks?: Block[];
   nodes?: Node[];
   /** Overrides, so a header can be made to disagree with the bytes. */
@@ -195,6 +234,7 @@ function buildBundle(options: BundleOptions = {}): Uint8Array {
     revision = "2022.3.0f1",
     padHeader = version >= 7,
     flags = BLOCKS_AND_DIRECTORY_COMBINED,
+    padBlocks = (flags & PADDING_AT_START) !== 0,
     blocks = [{ data: payload(64) }],
     nodes = [{ path: "CAB-test", offset: 0, size: 64, flags: NodeFlags.SerializedFile }],
   } = options;
@@ -214,33 +254,55 @@ function buildBundle(options: BundleOptions = {}): Uint8Array {
     info.u32(node.flags ?? 0);
     info.cstr(node.path);
   }
-  const infoBytes = info.build();
+  const rawInfo = info.build();
+  const infoCodec = flags & 0x3f;
+  const infoBytes = infoCodec === 2 || infoCodec === 3 ? lz4Literals(rawInfo) : rawInfo;
 
   const out = new Writer();
   out.cstr(signature);
   out.u32(version);
   out.cstr("5.x.x");
   out.cstr(revision);
-  out.i64(0n); // total size; upstream reads it but never checks it
+  const sizeAt = out.length;
+  out.i64(0n); // total size, filled in once the bundle is written
   out.u32(options.compressedBlocksInfoSize ?? infoBytes.length);
-  out.u32(options.uncompressedBlocksInfoSize ?? infoBytes.length);
+  out.u32(options.uncompressedBlocksInfoSize ?? rawInfo.length);
   out.u32(flags);
   // A UnityWeb/UnityRaw header at version 6 carries one more byte than UnityFS.
   if (signature !== "UnityFS") out.u8(0);
+  if (options.keyBlock) out.bytes(options.keyBlock);
   // Format version 7 (Unity 2020.1+) pads the header to 16 bytes, and so does
   // 2019.4.15 and later at format version 6.
   if (padHeader) out.align(16);
   // Padding and alignment are counted from the start of the file, so the
   // blocks have to be written into the same sink as the header.
   if ((flags & BLOCKS_INFO_AT_THE_END) !== 0) {
-    if ((flags & PADDING_AT_START) !== 0) out.align(16);
+    if (padBlocks) out.align(16);
     for (const block of blocks) out.bytes(block.data);
     out.bytes(infoBytes);
   } else {
     out.bytes(infoBytes);
-    if ((flags & PADDING_AT_START) !== 0) out.align(16);
+    if (padBlocks) out.align(16);
     for (const block of blocks) out.bytes(block.data);
   }
+  const bundle = out.build();
+  new DataView(bundle.buffer).setBigInt64(sizeAt, BigInt(bundle.length));
+  return bundle;
+}
+
+/**
+ * Wrap `data` as one LZ4 block made of a single literal run: a valid block
+ * that any LZ4 decoder expands back to `data`, without a compressor.
+ */
+function lz4Literals(data: Uint8Array): Uint8Array {
+  const out = new Writer();
+  out.u8(Math.min(data.length, 15) << 4);
+  if (data.length >= 15) {
+    let rest = data.length - 15;
+    for (; rest >= 255; rest -= 255) out.u8(255);
+    out.u8(rest);
+  }
+  out.bytes(data);
   return out.build();
 }
 
@@ -303,9 +365,10 @@ const PADDING_BY_REVISION = [
   ["2022.1.0f1", false],
   ["2022.1.1f1", true],
   ["6000.0.23f1", true],
-  // No revision at all: nothing says the bit is padding, so it is not read as
-  // padding.
-  ["", false],
+  // A revision that names no editor - stripped by AssetBundleStripUnityVersion,
+  // or missing - is read with the new flag set, as AssetStudio does (#104).
+  ["0.0.0", true],
+  ["", true],
 ] as const;
 
 /** One node path longer than the default, so the padding is not zero-width. */
@@ -386,6 +449,116 @@ test("keeps refusing the 0x400 and 0x1000 encryption bits on an older bundle", (
       `flag 0x${bit.toString(16)}`,
     );
   }
+});
+
+// --- a revision that names no editor (#104) ----------------------------------
+
+/** What Unity 6 writes on a stripped bundle: LZ4HC blocks info, combined, 0x200. */
+const STRIPPED_UNITY6_FLAGS = 0x243;
+
+/**
+ * What an editor before 2020.3.34 writes between an encrypted bundle's header
+ * and its blocks info: a u32, then two 16-byte vector pairs each followed by a
+ * byte (UnityPy `ArchiveStorageDecryptor`) - 70 bytes, too many to hide in the
+ * 16-byte padding a Unity 6 bundle carries there.
+ */
+const KEY_BLOCK = payload(70, 41);
+
+test('unpacks a "0.0.0" bundle with flags 0x243 from its padded blocks', () => {
+  const data = payload(64, 43);
+  const padded = buildBundle({
+    version: 8,
+    revision: "0.0.0",
+    flags: STRIPPED_UNITY6_FLAGS,
+    blocks: [{ data }],
+    nodes: PAD_NODES,
+  });
+  const unpadded = buildBundle({
+    version: 8,
+    revision: "0.0.0",
+    flags: STRIPPED_UNITY6_FLAGS,
+    padBlocks: false,
+    blocks: [{ data }],
+    nodes: PAD_NODES,
+  });
+  assert.ok(padded.length > unpadded.length, "the crafted bundle carries no padding");
+
+  const { header, files } = readBundle(padded);
+  assert.equal(header.flags, STRIPPED_UNITY6_FLAGS);
+  assert.deepEqual(
+    files.map(({ path, flags }) => ({ path, flags })),
+    [{ path: "CAB-test-pad", flags: NodeFlags.SerializedFile }],
+  );
+  assert.deepEqual(files[0]!.data, data);
+});
+
+test('unpacks a "0.0.0" bundle with 0x200 and its blocks info at the end', () => {
+  // The other side of the size check: with 0x80 the data blocks end where the
+  // blocks info starts, not at the header's size.
+  const data = payload(64, 49);
+  for (const version of [7, 8]) {
+    const bundle = buildBundle({
+      version,
+      revision: "0.0.0",
+      flags: BLOCKS_AND_DIRECTORY_COMBINED | BLOCKS_INFO_AT_THE_END | PADDING_AT_START,
+      blocks: [{ data }],
+      nodes: PAD_NODES,
+    });
+    assert.deepEqual(readBundle(bundle).files[0]!.data, data, `format ${version}`);
+  }
+});
+
+test('still refuses the 0x400 and 0x1000 encryption bits on a "0.0.0" bundle', () => {
+  for (const bit of [0x400, 0x1000]) {
+    assert.throws(
+      () => readBundle(buildBundle({ revision: "0.0.0", flags: STRIPPED_UNITY6_FLAGS | bit })),
+      (error: unknown) =>
+        error instanceof UnsupportedError &&
+        error.kind === "archive flag" &&
+        error.found === `0x${bit.toString(16)}`,
+      `flag 0x${bit.toString(16)}`,
+    );
+  }
+});
+
+test('refuses 0x200 on a "0.0.0" bundle whose bytes do not read as padded blocks', () => {
+  // The same header from an encrypted pre-2020.3.34 build: 0x200 is the
+  // encryption bit, the key block sits after the header and the data blocks
+  // are not padded. Read as padding, the blocks info comes from the key block
+  // and fails to decode - or, with the blocks info at the end (the last case),
+  // decodes fine, and only the fit check stops the stored data from coming
+  // back shifted into the key block.
+  const data = payload(64, 45);
+  for (const flags of [
+    STRIPPED_UNITY6_FLAGS,
+    BLOCKS_AND_DIRECTORY_COMBINED | PADDING_AT_START,
+    BLOCKS_AND_DIRECTORY_COMBINED | BLOCKS_INFO_AT_THE_END | PADDING_AT_START,
+  ]) {
+    const bundle = buildBundle({
+      version: 7,
+      revision: "0.0.0",
+      flags,
+      keyBlock: KEY_BLOCK,
+      padBlocks: false,
+      blocks: [{ data }],
+      nodes: PAD_NODES,
+    });
+    assert.throws(
+      () => readBundle(bundle),
+      (error: unknown) =>
+        error instanceof UnsupportedError &&
+        error.kind === "archive flag" &&
+        error.found === "0x200",
+      `flags 0x${flags.toString(16)}`,
+    );
+  }
+});
+
+test('reports a truncated "0.0.0" bundle as corrupt, not as an ambiguous 0x200', () => {
+  // The header still claims the full size, so the padded reading fits and is
+  // accepted; the missing bytes are then plain corruption, as with a revision.
+  const full = loadFixture("editor/6000.3.25f1/stripped/lz4");
+  assert.throws(() => readBundle(full.subarray(0, full.length - 10)), CorruptError);
 });
 
 test("stitches a file that spans two blocks", () => {
