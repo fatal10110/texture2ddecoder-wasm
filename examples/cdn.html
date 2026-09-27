@@ -124,13 +124,10 @@
     <div class="info">
       <strong>How this works</strong> (the Worker, <code>cdn-worker.js</code>):
       <pre><code>const CDN = "https://cdn.jsdelivr.net/npm";
-// Until texture2ddecoder-wasm ships the fix for #149 (PR #158), its initialize()
-// refuses to run in a Worker: pretend to be a page while the modules load.
-globalThis.window = { document: {} };
 const { load, ClassID } = await import(`${CDN}/unity-asset-reader@1.0.0/+esm`);
 const { initTexture, decodeTexture2D } =
   await import(`${CDN}/unity-asset-reader-texture@1.0.0/+esm`);
-delete globalThis.window; // before initTexture: the WASM loader must see the Worker
+// In a Worker this needs texture2ddecoder-wasm 1.2.3 or later (#149).
 await initTexture({ wasmPath: `${CDN}/texture2ddecoder-wasm@1/wasm` });
 
 const env = load([{ name: file.name, data: new Uint8Array(await file.arrayBuffer()) }]);

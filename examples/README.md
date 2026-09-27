@@ -27,6 +27,10 @@ imports nothing.
 - **The WASM** comes from `texture2ddecoder-wasm@1/wasm` on the same CDN.
   `initTexture({ wasmPath })` loads it, even when the textures are plain
   formats decoded in TS.
+- **`texture2ddecoder-wasm` 1.2.3 or later.** Earlier versions refuse to
+  `initialize()` in a Worker (#149). `?local` uses the workspace build, which
+  has the fix. On jsDelivr, `@1` still resolves to 1.2.2 until 1.2.3 is
+  published; #150 verifies the jsDelivr path.
 
 ### Where the packages come from
 

@@ -18,22 +18,13 @@ const DECODER_VERSION = "1";
 /** Base URL of a package: jsDelivr, or the local stand-in (which ignores versions). */
 const packageUrl = (name, version) => (LOCAL ? `/npm/${name}` : `${CDN}/${name}@${version}`);
 
+// Needs texture2ddecoder-wasm 1.2.3 or later: 1.2.2's initialize() refuses to
+// run in a Worker (#149).
 const ready = (async () => {
-  // texture2ddecoder-wasm 1.2.2 takes "browser" to mean `window.document`
-  // exists, which a Worker does not have, and then refuses to initialize
-  // (#149). Pretend only while its module evaluates, since it reads
-  // the flag once, at load. The emscripten loader that `initTexture` imports
-  // afterwards has its own Worker-aware check and sees the real global scope.
-  globalThis.window = { document: {} };
-  let reader, texture;
-  try {
-    [reader, texture] = await Promise.all([
-      import(`${packageUrl("unity-asset-reader", READER_VERSION)}/+esm`),
-      import(`${packageUrl("unity-asset-reader-texture", READER_VERSION)}/+esm`),
-    ]);
-  } finally {
-    delete globalThis.window;
-  }
+  const [reader, texture] = await Promise.all([
+    import(`${packageUrl("unity-asset-reader", READER_VERSION)}/+esm`),
+    import(`${packageUrl("unity-asset-reader-texture", READER_VERSION)}/+esm`),
+  ]);
   await texture.initTexture({
     wasmPath: `${packageUrl("texture2ddecoder-wasm", DECODER_VERSION)}/wasm`,
   });
