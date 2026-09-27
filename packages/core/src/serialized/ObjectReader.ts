@@ -104,14 +104,26 @@ export class ObjectReader extends BinaryReader {
   readonly platform: BuildTarget;
   /** The file's `[SerializeReference]` types, for {@link readTypeTree}. */
   readonly refTypes: SerializedType[];
+  /**
+   * Name of the SerializedFile the object was read from, its last path
+   * component (upstream `SerializedFile.fileName`): a bundle node's path
+   * (`"CAB-<hash>"`) or the name a loose file was passed to `load()` under
+   * (`"sharedassets0.assets"`). A class reader needs it for data kept in the
+   * file's own resource file, which Unity names after it (`<fileName>.resS`
+   * for an `AudioClip` streamed before 5.0). Empty for a reader built by hand
+   * without one.
+   */
+  readonly fileName: string;
 
   /**
    * @param data the whole SerializedFile the object table was read from
    * @param file the parsed header and metadata of `data`
    * @param info one entry of `file.objects`
+   * @param fileName the name of the file `data` is, for {@link fileName}:
+   *   `load()` passes the last component of its path; omit it when unknown
    * @throws {CorruptError} when the object's data runs past the end of `data`
    */
-  constructor(data: Uint8Array, file: SerializedFile, info: ObjectInfo) {
+  constructor(data: Uint8Array, file: SerializedFile, info: ObjectInfo, fileName = "") {
     const { pathId, byteStart, byteSize } = info;
     const end = byteStart + byteSize;
     if (end > data.length) {
@@ -132,6 +144,7 @@ export class ObjectReader extends BinaryReader {
     this.unityVersion = file.unityVersion;
     this.platform = file.targetPlatform;
     this.refTypes = file.refTypes;
+    this.fileName = fileName;
   }
 
   /**
