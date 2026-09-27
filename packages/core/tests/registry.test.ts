@@ -17,9 +17,10 @@ import { textAssetString, type TextAsset } from "../src/classes/TextAsset.js";
 import { readTexture2D } from "../src/classes/Texture2D.js";
 import { load, type Env } from "../src/env.js";
 import { CorruptError, ResourceNotFoundError, UnsupportedError } from "../src/errors.js";
-import { ClassID } from "../src/serialized/ClassID.js";
+import { ClassID, classIdName } from "../src/serialized/ClassID.js";
 import { ObjectReader } from "../src/serialized/ObjectReader.js";
 import { readSerializedFile } from "../src/serialized/SerializedFile.js";
+import { objectBytes, synthetic } from "./class-readers.js";
 
 /** Fixtures holding a Texture2D, per their golden object tables. */
 const TEXTURE_FIXTURES = fixtureNames().filter((name) =>
@@ -359,3 +360,38 @@ test("read() of a Texture2D in a version-stripped file: UnsupportedError(Unity v
   assert.deepEqual(versioned.version, [3, 4, 2, 3]);
   assert.throws(() => versioned.read(), CorruptError);
 });
+
+// --- m_Name: strict in every NamedObject reader (#129) ------------------------------
+
+/** A fixture object of each registered NamedObject class, in a 6000 player build. */
+const NAMED: { classId: number; name: string }[] = [
+  { classId: ClassID.Texture2D, name: "editor/6000.3.25f1/uncompressed/texture" },
+  { classId: ClassID.TextAsset, name: "editor/6000.3.25f1/uncompressed/shared" },
+  { classId: ClassID.MonoScript, name: "editor/6000.3.25f1/uncompressed/main" },
+  { classId: ClassID.AssetBundle, name: "editor/6000.3.25f1/uncompressed/shared" },
+];
+
+for (const { classId, name } of NAMED) {
+  const className = classIdName(classId)!;
+  test(`read(): ${className} with a bad m_Name length throws CorruptError, not ""`, () => {
+    const from = objectBytes(name, classId);
+    const size = from.bytes.length;
+    // A player build: m_Name's length is the object's first 4 bytes.
+    const cases: [number, string][] = [
+      [-1, "m_Name byte count -1 at offset 0 is negative"],
+      [size, `m_Name byte count ${size} at offset 0 exceeds the ${size - 4} bytes left`],
+    ];
+    for (const [length, message] of cases) {
+      const bytes = from.bytes.slice();
+      new DataView(bytes.buffer).setInt32(0, length, true);
+      const obj = synthetic(from, bytes, from.sf.version, from.sf.unityVersion);
+      assert.throws(
+        () => obj.read(),
+        (err: unknown) =>
+          err instanceof CorruptError &&
+          err.message === `${className} ${obj.pathId} ${message}`,
+        `length ${length}`,
+      );
+    }
+  });
+}
