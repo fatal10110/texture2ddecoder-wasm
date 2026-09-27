@@ -86,15 +86,13 @@ export interface SerializedFile {
   header: SerializedFileHeader;
   /**
    * Editor version exactly as written, suffix included: typetree-stripped files
-   * carry one, e.g. `"6000.3.25f1\n2"`. `"2.5.0f5"` before format 7, unless
-   * `load()` gave the file its enclosing bundle's `unityRevision`.
+   * carry one, e.g. `"6000.3.25f1\n2"`. `"2.5.0f5"` before format 7.
    */
   unityVersion: string;
   /**
    * The version parsed from the leading `major.minor.patch<type>build` of
    * `unityVersion`, suffix ignored. `[0, 0, 0, 0]` before format 7, which
-   * names no editor, unless `load()` gave the file its enclosing bundle's
-   * `unityRevision`; and `[0, 0, 0, 0]` for the stripped placeholder `"0.0.0"`.
+   * names no editor, and for the stripped placeholder `"0.0.0"`.
    */
   version: UnityVersion;
   /** Format 8+; `UnknownPlatform` before, or when the value is not one upstream knows. */
