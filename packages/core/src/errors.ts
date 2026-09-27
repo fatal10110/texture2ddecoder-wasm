@@ -10,9 +10,9 @@
  * {@link ResourceNotFoundError}, which a caller can answer by loading it.
  *
  * ponytail: no shared base class - three classes, and `instanceof` on each
- * covers every caller so far (the M5 node adapter needs to catch only the
- * third, to fall back to a directory search). Add one if something needs to
- * catch all reader errors.
+ * covers every caller so far (a caller that catches the third answers it by
+ * loading the missing file). Add one if something needs to catch all reader
+ * errors.
  */
 
 /**
