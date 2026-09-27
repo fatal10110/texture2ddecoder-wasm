@@ -1,5 +1,6 @@
 // Ported from AssetStudio/Classes/Texture2D.cs (MIT, © Perfare / RazTools / Razviar)
 
+import type { ResourceRef } from "../env.js";
 import { CorruptError } from "../errors.js";
 import type { ObjectReader } from "../serialized/ObjectReader.js";
 import { readCount } from "../serialized/TypeTree.js";
@@ -9,21 +10,14 @@ import { atLeast, readTexture, type Texture } from "./Texture.js";
  * Where a texture's image data lives when it is not stored in the object
  * (Unity's `StreamingInfo`): `size` bytes at `offset` in the resource file
  * `path`, usually a `.resS` node of the same bundle, named like
- * `archive:/CAB-<hash>/CAB-<hash>.resS`.
+ * `archive:/CAB-<hash>/CAB-<hash>.resS`. It is the env's `ResourceRef`, so
+ * `env.readResource(texture.m_StreamData, reader)` takes it as it is.
  *
  * An empty `path` means the data is inline, in the object's `image data`.
+ * `offset` is `UInt64` from Unity 2020.1 on, refused at 2^53 and above (D9);
+ * the reader returns the fields in Unity's order: `offset`, `size`, `path`.
  */
-export interface StreamingInfo {
-  /**
-   * Byte offset into the resource file. A `number` (D9): `UInt64` from Unity
-   * 2020.1 on, refused above 2^53.
-   */
-  offset: number;
-  /** Byte count. */
-  size: number;
-  /** The resource file, as Unity wrote it; `""` when the data is inline. */
-  path: string;
-}
+export type StreamingInfo = ResourceRef;
 
 /**
  * Sampling settings of a texture (Unity's `GLTextureSettings`). Before Unity
