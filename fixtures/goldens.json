@@ -3878,6 +3878,729 @@
         }
       }
     },
+    "editor/2019.4.41f2/material/lz4-notypetree/material": {
+      "signature": "UnityFS",
+      "formatVersion": 7,
+      "unityVersion": "5.x.x",
+      "unityRevision": "2019.4.41f2",
+      "files": {
+        "CAB-4e1495302a9362227e5054a500aa979a": {
+          "sha256": "43ad82bf72d017defe90298d84554f74fe69929d13172549ff07e6cdb6b9830e",
+          "size": 4628
+        }
+      },
+      "objects": {
+        "CAB-4e1495302a9362227e5054a500aa979a": [
+          {
+            "pathId": "1",
+            "classId": 142,
+            "byteSize": 180
+          },
+          {
+            "pathId": "6061584164174037990",
+            "classId": 21,
+            "byteSize": 348
+          }
+        ]
+      },
+      "serialized": {
+        "CAB-4e1495302a9362227e5054a500aa979a": {
+          "formatVersion": 21,
+          "unityVersion": "2019.4.41f2\n2",
+          "targetPlatform": 19,
+          "bigEndian": false,
+          "enableTypeTree": false,
+          "externals": [
+            {
+              "path": "archive:/CAB-a7161beab8ac9e6904f9fd8262e69daf/CAB-a7161beab8ac9e6904f9fd8262e69daf",
+              "guid": "00000000000000000000000000000000",
+              "type": 0
+            }
+          ],
+          "types": [
+            {
+              "classId": 142,
+              "isStrippedType": false,
+              "scriptTypeIndex": -1,
+              "scriptId": null,
+              "oldTypeHash": "97da5f4688e45a57c8b42d4f42497297",
+              "typeDependencies": null,
+              "nodes": null
+            },
+            {
+              "classId": 21,
+              "isStrippedType": false,
+              "scriptTypeIndex": -1,
+              "scriptId": null,
+              "oldTypeHash": "d871346d990bbc294d02f4c366bf1b6d",
+              "typeDependencies": null,
+              "nodes": null
+            }
+          ],
+          "refTypes": [],
+          "typetrees": {}
+        }
+      }
+    },
+    "editor/2019.4.41f2/material/lz4-stripped/material": {
+      "signature": "UnityFS",
+      "formatVersion": 7,
+      "unityVersion": "5.x.x",
+      "unityRevision": "0.0.0",
+      "files": {
+        "CAB-4e1495302a9362227e5054a500aa979a": {
+          "sha256": "fa87e9293f4ab76369a5ae61de2a86237ad81a1a5448b98ae91e65e06151129b",
+          "size": 5636
+        }
+      },
+      "objects": {
+        "CAB-4e1495302a9362227e5054a500aa979a": [
+          {
+            "pathId": "1",
+            "classId": 142,
+            "byteSize": 180
+          },
+          {
+            "pathId": "6061584164174037990",
+            "classId": 21,
+            "byteSize": 348
+          }
+        ]
+      },
+      "serialized": {
+        "CAB-4e1495302a9362227e5054a500aa979a": {
+          "formatVersion": 21,
+          "unityVersion": "0.0.0",
+          "targetPlatform": 19,
+          "bigEndian": false,
+          "enableTypeTree": true,
+          "externals": [
+            {
+              "path": "archive:/CAB-a7161beab8ac9e6904f9fd8262e69daf/CAB-a7161beab8ac9e6904f9fd8262e69daf",
+              "guid": "00000000000000000000000000000000",
+              "type": 0
+            }
+          ],
+          "types": [
+            {
+              "classId": 142,
+              "isStrippedType": false,
+              "scriptTypeIndex": -1,
+              "scriptId": null,
+              "oldTypeHash": "97da5f4688e45a57c8b42d4f42497297",
+              "typeDependencies": [],
+              "nodes": [
+                [0, "AssetBundle", "Base", -1, 32768],
+                [1, "string", "m_Name", -1, 557057],
+                [2, "Array", "Array", -1, 540673],
+                [3, "int", "size", 4, 524289],
+                [3, "char", "data", 1, 524289],
+                [1, "vector", "m_PreloadTable", -1, 32768],
+                [2, "Array", "Array", -1, 16384],
+                [3, "int", "size", 4, 0],
+                [3, "PPtr<Object>", "data", 12, 0],
+                [4, "int", "m_FileID", 4, 8388609],
+                [4, "SInt64", "m_PathID", 8, 8388609],
+                [1, "map", "m_Container", -1, 32768],
+                [2, "Array", "Array", -1, 32768],
+                [3, "int", "size", 4, 0],
+                [3, "pair", "data", -1, 32768],
+                [4, "string", "first", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "AssetInfo", "second", 20, 0],
+                [5, "int", "preloadIndex", 4, 0],
+                [5, "int", "preloadSize", 4, 0],
+                [5, "PPtr<Object>", "asset", 12, 0],
+                [6, "int", "m_FileID", 4, 8388609],
+                [6, "SInt64", "m_PathID", 8, 8388609],
+                [1, "AssetInfo", "m_MainAsset", 20, 0],
+                [2, "int", "preloadIndex", 4, 0],
+                [2, "int", "preloadSize", 4, 0],
+                [2, "PPtr<Object>", "asset", 12, 0],
+                [3, "int", "m_FileID", 4, 8388609],
+                [3, "SInt64", "m_PathID", 8, 8388609],
+                [1, "unsigned int", "m_RuntimeCompatibility", 4, 0],
+                [1, "string", "m_AssetBundleName", -1, 32768],
+                [2, "Array", "Array", -1, 16385],
+                [3, "int", "size", 4, 1],
+                [3, "char", "data", 1, 1],
+                [1, "vector", "m_Dependencies", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "string", "data", -1, 32768],
+                [4, "Array", "Array", -1, 16385],
+                [5, "int", "size", 4, 1],
+                [5, "char", "data", 1, 1],
+                [1, "bool", "m_IsStreamedSceneAssetBundle", 1, 16384],
+                [1, "int", "m_ExplicitDataLayout", 4, 0],
+                [1, "int", "m_PathFlags", 4, 0],
+                [1, "map", "m_SceneHashes", -1, 32768],
+                [2, "Array", "Array", -1, 32768],
+                [3, "int", "size", 4, 0],
+                [3, "pair", "data", -1, 32768],
+                [4, "string", "first", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "string", "second", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1]
+              ]
+            },
+            {
+              "classId": 21,
+              "isStrippedType": false,
+              "scriptTypeIndex": -1,
+              "scriptId": null,
+              "oldTypeHash": "d871346d990bbc294d02f4c366bf1b6d",
+              "typeDependencies": [],
+              "nodes": [
+                [0, "Material", "Base", -1, 32768],
+                [1, "string", "m_Name", -1, 557057],
+                [2, "Array", "Array", -1, 540673],
+                [3, "int", "size", 4, 524289],
+                [3, "char", "data", 1, 524289],
+                [1, "PPtr<Shader>", "m_Shader", 12, 0],
+                [2, "int", "m_FileID", 4, 8388609],
+                [2, "SInt64", "m_PathID", 8, 8388609],
+                [1, "string", "m_ShaderKeywords", -1, 32768],
+                [2, "Array", "Array", -1, 16385],
+                [3, "int", "size", 4, 1],
+                [3, "char", "data", 1, 1],
+                [1, "unsigned int", "m_LightmapFlags", 4, 0],
+                [1, "bool", "m_EnableInstancingVariants", 1, 0],
+                [1, "bool", "m_DoubleSidedGI", 1, 16384],
+                [1, "int", "m_CustomRenderQueue", 4, 0],
+                [1, "map", "stringTagMap", -1, 32768],
+                [2, "Array", "Array", -1, 32768],
+                [3, "int", "size", 4, 0],
+                [3, "pair", "data", -1, 32768],
+                [4, "string", "first", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "string", "second", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [1, "vector", "disabledShaderPasses", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "string", "data", -1, 32768],
+                [4, "Array", "Array", -1, 16385],
+                [5, "int", "size", 4, 1],
+                [5, "char", "data", 1, 1],
+                [1, "UnityPropertySheet", "m_SavedProperties", -1, 32768],
+                [2, "map", "m_TexEnvs", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "UnityTexEnv", "second", 28, 0],
+                [6, "PPtr<Texture>", "m_Texture", 12, 0],
+                [7, "int", "m_FileID", 4, 8388609],
+                [7, "SInt64", "m_PathID", 8, 8388609],
+                [6, "Vector2f", "m_Scale", 8, 2097152],
+                [7, "float", "x", 4, 2097152],
+                [7, "float", "y", 4, 2097152],
+                [6, "Vector2f", "m_Offset", 8, 2097152],
+                [7, "float", "x", 4, 2097152],
+                [7, "float", "y", 4, 2097152],
+                [2, "map", "m_Floats", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "float", "second", 4, 0],
+                [2, "map", "m_Colors", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "ColorRGBA", "second", 16, 2097152],
+                [6, "float", "r", 4, 2097153],
+                [6, "float", "g", 4, 2097153],
+                [6, "float", "b", 4, 2097153],
+                [6, "float", "a", 4, 2097153]
+              ]
+            }
+          ],
+          "refTypes": [],
+          "typetrees": {
+            "1": {
+              "value": {
+                "m_Name": "material",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "6061584164174037990"
+                  },
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "-8664731681437194551"
+                  },
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "3337554563716702899"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/material/uar.mat",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 3,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "6061584164174037990"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "material",
+                "m_Dependencies": ["matdeps"],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
+            },
+            "6061584164174037990": {
+              "value": {
+                "m_Name": "uar",
+                "m_Shader": {
+                  "m_FileID": 1,
+                  "m_PathID": "-8664731681437194551"
+                },
+                "m_ShaderKeywords": "UAR_NOT_IN_SHADER _EMISSION _NORMALMAP",
+                "m_LightmapFlags": 2,
+                "m_EnableInstancingVariants": true,
+                "m_DoubleSidedGI": true,
+                "m_CustomRenderQueue": 2450,
+                "stringTagMap": [
+                  ["RenderType", "TransparentCutout"]
+                ],
+                "disabledShaderPasses": ["SHADOWCASTER"],
+                "m_SavedProperties": {
+                  "m_TexEnvs": [
+                    [
+                      "_BumpMap",
+                      {
+                        "m_Texture": {
+                          "m_FileID": 0,
+                          "m_PathID": "0"
+                        },
+                        "m_Scale": {
+                          "x": "f32:3f800000",
+                          "y": "f32:3f800000"
+                        },
+                        "m_Offset": {
+                          "x": "f32:00000000",
+                          "y": "f32:00000000"
+                        }
+                      }
+                    ],
+                    [
+                      "_MainTex",
+                      {
+                        "m_Texture": {
+                          "m_FileID": 1,
+                          "m_PathID": "3337554563716702899"
+                        },
+                        "m_Scale": {
+                          "x": "f32:40000000",
+                          "y": "f32:40400000"
+                        },
+                        "m_Offset": {
+                          "x": "f32:3e800000",
+                          "y": "f32:bf000000"
+                        }
+                      }
+                    ]
+                  ],
+                  "m_Floats": [
+                    ["_Glossiness", "f32:3f400000"],
+                    ["_NegZero", "f32:00000000"],
+                    ["_UarInt", "f32:c0e00000"]
+                  ],
+                  "m_Colors": [
+                    [
+                      "_Color",
+                      {
+                        "r": "f32:3dcccccd",
+                        "g": "f32:3e4ccccd",
+                        "b": "f32:3e99999a",
+                        "a": "f32:3ecccccd"
+                      }
+                    ],
+                    [
+                      "_EmissionColor",
+                      {
+                        "r": "f32:40000000",
+                        "g": "f32:3f000000",
+                        "b": "f32:00000000",
+                        "a": "f32:3f800000"
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "oracleNote": "version-stripped (\"0.0.0\"): UnityPy refuses it without a fallback, so it was read with config.FALLBACK_UNITY_VERSION = \"2019.4.41f2\", the editor that built it - see #104"
+    },
+    "editor/2019.4.41f2/material/lz4/material": {
+      "signature": "UnityFS",
+      "formatVersion": 7,
+      "unityVersion": "5.x.x",
+      "unityRevision": "2019.4.41f2",
+      "files": {
+        "CAB-4e1495302a9362227e5054a500aa979a": {
+          "sha256": "f64f96d1c6f806cb5418740b5e10fa6a649ba5e944a4aadec7fa9e616a5b50d0",
+          "size": 5636
+        }
+      },
+      "objects": {
+        "CAB-4e1495302a9362227e5054a500aa979a": [
+          {
+            "pathId": "1",
+            "classId": 142,
+            "byteSize": 180
+          },
+          {
+            "pathId": "6061584164174037990",
+            "classId": 21,
+            "byteSize": 348
+          }
+        ]
+      },
+      "serialized": {
+        "CAB-4e1495302a9362227e5054a500aa979a": {
+          "formatVersion": 21,
+          "unityVersion": "2019.4.41f2",
+          "targetPlatform": 19,
+          "bigEndian": false,
+          "enableTypeTree": true,
+          "externals": [
+            {
+              "path": "archive:/CAB-a7161beab8ac9e6904f9fd8262e69daf/CAB-a7161beab8ac9e6904f9fd8262e69daf",
+              "guid": "00000000000000000000000000000000",
+              "type": 0
+            }
+          ],
+          "types": [
+            {
+              "classId": 142,
+              "isStrippedType": false,
+              "scriptTypeIndex": -1,
+              "scriptId": null,
+              "oldTypeHash": "97da5f4688e45a57c8b42d4f42497297",
+              "typeDependencies": [],
+              "nodes": [
+                [0, "AssetBundle", "Base", -1, 32768],
+                [1, "string", "m_Name", -1, 557057],
+                [2, "Array", "Array", -1, 540673],
+                [3, "int", "size", 4, 524289],
+                [3, "char", "data", 1, 524289],
+                [1, "vector", "m_PreloadTable", -1, 32768],
+                [2, "Array", "Array", -1, 16384],
+                [3, "int", "size", 4, 0],
+                [3, "PPtr<Object>", "data", 12, 0],
+                [4, "int", "m_FileID", 4, 8388609],
+                [4, "SInt64", "m_PathID", 8, 8388609],
+                [1, "map", "m_Container", -1, 32768],
+                [2, "Array", "Array", -1, 32768],
+                [3, "int", "size", 4, 0],
+                [3, "pair", "data", -1, 32768],
+                [4, "string", "first", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "AssetInfo", "second", 20, 0],
+                [5, "int", "preloadIndex", 4, 0],
+                [5, "int", "preloadSize", 4, 0],
+                [5, "PPtr<Object>", "asset", 12, 0],
+                [6, "int", "m_FileID", 4, 8388609],
+                [6, "SInt64", "m_PathID", 8, 8388609],
+                [1, "AssetInfo", "m_MainAsset", 20, 0],
+                [2, "int", "preloadIndex", 4, 0],
+                [2, "int", "preloadSize", 4, 0],
+                [2, "PPtr<Object>", "asset", 12, 0],
+                [3, "int", "m_FileID", 4, 8388609],
+                [3, "SInt64", "m_PathID", 8, 8388609],
+                [1, "unsigned int", "m_RuntimeCompatibility", 4, 0],
+                [1, "string", "m_AssetBundleName", -1, 32768],
+                [2, "Array", "Array", -1, 16385],
+                [3, "int", "size", 4, 1],
+                [3, "char", "data", 1, 1],
+                [1, "vector", "m_Dependencies", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "string", "data", -1, 32768],
+                [4, "Array", "Array", -1, 16385],
+                [5, "int", "size", 4, 1],
+                [5, "char", "data", 1, 1],
+                [1, "bool", "m_IsStreamedSceneAssetBundle", 1, 16384],
+                [1, "int", "m_ExplicitDataLayout", 4, 0],
+                [1, "int", "m_PathFlags", 4, 0],
+                [1, "map", "m_SceneHashes", -1, 32768],
+                [2, "Array", "Array", -1, 32768],
+                [3, "int", "size", 4, 0],
+                [3, "pair", "data", -1, 32768],
+                [4, "string", "first", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "string", "second", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1]
+              ]
+            },
+            {
+              "classId": 21,
+              "isStrippedType": false,
+              "scriptTypeIndex": -1,
+              "scriptId": null,
+              "oldTypeHash": "d871346d990bbc294d02f4c366bf1b6d",
+              "typeDependencies": [],
+              "nodes": [
+                [0, "Material", "Base", -1, 32768],
+                [1, "string", "m_Name", -1, 557057],
+                [2, "Array", "Array", -1, 540673],
+                [3, "int", "size", 4, 524289],
+                [3, "char", "data", 1, 524289],
+                [1, "PPtr<Shader>", "m_Shader", 12, 0],
+                [2, "int", "m_FileID", 4, 8388609],
+                [2, "SInt64", "m_PathID", 8, 8388609],
+                [1, "string", "m_ShaderKeywords", -1, 32768],
+                [2, "Array", "Array", -1, 16385],
+                [3, "int", "size", 4, 1],
+                [3, "char", "data", 1, 1],
+                [1, "unsigned int", "m_LightmapFlags", 4, 0],
+                [1, "bool", "m_EnableInstancingVariants", 1, 0],
+                [1, "bool", "m_DoubleSidedGI", 1, 16384],
+                [1, "int", "m_CustomRenderQueue", 4, 0],
+                [1, "map", "stringTagMap", -1, 32768],
+                [2, "Array", "Array", -1, 32768],
+                [3, "int", "size", 4, 0],
+                [3, "pair", "data", -1, 32768],
+                [4, "string", "first", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "string", "second", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [1, "vector", "disabledShaderPasses", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "string", "data", -1, 32768],
+                [4, "Array", "Array", -1, 16385],
+                [5, "int", "size", 4, 1],
+                [5, "char", "data", 1, 1],
+                [1, "UnityPropertySheet", "m_SavedProperties", -1, 32768],
+                [2, "map", "m_TexEnvs", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "UnityTexEnv", "second", 28, 0],
+                [6, "PPtr<Texture>", "m_Texture", 12, 0],
+                [7, "int", "m_FileID", 4, 8388609],
+                [7, "SInt64", "m_PathID", 8, 8388609],
+                [6, "Vector2f", "m_Scale", 8, 2097152],
+                [7, "float", "x", 4, 2097152],
+                [7, "float", "y", 4, 2097152],
+                [6, "Vector2f", "m_Offset", 8, 2097152],
+                [7, "float", "x", 4, 2097152],
+                [7, "float", "y", 4, 2097152],
+                [2, "map", "m_Floats", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "float", "second", 4, 0],
+                [2, "map", "m_Colors", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "ColorRGBA", "second", 16, 2097152],
+                [6, "float", "r", 4, 2097153],
+                [6, "float", "g", 4, 2097153],
+                [6, "float", "b", 4, 2097153],
+                [6, "float", "a", 4, 2097153]
+              ]
+            }
+          ],
+          "refTypes": [],
+          "typetrees": {
+            "1": {
+              "value": {
+                "m_Name": "material",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "6061584164174037990"
+                  },
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "-8664731681437194551"
+                  },
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "3337554563716702899"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/material/uar.mat",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 3,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "6061584164174037990"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "material",
+                "m_Dependencies": ["matdeps"],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
+            },
+            "6061584164174037990": {
+              "value": {
+                "m_Name": "uar",
+                "m_Shader": {
+                  "m_FileID": 1,
+                  "m_PathID": "-8664731681437194551"
+                },
+                "m_ShaderKeywords": "UAR_NOT_IN_SHADER _EMISSION _NORMALMAP",
+                "m_LightmapFlags": 2,
+                "m_EnableInstancingVariants": true,
+                "m_DoubleSidedGI": true,
+                "m_CustomRenderQueue": 2450,
+                "stringTagMap": [
+                  ["RenderType", "TransparentCutout"]
+                ],
+                "disabledShaderPasses": ["SHADOWCASTER"],
+                "m_SavedProperties": {
+                  "m_TexEnvs": [
+                    [
+                      "_BumpMap",
+                      {
+                        "m_Texture": {
+                          "m_FileID": 0,
+                          "m_PathID": "0"
+                        },
+                        "m_Scale": {
+                          "x": "f32:3f800000",
+                          "y": "f32:3f800000"
+                        },
+                        "m_Offset": {
+                          "x": "f32:00000000",
+                          "y": "f32:00000000"
+                        }
+                      }
+                    ],
+                    [
+                      "_MainTex",
+                      {
+                        "m_Texture": {
+                          "m_FileID": 1,
+                          "m_PathID": "3337554563716702899"
+                        },
+                        "m_Scale": {
+                          "x": "f32:40000000",
+                          "y": "f32:40400000"
+                        },
+                        "m_Offset": {
+                          "x": "f32:3e800000",
+                          "y": "f32:bf000000"
+                        }
+                      }
+                    ]
+                  ],
+                  "m_Floats": [
+                    ["_Glossiness", "f32:3f400000"],
+                    ["_NegZero", "f32:00000000"],
+                    ["_UarInt", "f32:c0e00000"]
+                  ],
+                  "m_Colors": [
+                    [
+                      "_Color",
+                      {
+                        "r": "f32:3dcccccd",
+                        "g": "f32:3e4ccccd",
+                        "b": "f32:3e99999a",
+                        "a": "f32:3ecccccd"
+                      }
+                    ],
+                    [
+                      "_EmissionColor",
+                      {
+                        "r": "f32:40000000",
+                        "g": "f32:3f000000",
+                        "b": "f32:00000000",
+                        "a": "f32:3f800000"
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "editor/2019.4.41f2/registry/refs": {
       "signature": "UnityFS",
       "formatVersion": 7,
@@ -9279,6 +10002,755 @@
               "imageSize": 64,
               "imageSha256": "8999a27916987ca925355c5571a0c30364078a762f4bd2df3a64955f64c55d8a",
               "rgbaSha256": "8999a27916987ca925355c5571a0c30364078a762f4bd2df3a64955f64c55d8a"
+            }
+          }
+        }
+      }
+    },
+    "editor/2020.3.30f1/material/lz4-notypetree/material": {
+      "signature": "UnityFS",
+      "formatVersion": 7,
+      "unityVersion": "5.x.x",
+      "unityRevision": "2020.3.30f1",
+      "files": {
+        "CAB-4e1495302a9362227e5054a500aa979a": {
+          "sha256": "eacd562d9cc0aabcaeeb05ff5c252aae9c2938126180c5e42d7841742797b322",
+          "size": 4628
+        }
+      },
+      "objects": {
+        "CAB-4e1495302a9362227e5054a500aa979a": [
+          {
+            "pathId": "-3287953680256562156",
+            "classId": 21,
+            "byteSize": 352
+          },
+          {
+            "pathId": "1",
+            "classId": 142,
+            "byteSize": 180
+          }
+        ]
+      },
+      "serialized": {
+        "CAB-4e1495302a9362227e5054a500aa979a": {
+          "formatVersion": 22,
+          "unityVersion": "2020.3.30f1\n2",
+          "targetPlatform": 19,
+          "bigEndian": false,
+          "enableTypeTree": false,
+          "externals": [
+            {
+              "path": "archive:/CAB-a7161beab8ac9e6904f9fd8262e69daf/CAB-a7161beab8ac9e6904f9fd8262e69daf",
+              "guid": "00000000000000000000000000000000",
+              "type": 0
+            }
+          ],
+          "types": [
+            {
+              "classId": 21,
+              "isStrippedType": false,
+              "scriptTypeIndex": -1,
+              "scriptId": null,
+              "oldTypeHash": "63d861fd9f999c93d61fe5659162061d",
+              "typeDependencies": null,
+              "nodes": null
+            },
+            {
+              "classId": 142,
+              "isStrippedType": false,
+              "scriptTypeIndex": -1,
+              "scriptId": null,
+              "oldTypeHash": "97da5f4688e45a57c8b42d4f42497297",
+              "typeDependencies": null,
+              "nodes": null
+            }
+          ],
+          "refTypes": [],
+          "typetrees": {}
+        }
+      }
+    },
+    "editor/2020.3.30f1/material/lz4-stripped/material": {
+      "signature": "UnityFS",
+      "formatVersion": 7,
+      "unityVersion": "5.x.x",
+      "unityRevision": "0.0.0",
+      "files": {
+        "CAB-4e1495302a9362227e5054a500aa979a": {
+          "sha256": "94fab3c213e44e1de3fe15afc46ad88f4d4322ff0de0fa4e58cae7aa7ad3b547",
+          "size": 6116
+        }
+      },
+      "objects": {
+        "CAB-4e1495302a9362227e5054a500aa979a": [
+          {
+            "pathId": "-3287953680256562156",
+            "classId": 21,
+            "byteSize": 352
+          },
+          {
+            "pathId": "1",
+            "classId": 142,
+            "byteSize": 180
+          }
+        ]
+      },
+      "serialized": {
+        "CAB-4e1495302a9362227e5054a500aa979a": {
+          "formatVersion": 22,
+          "unityVersion": "0.0.0",
+          "targetPlatform": 19,
+          "bigEndian": false,
+          "enableTypeTree": true,
+          "externals": [
+            {
+              "path": "archive:/CAB-a7161beab8ac9e6904f9fd8262e69daf/CAB-a7161beab8ac9e6904f9fd8262e69daf",
+              "guid": "00000000000000000000000000000000",
+              "type": 0
+            }
+          ],
+          "types": [
+            {
+              "classId": 21,
+              "isStrippedType": false,
+              "scriptTypeIndex": -1,
+              "scriptId": null,
+              "oldTypeHash": "63d861fd9f999c93d61fe5659162061d",
+              "typeDependencies": [],
+              "nodes": [
+                [0, "Material", "Base", -1, 32768],
+                [1, "string", "m_Name", -1, 557057],
+                [2, "Array", "Array", -1, 540673],
+                [3, "int", "size", 4, 524289],
+                [3, "char", "data", 1, 524289],
+                [1, "PPtr<Shader>", "m_Shader", 12, 0],
+                [2, "int", "m_FileID", 4, 8388609],
+                [2, "SInt64", "m_PathID", 8, 8388609],
+                [1, "string", "m_ShaderKeywords", -1, 32768],
+                [2, "Array", "Array", -1, 16385],
+                [3, "int", "size", 4, 1],
+                [3, "char", "data", 1, 1],
+                [1, "unsigned int", "m_LightmapFlags", 4, 0],
+                [1, "bool", "m_EnableInstancingVariants", 1, 0],
+                [1, "bool", "m_DoubleSidedGI", 1, 16384],
+                [1, "int", "m_CustomRenderQueue", 4, 0],
+                [1, "map", "stringTagMap", -1, 32768],
+                [2, "Array", "Array", -1, 32768],
+                [3, "int", "size", 4, 0],
+                [3, "pair", "data", -1, 32768],
+                [4, "string", "first", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "string", "second", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [1, "vector", "disabledShaderPasses", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "string", "data", -1, 32768],
+                [4, "Array", "Array", -1, 16385],
+                [5, "int", "size", 4, 1],
+                [5, "char", "data", 1, 1],
+                [1, "UnityPropertySheet", "m_SavedProperties", -1, 32768],
+                [2, "map", "m_TexEnvs", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "UnityTexEnv", "second", 28, 0],
+                [6, "PPtr<Texture>", "m_Texture", 12, 0],
+                [7, "int", "m_FileID", 4, 8388609],
+                [7, "SInt64", "m_PathID", 8, 8388609],
+                [6, "Vector2f", "m_Scale", 8, 2097152],
+                [7, "float", "x", 4, 2097152],
+                [7, "float", "y", 4, 2097152],
+                [6, "Vector2f", "m_Offset", 8, 2097152],
+                [7, "float", "x", 4, 2097152],
+                [7, "float", "y", 4, 2097152],
+                [2, "map", "m_Floats", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "float", "second", 4, 0],
+                [2, "map", "m_Colors", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "ColorRGBA", "second", 16, 2097152],
+                [6, "float", "r", 4, 2097153],
+                [6, "float", "g", 4, 2097153],
+                [6, "float", "b", 4, 2097153],
+                [6, "float", "a", 4, 2097153],
+                [1, "vector", "m_BuildTextureStacks", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "BuildTextureStackReference", "data", -1, 32768],
+                [4, "string", "groupName", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "string", "itemName", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1]
+              ]
+            },
+            {
+              "classId": 142,
+              "isStrippedType": false,
+              "scriptTypeIndex": -1,
+              "scriptId": null,
+              "oldTypeHash": "97da5f4688e45a57c8b42d4f42497297",
+              "typeDependencies": [],
+              "nodes": [
+                [0, "AssetBundle", "Base", -1, 32768],
+                [1, "string", "m_Name", -1, 557057],
+                [2, "Array", "Array", -1, 540673],
+                [3, "int", "size", 4, 524289],
+                [3, "char", "data", 1, 524289],
+                [1, "vector", "m_PreloadTable", -1, 32768],
+                [2, "Array", "Array", -1, 16384],
+                [3, "int", "size", 4, 0],
+                [3, "PPtr<Object>", "data", 12, 0],
+                [4, "int", "m_FileID", 4, 8388609],
+                [4, "SInt64", "m_PathID", 8, 8388609],
+                [1, "map", "m_Container", -1, 32768],
+                [2, "Array", "Array", -1, 32768],
+                [3, "int", "size", 4, 0],
+                [3, "pair", "data", -1, 32768],
+                [4, "string", "first", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "AssetInfo", "second", 20, 0],
+                [5, "int", "preloadIndex", 4, 0],
+                [5, "int", "preloadSize", 4, 0],
+                [5, "PPtr<Object>", "asset", 12, 0],
+                [6, "int", "m_FileID", 4, 8388609],
+                [6, "SInt64", "m_PathID", 8, 8388609],
+                [1, "AssetInfo", "m_MainAsset", 20, 0],
+                [2, "int", "preloadIndex", 4, 0],
+                [2, "int", "preloadSize", 4, 0],
+                [2, "PPtr<Object>", "asset", 12, 0],
+                [3, "int", "m_FileID", 4, 8388609],
+                [3, "SInt64", "m_PathID", 8, 8388609],
+                [1, "unsigned int", "m_RuntimeCompatibility", 4, 0],
+                [1, "string", "m_AssetBundleName", -1, 32768],
+                [2, "Array", "Array", -1, 16385],
+                [3, "int", "size", 4, 1],
+                [3, "char", "data", 1, 1],
+                [1, "vector", "m_Dependencies", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "string", "data", -1, 32768],
+                [4, "Array", "Array", -1, 16385],
+                [5, "int", "size", 4, 1],
+                [5, "char", "data", 1, 1],
+                [1, "bool", "m_IsStreamedSceneAssetBundle", 1, 16384],
+                [1, "int", "m_ExplicitDataLayout", 4, 0],
+                [1, "int", "m_PathFlags", 4, 0],
+                [1, "map", "m_SceneHashes", -1, 32768],
+                [2, "Array", "Array", -1, 32768],
+                [3, "int", "size", 4, 0],
+                [3, "pair", "data", -1, 32768],
+                [4, "string", "first", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "string", "second", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1]
+              ]
+            }
+          ],
+          "refTypes": [],
+          "typetrees": {
+            "-3287953680256562156": {
+              "value": {
+                "m_Name": "uar",
+                "m_Shader": {
+                  "m_FileID": 1,
+                  "m_PathID": "8772023749831530254"
+                },
+                "m_ShaderKeywords": "UAR_NOT_IN_SHADER _EMISSION _NORMALMAP",
+                "m_LightmapFlags": 2,
+                "m_EnableInstancingVariants": true,
+                "m_DoubleSidedGI": true,
+                "m_CustomRenderQueue": 2450,
+                "stringTagMap": [
+                  ["RenderType", "TransparentCutout"]
+                ],
+                "disabledShaderPasses": ["SHADOWCASTER"],
+                "m_SavedProperties": {
+                  "m_TexEnvs": [
+                    [
+                      "_BumpMap",
+                      {
+                        "m_Texture": {
+                          "m_FileID": 0,
+                          "m_PathID": "0"
+                        },
+                        "m_Scale": {
+                          "x": "f32:3f800000",
+                          "y": "f32:3f800000"
+                        },
+                        "m_Offset": {
+                          "x": "f32:00000000",
+                          "y": "f32:00000000"
+                        }
+                      }
+                    ],
+                    [
+                      "_MainTex",
+                      {
+                        "m_Texture": {
+                          "m_FileID": 1,
+                          "m_PathID": "-1318176977299767602"
+                        },
+                        "m_Scale": {
+                          "x": "f32:40000000",
+                          "y": "f32:40400000"
+                        },
+                        "m_Offset": {
+                          "x": "f32:3e800000",
+                          "y": "f32:bf000000"
+                        }
+                      }
+                    ]
+                  ],
+                  "m_Floats": [
+                    ["_Glossiness", "f32:3f400000"],
+                    ["_NegZero", "f32:00000000"],
+                    ["_UarInt", "f32:c0e00000"]
+                  ],
+                  "m_Colors": [
+                    [
+                      "_Color",
+                      {
+                        "r": "f32:3dcccccd",
+                        "g": "f32:3e4ccccd",
+                        "b": "f32:3e99999a",
+                        "a": "f32:3ecccccd"
+                      }
+                    ],
+                    [
+                      "_EmissionColor",
+                      {
+                        "r": "f32:40000000",
+                        "g": "f32:3f000000",
+                        "b": "f32:00000000",
+                        "a": "f32:3f800000"
+                      }
+                    ]
+                  ]
+                },
+                "m_BuildTextureStacks": []
+              }
+            },
+            "1": {
+              "value": {
+                "m_Name": "material",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-3287953680256562156"
+                  },
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "-1318176977299767602"
+                  },
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "8772023749831530254"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/material/uar.mat",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 3,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "-3287953680256562156"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "material",
+                "m_Dependencies": ["matdeps"],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
+            }
+          }
+        }
+      },
+      "oracleNote": "version-stripped (\"0.0.0\"): UnityPy refuses it without a fallback, so it was read with config.FALLBACK_UNITY_VERSION = \"2020.3.30f1\", the editor that built it - see #104"
+    },
+    "editor/2020.3.30f1/material/lz4/material": {
+      "signature": "UnityFS",
+      "formatVersion": 7,
+      "unityVersion": "5.x.x",
+      "unityRevision": "2020.3.30f1",
+      "files": {
+        "CAB-4e1495302a9362227e5054a500aa979a": {
+          "sha256": "59224444d2a582936eb4b755e03e8d20b3492a8a7c6b6f9a7ccd7d4ac6a03887",
+          "size": 6132
+        }
+      },
+      "objects": {
+        "CAB-4e1495302a9362227e5054a500aa979a": [
+          {
+            "pathId": "-3287953680256562156",
+            "classId": 21,
+            "byteSize": 352
+          },
+          {
+            "pathId": "1",
+            "classId": 142,
+            "byteSize": 180
+          }
+        ]
+      },
+      "serialized": {
+        "CAB-4e1495302a9362227e5054a500aa979a": {
+          "formatVersion": 22,
+          "unityVersion": "2020.3.30f1",
+          "targetPlatform": 19,
+          "bigEndian": false,
+          "enableTypeTree": true,
+          "externals": [
+            {
+              "path": "archive:/CAB-a7161beab8ac9e6904f9fd8262e69daf/CAB-a7161beab8ac9e6904f9fd8262e69daf",
+              "guid": "00000000000000000000000000000000",
+              "type": 0
+            }
+          ],
+          "types": [
+            {
+              "classId": 21,
+              "isStrippedType": false,
+              "scriptTypeIndex": -1,
+              "scriptId": null,
+              "oldTypeHash": "63d861fd9f999c93d61fe5659162061d",
+              "typeDependencies": [],
+              "nodes": [
+                [0, "Material", "Base", -1, 32768],
+                [1, "string", "m_Name", -1, 557057],
+                [2, "Array", "Array", -1, 540673],
+                [3, "int", "size", 4, 524289],
+                [3, "char", "data", 1, 524289],
+                [1, "PPtr<Shader>", "m_Shader", 12, 0],
+                [2, "int", "m_FileID", 4, 8388609],
+                [2, "SInt64", "m_PathID", 8, 8388609],
+                [1, "string", "m_ShaderKeywords", -1, 32768],
+                [2, "Array", "Array", -1, 16385],
+                [3, "int", "size", 4, 1],
+                [3, "char", "data", 1, 1],
+                [1, "unsigned int", "m_LightmapFlags", 4, 0],
+                [1, "bool", "m_EnableInstancingVariants", 1, 0],
+                [1, "bool", "m_DoubleSidedGI", 1, 16384],
+                [1, "int", "m_CustomRenderQueue", 4, 0],
+                [1, "map", "stringTagMap", -1, 32768],
+                [2, "Array", "Array", -1, 32768],
+                [3, "int", "size", 4, 0],
+                [3, "pair", "data", -1, 32768],
+                [4, "string", "first", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "string", "second", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [1, "vector", "disabledShaderPasses", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "string", "data", -1, 32768],
+                [4, "Array", "Array", -1, 16385],
+                [5, "int", "size", 4, 1],
+                [5, "char", "data", 1, 1],
+                [1, "UnityPropertySheet", "m_SavedProperties", -1, 32768],
+                [2, "map", "m_TexEnvs", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "UnityTexEnv", "second", 28, 0],
+                [6, "PPtr<Texture>", "m_Texture", 12, 0],
+                [7, "int", "m_FileID", 4, 8388609],
+                [7, "SInt64", "m_PathID", 8, 8388609],
+                [6, "Vector2f", "m_Scale", 8, 2097152],
+                [7, "float", "x", 4, 2097152],
+                [7, "float", "y", 4, 2097152],
+                [6, "Vector2f", "m_Offset", 8, 2097152],
+                [7, "float", "x", 4, 2097152],
+                [7, "float", "y", 4, 2097152],
+                [2, "map", "m_Floats", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "float", "second", 4, 0],
+                [2, "map", "m_Colors", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "ColorRGBA", "second", 16, 2097152],
+                [6, "float", "r", 4, 2097153],
+                [6, "float", "g", 4, 2097153],
+                [6, "float", "b", 4, 2097153],
+                [6, "float", "a", 4, 2097153],
+                [1, "vector", "m_BuildTextureStacks", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "BuildTextureStackReference", "data", -1, 32768],
+                [4, "string", "groupName", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "string", "itemName", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1]
+              ]
+            },
+            {
+              "classId": 142,
+              "isStrippedType": false,
+              "scriptTypeIndex": -1,
+              "scriptId": null,
+              "oldTypeHash": "97da5f4688e45a57c8b42d4f42497297",
+              "typeDependencies": [],
+              "nodes": [
+                [0, "AssetBundle", "Base", -1, 32768],
+                [1, "string", "m_Name", -1, 557057],
+                [2, "Array", "Array", -1, 540673],
+                [3, "int", "size", 4, 524289],
+                [3, "char", "data", 1, 524289],
+                [1, "vector", "m_PreloadTable", -1, 32768],
+                [2, "Array", "Array", -1, 16384],
+                [3, "int", "size", 4, 0],
+                [3, "PPtr<Object>", "data", 12, 0],
+                [4, "int", "m_FileID", 4, 8388609],
+                [4, "SInt64", "m_PathID", 8, 8388609],
+                [1, "map", "m_Container", -1, 32768],
+                [2, "Array", "Array", -1, 32768],
+                [3, "int", "size", 4, 0],
+                [3, "pair", "data", -1, 32768],
+                [4, "string", "first", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "AssetInfo", "second", 20, 0],
+                [5, "int", "preloadIndex", 4, 0],
+                [5, "int", "preloadSize", 4, 0],
+                [5, "PPtr<Object>", "asset", 12, 0],
+                [6, "int", "m_FileID", 4, 8388609],
+                [6, "SInt64", "m_PathID", 8, 8388609],
+                [1, "AssetInfo", "m_MainAsset", 20, 0],
+                [2, "int", "preloadIndex", 4, 0],
+                [2, "int", "preloadSize", 4, 0],
+                [2, "PPtr<Object>", "asset", 12, 0],
+                [3, "int", "m_FileID", 4, 8388609],
+                [3, "SInt64", "m_PathID", 8, 8388609],
+                [1, "unsigned int", "m_RuntimeCompatibility", 4, 0],
+                [1, "string", "m_AssetBundleName", -1, 32768],
+                [2, "Array", "Array", -1, 16385],
+                [3, "int", "size", 4, 1],
+                [3, "char", "data", 1, 1],
+                [1, "vector", "m_Dependencies", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "string", "data", -1, 32768],
+                [4, "Array", "Array", -1, 16385],
+                [5, "int", "size", 4, 1],
+                [5, "char", "data", 1, 1],
+                [1, "bool", "m_IsStreamedSceneAssetBundle", 1, 16384],
+                [1, "int", "m_ExplicitDataLayout", 4, 0],
+                [1, "int", "m_PathFlags", 4, 0],
+                [1, "map", "m_SceneHashes", -1, 32768],
+                [2, "Array", "Array", -1, 32768],
+                [3, "int", "size", 4, 0],
+                [3, "pair", "data", -1, 32768],
+                [4, "string", "first", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "string", "second", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1]
+              ]
+            }
+          ],
+          "refTypes": [],
+          "typetrees": {
+            "-3287953680256562156": {
+              "value": {
+                "m_Name": "uar",
+                "m_Shader": {
+                  "m_FileID": 1,
+                  "m_PathID": "8772023749831530254"
+                },
+                "m_ShaderKeywords": "UAR_NOT_IN_SHADER _EMISSION _NORMALMAP",
+                "m_LightmapFlags": 2,
+                "m_EnableInstancingVariants": true,
+                "m_DoubleSidedGI": true,
+                "m_CustomRenderQueue": 2450,
+                "stringTagMap": [
+                  ["RenderType", "TransparentCutout"]
+                ],
+                "disabledShaderPasses": ["SHADOWCASTER"],
+                "m_SavedProperties": {
+                  "m_TexEnvs": [
+                    [
+                      "_BumpMap",
+                      {
+                        "m_Texture": {
+                          "m_FileID": 0,
+                          "m_PathID": "0"
+                        },
+                        "m_Scale": {
+                          "x": "f32:3f800000",
+                          "y": "f32:3f800000"
+                        },
+                        "m_Offset": {
+                          "x": "f32:00000000",
+                          "y": "f32:00000000"
+                        }
+                      }
+                    ],
+                    [
+                      "_MainTex",
+                      {
+                        "m_Texture": {
+                          "m_FileID": 1,
+                          "m_PathID": "-1318176977299767602"
+                        },
+                        "m_Scale": {
+                          "x": "f32:40000000",
+                          "y": "f32:40400000"
+                        },
+                        "m_Offset": {
+                          "x": "f32:3e800000",
+                          "y": "f32:bf000000"
+                        }
+                      }
+                    ]
+                  ],
+                  "m_Floats": [
+                    ["_Glossiness", "f32:3f400000"],
+                    ["_NegZero", "f32:00000000"],
+                    ["_UarInt", "f32:c0e00000"]
+                  ],
+                  "m_Colors": [
+                    [
+                      "_Color",
+                      {
+                        "r": "f32:3dcccccd",
+                        "g": "f32:3e4ccccd",
+                        "b": "f32:3e99999a",
+                        "a": "f32:3ecccccd"
+                      }
+                    ],
+                    [
+                      "_EmissionColor",
+                      {
+                        "r": "f32:40000000",
+                        "g": "f32:3f000000",
+                        "b": "f32:00000000",
+                        "a": "f32:3f800000"
+                      }
+                    ]
+                  ]
+                },
+                "m_BuildTextureStacks": []
+              }
+            },
+            "1": {
+              "value": {
+                "m_Name": "material",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-3287953680256562156"
+                  },
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "-1318176977299767602"
+                  },
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "8772023749831530254"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/material/uar.mat",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 3,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "-3287953680256562156"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "material",
+                "m_Dependencies": ["matdeps"],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
             }
           }
         }
@@ -17090,6 +18562,799 @@
               "imageSize": 64,
               "imageSha256": "8999a27916987ca925355c5571a0c30364078a762f4bd2df3a64955f64c55d8a",
               "rgbaSha256": "8999a27916987ca925355c5571a0c30364078a762f4bd2df3a64955f64c55d8a"
+            }
+          }
+        }
+      }
+    },
+    "editor/6000.3.25f1/material/lz4-notypetree/material": {
+      "signature": "UnityFS",
+      "formatVersion": 8,
+      "unityVersion": "5.x.x",
+      "unityRevision": "6000.3.25f1",
+      "files": {
+        "CAB-4e1495302a9362227e5054a500aa979a": {
+          "sha256": "e6cb4d0d86ac9e9a153870acbf11a7f689b15fb970f05cc52498c84a5c073db9",
+          "size": 868
+        }
+      },
+      "objects": {
+        "CAB-4e1495302a9362227e5054a500aa979a": [
+          {
+            "pathId": "-1146626092855194285",
+            "classId": 21,
+            "byteSize": 376
+          },
+          {
+            "pathId": "1",
+            "classId": 142,
+            "byteSize": 180
+          }
+        ]
+      },
+      "serialized": {
+        "CAB-4e1495302a9362227e5054a500aa979a": {
+          "formatVersion": 22,
+          "unityVersion": "6000.3.25f1\n2",
+          "targetPlatform": 19,
+          "bigEndian": false,
+          "enableTypeTree": false,
+          "externals": [
+            {
+              "path": "archive:/CAB-a7161beab8ac9e6904f9fd8262e69daf/CAB-a7161beab8ac9e6904f9fd8262e69daf",
+              "guid": "00000000000000000000000000000000",
+              "type": 0
+            }
+          ],
+          "types": [
+            {
+              "classId": 21,
+              "isStrippedType": false,
+              "scriptTypeIndex": -1,
+              "scriptId": null,
+              "oldTypeHash": "c60098ac66a28b50aa0580db11bf018c",
+              "typeDependencies": null,
+              "nodes": null
+            },
+            {
+              "classId": 142,
+              "isStrippedType": false,
+              "scriptTypeIndex": -1,
+              "scriptId": null,
+              "oldTypeHash": "97da5f4688e45a57c8b42d4f42497297",
+              "typeDependencies": null,
+              "nodes": null
+            }
+          ],
+          "refTypes": [],
+          "typetrees": {}
+        }
+      }
+    },
+    "editor/6000.3.25f1/material/lz4-stripped/material": {
+      "signature": "UnityFS",
+      "formatVersion": 8,
+      "unityVersion": "5.x.x",
+      "unityRevision": "0.0.0",
+      "files": {
+        "CAB-4e1495302a9362227e5054a500aa979a": {
+          "sha256": "de256918845cbcecec673267a01efc66aa1810305abcbabd9bc913a3d28cc73b",
+          "size": 6788
+        }
+      },
+      "objects": {
+        "CAB-4e1495302a9362227e5054a500aa979a": [
+          {
+            "pathId": "-1146626092855194285",
+            "classId": 21,
+            "byteSize": 376
+          },
+          {
+            "pathId": "1",
+            "classId": 142,
+            "byteSize": 180
+          }
+        ]
+      },
+      "serialized": {
+        "CAB-4e1495302a9362227e5054a500aa979a": {
+          "formatVersion": 22,
+          "unityVersion": "0.0.0",
+          "targetPlatform": 19,
+          "bigEndian": false,
+          "enableTypeTree": true,
+          "externals": [
+            {
+              "path": "archive:/CAB-a7161beab8ac9e6904f9fd8262e69daf/CAB-a7161beab8ac9e6904f9fd8262e69daf",
+              "guid": "00000000000000000000000000000000",
+              "type": 0
+            }
+          ],
+          "types": [
+            {
+              "classId": 21,
+              "isStrippedType": false,
+              "scriptTypeIndex": -1,
+              "scriptId": null,
+              "oldTypeHash": "c60098ac66a28b50aa0580db11bf018c",
+              "typeDependencies": [],
+              "nodes": [
+                [0, "Material", "Base", -1, 32768],
+                [1, "string", "m_Name", -1, 557057],
+                [2, "Array", "Array", -1, 540673],
+                [3, "int", "size", 4, 524289],
+                [3, "char", "data", 1, 524289],
+                [1, "PPtr<Shader>", "m_Shader", 12, 0],
+                [2, "int", "m_FileID", 4, 8388609],
+                [2, "SInt64", "m_PathID", 8, 8388609],
+                [1, "vector", "m_ValidKeywords", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "string", "data", -1, 32768],
+                [4, "Array", "Array", -1, 16385],
+                [5, "int", "size", 4, 1],
+                [5, "char", "data", 1, 1],
+                [1, "vector", "m_InvalidKeywords", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "string", "data", -1, 32768],
+                [4, "Array", "Array", -1, 16385],
+                [5, "int", "size", 4, 1],
+                [5, "char", "data", 1, 1],
+                [1, "unsigned int", "m_LightmapFlags", 4, 0],
+                [1, "bool", "m_EnableInstancingVariants", 1, 0],
+                [1, "bool", "m_DoubleSidedGI", 1, 16384],
+                [1, "int", "m_CustomRenderQueue", 4, 0],
+                [1, "map", "stringTagMap", -1, 32768],
+                [2, "Array", "Array", -1, 32768],
+                [3, "int", "size", 4, 0],
+                [3, "pair", "data", -1, 32768],
+                [4, "string", "first", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "string", "second", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [1, "vector", "disabledShaderPasses", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "string", "data", -1, 32768],
+                [4, "Array", "Array", -1, 16385],
+                [5, "int", "size", 4, 1],
+                [5, "char", "data", 1, 1],
+                [1, "UnityPropertySheet", "m_SavedProperties", -1, 32768],
+                [2, "map", "m_TexEnvs", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "UnityTexEnv", "second", 28, 0],
+                [6, "PPtr<Texture>", "m_Texture", 12, 0],
+                [7, "int", "m_FileID", 4, 8388609],
+                [7, "SInt64", "m_PathID", 8, 8388609],
+                [6, "Vector2f", "m_Scale", 8, 2097152],
+                [7, "float", "x", 4, 2097152],
+                [7, "float", "y", 4, 2097152],
+                [6, "Vector2f", "m_Offset", 8, 2097152],
+                [7, "float", "x", 4, 2097152],
+                [7, "float", "y", 4, 2097152],
+                [2, "map", "m_Ints", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "int", "second", 4, 0],
+                [2, "map", "m_Floats", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "float", "second", 4, 0],
+                [2, "map", "m_Colors", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "ColorRGBA", "second", 16, 2097152],
+                [6, "float", "r", 4, 2097153],
+                [6, "float", "g", 4, 2097153],
+                [6, "float", "b", 4, 2097153],
+                [6, "float", "a", 4, 2097153],
+                [1, "vector", "m_BuildTextureStacks", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "BuildTextureStackReference", "data", -1, 32768],
+                [4, "string", "groupName", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "string", "itemName", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1]
+              ]
+            },
+            {
+              "classId": 142,
+              "isStrippedType": false,
+              "scriptTypeIndex": -1,
+              "scriptId": null,
+              "oldTypeHash": "97da5f4688e45a57c8b42d4f42497297",
+              "typeDependencies": [],
+              "nodes": [
+                [0, "AssetBundle", "Base", -1, 32768],
+                [1, "string", "m_Name", -1, 557057],
+                [2, "Array", "Array", -1, 540673],
+                [3, "int", "size", 4, 524289],
+                [3, "char", "data", 1, 524289],
+                [1, "vector", "m_PreloadTable", -1, 32768],
+                [2, "Array", "Array", -1, 16384],
+                [3, "int", "size", 4, 0],
+                [3, "PPtr<Object>", "data", 12, 0],
+                [4, "int", "m_FileID", 4, 8388609],
+                [4, "SInt64", "m_PathID", 8, 8388609],
+                [1, "map", "m_Container", -1, 32768],
+                [2, "Array", "Array", -1, 32768],
+                [3, "int", "size", 4, 0],
+                [3, "pair", "data", -1, 32768],
+                [4, "string", "first", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "AssetInfo", "second", 20, 0],
+                [5, "int", "preloadIndex", 4, 0],
+                [5, "int", "preloadSize", 4, 0],
+                [5, "PPtr<Object>", "asset", 12, 0],
+                [6, "int", "m_FileID", 4, 8388609],
+                [6, "SInt64", "m_PathID", 8, 8388609],
+                [1, "AssetInfo", "m_MainAsset", 20, 0],
+                [2, "int", "preloadIndex", 4, 0],
+                [2, "int", "preloadSize", 4, 0],
+                [2, "PPtr<Object>", "asset", 12, 0],
+                [3, "int", "m_FileID", 4, 8388609],
+                [3, "SInt64", "m_PathID", 8, 8388609],
+                [1, "unsigned int", "m_RuntimeCompatibility", 4, 0],
+                [1, "string", "m_AssetBundleName", -1, 32768],
+                [2, "Array", "Array", -1, 16385],
+                [3, "int", "size", 4, 1],
+                [3, "char", "data", 1, 1],
+                [1, "vector", "m_Dependencies", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "string", "data", -1, 32768],
+                [4, "Array", "Array", -1, 16385],
+                [5, "int", "size", 4, 1],
+                [5, "char", "data", 1, 1],
+                [1, "bool", "m_IsStreamedSceneAssetBundle", 1, 16384],
+                [1, "int", "m_ExplicitDataLayout", 4, 0],
+                [1, "int", "m_PathFlags", 4, 0],
+                [1, "map", "m_SceneHashes", -1, 32768],
+                [2, "Array", "Array", -1, 32768],
+                [3, "int", "size", 4, 0],
+                [3, "pair", "data", -1, 32768],
+                [4, "string", "first", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "string", "second", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1]
+              ]
+            }
+          ],
+          "refTypes": [],
+          "typetrees": {
+            "-1146626092855194285": {
+              "value": {
+                "m_Name": "uar",
+                "m_Shader": {
+                  "m_FileID": 1,
+                  "m_PathID": "-8954830357114744286"
+                },
+                "m_ValidKeywords": ["_EMISSION", "_NORMALMAP"],
+                "m_InvalidKeywords": ["UAR_NOT_IN_SHADER"],
+                "m_LightmapFlags": 2,
+                "m_EnableInstancingVariants": true,
+                "m_DoubleSidedGI": true,
+                "m_CustomRenderQueue": 2450,
+                "stringTagMap": [
+                  ["RenderType", "TransparentCutout"]
+                ],
+                "disabledShaderPasses": ["SHADOWCASTER"],
+                "m_SavedProperties": {
+                  "m_TexEnvs": [
+                    [
+                      "_BumpMap",
+                      {
+                        "m_Texture": {
+                          "m_FileID": 0,
+                          "m_PathID": "0"
+                        },
+                        "m_Scale": {
+                          "x": "f32:3f800000",
+                          "y": "f32:3f800000"
+                        },
+                        "m_Offset": {
+                          "x": "f32:00000000",
+                          "y": "f32:00000000"
+                        }
+                      }
+                    ],
+                    [
+                      "_MainTex",
+                      {
+                        "m_Texture": {
+                          "m_FileID": 1,
+                          "m_PathID": "209122546072171184"
+                        },
+                        "m_Scale": {
+                          "x": "f32:40000000",
+                          "y": "f32:40400000"
+                        },
+                        "m_Offset": {
+                          "x": "f32:3e800000",
+                          "y": "f32:bf000000"
+                        }
+                      }
+                    ]
+                  ],
+                  "m_Ints": [
+                    ["_UarInt", -7]
+                  ],
+                  "m_Floats": [
+                    ["_Glossiness", "f32:3f400000"],
+                    ["_NegZero", "f32:00000000"]
+                  ],
+                  "m_Colors": [
+                    [
+                      "_Color",
+                      {
+                        "r": "f32:3dcccccd",
+                        "g": "f32:3e4ccccd",
+                        "b": "f32:3e99999a",
+                        "a": "f32:3ecccccd"
+                      }
+                    ],
+                    [
+                      "_EmissionColor",
+                      {
+                        "r": "f32:40000000",
+                        "g": "f32:3f000000",
+                        "b": "f32:00000000",
+                        "a": "f32:3f800000"
+                      }
+                    ]
+                  ]
+                },
+                "m_BuildTextureStacks": []
+              }
+            },
+            "1": {
+              "value": {
+                "m_Name": "material",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-1146626092855194285"
+                  },
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "-8954830357114744286"
+                  },
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "209122546072171184"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/material/uar.mat",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 3,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "-1146626092855194285"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "material",
+                "m_Dependencies": ["matdeps"],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
+            }
+          }
+        }
+      },
+      "oracleNote": "version-stripped (\"0.0.0\"): UnityPy refuses it without a fallback, so it was read with config.FALLBACK_UNITY_VERSION = \"6000.3.25f1\", the editor that built it - see #104"
+    },
+    "editor/6000.3.25f1/material/lz4/material": {
+      "signature": "UnityFS",
+      "formatVersion": 8,
+      "unityVersion": "5.x.x",
+      "unityRevision": "6000.3.25f1",
+      "files": {
+        "CAB-4e1495302a9362227e5054a500aa979a": {
+          "sha256": "47f65fcd7189bffe2432bc83383f06b56cfb431379faef1c2aa05363298377fc",
+          "size": 6788
+        }
+      },
+      "objects": {
+        "CAB-4e1495302a9362227e5054a500aa979a": [
+          {
+            "pathId": "-1146626092855194285",
+            "classId": 21,
+            "byteSize": 376
+          },
+          {
+            "pathId": "1",
+            "classId": 142,
+            "byteSize": 180
+          }
+        ]
+      },
+      "serialized": {
+        "CAB-4e1495302a9362227e5054a500aa979a": {
+          "formatVersion": 22,
+          "unityVersion": "6000.3.25f1",
+          "targetPlatform": 19,
+          "bigEndian": false,
+          "enableTypeTree": true,
+          "externals": [
+            {
+              "path": "archive:/CAB-a7161beab8ac9e6904f9fd8262e69daf/CAB-a7161beab8ac9e6904f9fd8262e69daf",
+              "guid": "00000000000000000000000000000000",
+              "type": 0
+            }
+          ],
+          "types": [
+            {
+              "classId": 21,
+              "isStrippedType": false,
+              "scriptTypeIndex": -1,
+              "scriptId": null,
+              "oldTypeHash": "c60098ac66a28b50aa0580db11bf018c",
+              "typeDependencies": [],
+              "nodes": [
+                [0, "Material", "Base", -1, 32768],
+                [1, "string", "m_Name", -1, 557057],
+                [2, "Array", "Array", -1, 540673],
+                [3, "int", "size", 4, 524289],
+                [3, "char", "data", 1, 524289],
+                [1, "PPtr<Shader>", "m_Shader", 12, 0],
+                [2, "int", "m_FileID", 4, 8388609],
+                [2, "SInt64", "m_PathID", 8, 8388609],
+                [1, "vector", "m_ValidKeywords", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "string", "data", -1, 32768],
+                [4, "Array", "Array", -1, 16385],
+                [5, "int", "size", 4, 1],
+                [5, "char", "data", 1, 1],
+                [1, "vector", "m_InvalidKeywords", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "string", "data", -1, 32768],
+                [4, "Array", "Array", -1, 16385],
+                [5, "int", "size", 4, 1],
+                [5, "char", "data", 1, 1],
+                [1, "unsigned int", "m_LightmapFlags", 4, 0],
+                [1, "bool", "m_EnableInstancingVariants", 1, 0],
+                [1, "bool", "m_DoubleSidedGI", 1, 16384],
+                [1, "int", "m_CustomRenderQueue", 4, 0],
+                [1, "map", "stringTagMap", -1, 32768],
+                [2, "Array", "Array", -1, 32768],
+                [3, "int", "size", 4, 0],
+                [3, "pair", "data", -1, 32768],
+                [4, "string", "first", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "string", "second", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [1, "vector", "disabledShaderPasses", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "string", "data", -1, 32768],
+                [4, "Array", "Array", -1, 16385],
+                [5, "int", "size", 4, 1],
+                [5, "char", "data", 1, 1],
+                [1, "UnityPropertySheet", "m_SavedProperties", -1, 32768],
+                [2, "map", "m_TexEnvs", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "UnityTexEnv", "second", 28, 0],
+                [6, "PPtr<Texture>", "m_Texture", 12, 0],
+                [7, "int", "m_FileID", 4, 8388609],
+                [7, "SInt64", "m_PathID", 8, 8388609],
+                [6, "Vector2f", "m_Scale", 8, 2097152],
+                [7, "float", "x", 4, 2097152],
+                [7, "float", "y", 4, 2097152],
+                [6, "Vector2f", "m_Offset", 8, 2097152],
+                [7, "float", "x", 4, 2097152],
+                [7, "float", "y", 4, 2097152],
+                [2, "map", "m_Ints", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "int", "second", 4, 0],
+                [2, "map", "m_Floats", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "float", "second", 4, 0],
+                [2, "map", "m_Colors", -1, 32768],
+                [3, "Array", "Array", -1, 32768],
+                [4, "int", "size", 4, 0],
+                [4, "pair", "data", -1, 32768],
+                [5, "string", "first", -1, 32768],
+                [6, "Array", "Array", -1, 16385],
+                [7, "int", "size", 4, 1],
+                [7, "char", "data", 1, 1],
+                [5, "ColorRGBA", "second", 16, 2097152],
+                [6, "float", "r", 4, 2097153],
+                [6, "float", "g", 4, 2097153],
+                [6, "float", "b", 4, 2097153],
+                [6, "float", "a", 4, 2097153],
+                [1, "vector", "m_BuildTextureStacks", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "BuildTextureStackReference", "data", -1, 32768],
+                [4, "string", "groupName", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "string", "itemName", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1]
+              ]
+            },
+            {
+              "classId": 142,
+              "isStrippedType": false,
+              "scriptTypeIndex": -1,
+              "scriptId": null,
+              "oldTypeHash": "97da5f4688e45a57c8b42d4f42497297",
+              "typeDependencies": [],
+              "nodes": [
+                [0, "AssetBundle", "Base", -1, 32768],
+                [1, "string", "m_Name", -1, 557057],
+                [2, "Array", "Array", -1, 540673],
+                [3, "int", "size", 4, 524289],
+                [3, "char", "data", 1, 524289],
+                [1, "vector", "m_PreloadTable", -1, 32768],
+                [2, "Array", "Array", -1, 16384],
+                [3, "int", "size", 4, 0],
+                [3, "PPtr<Object>", "data", 12, 0],
+                [4, "int", "m_FileID", 4, 8388609],
+                [4, "SInt64", "m_PathID", 8, 8388609],
+                [1, "map", "m_Container", -1, 32768],
+                [2, "Array", "Array", -1, 32768],
+                [3, "int", "size", 4, 0],
+                [3, "pair", "data", -1, 32768],
+                [4, "string", "first", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "AssetInfo", "second", 20, 0],
+                [5, "int", "preloadIndex", 4, 0],
+                [5, "int", "preloadSize", 4, 0],
+                [5, "PPtr<Object>", "asset", 12, 0],
+                [6, "int", "m_FileID", 4, 8388609],
+                [6, "SInt64", "m_PathID", 8, 8388609],
+                [1, "AssetInfo", "m_MainAsset", 20, 0],
+                [2, "int", "preloadIndex", 4, 0],
+                [2, "int", "preloadSize", 4, 0],
+                [2, "PPtr<Object>", "asset", 12, 0],
+                [3, "int", "m_FileID", 4, 8388609],
+                [3, "SInt64", "m_PathID", 8, 8388609],
+                [1, "unsigned int", "m_RuntimeCompatibility", 4, 0],
+                [1, "string", "m_AssetBundleName", -1, 32768],
+                [2, "Array", "Array", -1, 16385],
+                [3, "int", "size", 4, 1],
+                [3, "char", "data", 1, 1],
+                [1, "vector", "m_Dependencies", -1, 32768],
+                [2, "Array", "Array", -1, 49152],
+                [3, "int", "size", 4, 0],
+                [3, "string", "data", -1, 32768],
+                [4, "Array", "Array", -1, 16385],
+                [5, "int", "size", 4, 1],
+                [5, "char", "data", 1, 1],
+                [1, "bool", "m_IsStreamedSceneAssetBundle", 1, 16384],
+                [1, "int", "m_ExplicitDataLayout", 4, 0],
+                [1, "int", "m_PathFlags", 4, 0],
+                [1, "map", "m_SceneHashes", -1, 32768],
+                [2, "Array", "Array", -1, 32768],
+                [3, "int", "size", 4, 0],
+                [3, "pair", "data", -1, 32768],
+                [4, "string", "first", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1],
+                [4, "string", "second", -1, 32768],
+                [5, "Array", "Array", -1, 16385],
+                [6, "int", "size", 4, 1],
+                [6, "char", "data", 1, 1]
+              ]
+            }
+          ],
+          "refTypes": [],
+          "typetrees": {
+            "-1146626092855194285": {
+              "value": {
+                "m_Name": "uar",
+                "m_Shader": {
+                  "m_FileID": 1,
+                  "m_PathID": "-8954830357114744286"
+                },
+                "m_ValidKeywords": ["_EMISSION", "_NORMALMAP"],
+                "m_InvalidKeywords": ["UAR_NOT_IN_SHADER"],
+                "m_LightmapFlags": 2,
+                "m_EnableInstancingVariants": true,
+                "m_DoubleSidedGI": true,
+                "m_CustomRenderQueue": 2450,
+                "stringTagMap": [
+                  ["RenderType", "TransparentCutout"]
+                ],
+                "disabledShaderPasses": ["SHADOWCASTER"],
+                "m_SavedProperties": {
+                  "m_TexEnvs": [
+                    [
+                      "_BumpMap",
+                      {
+                        "m_Texture": {
+                          "m_FileID": 0,
+                          "m_PathID": "0"
+                        },
+                        "m_Scale": {
+                          "x": "f32:3f800000",
+                          "y": "f32:3f800000"
+                        },
+                        "m_Offset": {
+                          "x": "f32:00000000",
+                          "y": "f32:00000000"
+                        }
+                      }
+                    ],
+                    [
+                      "_MainTex",
+                      {
+                        "m_Texture": {
+                          "m_FileID": 1,
+                          "m_PathID": "209122546072171184"
+                        },
+                        "m_Scale": {
+                          "x": "f32:40000000",
+                          "y": "f32:40400000"
+                        },
+                        "m_Offset": {
+                          "x": "f32:3e800000",
+                          "y": "f32:bf000000"
+                        }
+                      }
+                    ]
+                  ],
+                  "m_Ints": [
+                    ["_UarInt", -7]
+                  ],
+                  "m_Floats": [
+                    ["_Glossiness", "f32:3f400000"],
+                    ["_NegZero", "f32:00000000"]
+                  ],
+                  "m_Colors": [
+                    [
+                      "_Color",
+                      {
+                        "r": "f32:3dcccccd",
+                        "g": "f32:3e4ccccd",
+                        "b": "f32:3e99999a",
+                        "a": "f32:3ecccccd"
+                      }
+                    ],
+                    [
+                      "_EmissionColor",
+                      {
+                        "r": "f32:40000000",
+                        "g": "f32:3f000000",
+                        "b": "f32:00000000",
+                        "a": "f32:3f800000"
+                      }
+                    ]
+                  ]
+                },
+                "m_BuildTextureStacks": []
+              }
+            },
+            "1": {
+              "value": {
+                "m_Name": "material",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-1146626092855194285"
+                  },
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "-8954830357114744286"
+                  },
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "209122546072171184"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/material/uar.mat",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 3,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "-1146626092855194285"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "material",
+                "m_Dependencies": ["matdeps"],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
             }
           }
         }

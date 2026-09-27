@@ -44,6 +44,7 @@ const HARDCODED: ReadonlySet<number> = new Set([
   ClassID.AssetBundle,
   ClassID.TextAsset,
   ClassID.MonoScript,
+  ClassID.Material,
 ]);
 /** Whether a fixture holds an object of a class without a hardcoded reader. */
 const hasOthers = (name: string): boolean =>
@@ -384,6 +385,7 @@ const NAMED: { classId: number; name: string }[] = [
   { classId: ClassID.TextAsset, name: "editor/6000.3.25f1/uncompressed/shared" },
   { classId: ClassID.MonoScript, name: "editor/6000.3.25f1/uncompressed/main" },
   { classId: ClassID.AssetBundle, name: "editor/6000.3.25f1/uncompressed/shared" },
+  { classId: ClassID.Material, name: "editor/6000.3.25f1/material/lz4/material" },
 ];
 
 for (const { classId, name } of NAMED) {
