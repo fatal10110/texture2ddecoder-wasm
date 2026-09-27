@@ -136,7 +136,7 @@ test("RGBA sha256 = UnityPy golden where the oracle and AssetStudio agree", () =
   }
 });
 
-test("convertPlain keeps Unity's stored row order, bottom row first (decodeTexture2D flips)", () => {
+test("convertPlain keeps the stored row order, bottom row first (decodeTexture2D flips)", () => {
   // RGBA32 is RGBA already, so any reordering of rows would show.
   for (const t of TEXTURES.filter((x) => x.format === 4)) {
     assert.deepEqual(decode(t), t.image.subarray(0, t.width * t.height * 4), t.fixture);
