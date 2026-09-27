@@ -335,8 +335,15 @@ function parseUnityVersion(text: string): UnityVersion {
   return [part(1), part(2), part(3), part(4)];
 }
 
-/** Last path component, splitting on `/` and `\` like .NET `Path.GetFileName`. */
-function baseName(path: string): string {
+/**
+ * Last path component, splitting on `/` and `\` like .NET `Path.GetFileName`.
+ * Internal (not exported from the package): env names loaded files with it, so
+ * an external's `fileName` and a loaded file's name are cut the same way.
+ *
+ * @param path a path with either separator
+ * @returns everything after the last separator; `path` itself if it has none
+ */
+export function baseName(path: string): string {
   return path.slice(Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\")) + 1);
 }
 

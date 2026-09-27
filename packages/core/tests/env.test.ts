@@ -2,10 +2,18 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { gzipSync } from "node:zlib";
 
-import { assertMatchesGolden, fixtureNames, loadFixture } from "../../../fixtures/helpers.js";
+import {
+  assertMatchesGolden,
+  fixtureNames,
+  golden,
+  loadFixture,
+} from "../../../fixtures/helpers.js";
 import { NodeFlags } from "../src/bundle/BundleFile.js";
 import { load } from "../src/env.js";
 import { CorruptError, UnsupportedError } from "../src/errors.js";
+import { ClassID } from "../src/serialized/ClassID.js";
+import { ObjectReader } from "../src/serialized/ObjectReader.js";
+import { readSerializedFile } from "../src/serialized/SerializedFile.js";
 
 /** Deterministic opaque bytes, so a failure names a byte rather than a seed. */
 function payload(length: number, step = 7): Uint8Array {
@@ -14,9 +22,33 @@ function payload(length: number, step = 7): Uint8Array {
 
 // --- every M1 fixture against the oracle goldens -----------------------------
 
+interface TableRow {
+  pathId: string;
+  classId: number;
+  byteSize: number;
+}
+
+const byPathId = (a: TableRow, b: TableRow): number =>
+  a.pathId < b.pathId ? -1 : a.pathId > b.pathId ? 1 : 0;
+
+/** Objects as a golden object table lists them, sorted by path id. */
+function objectTable(objects: ObjectReader[]): TableRow[] {
+  return objects
+    .map((o) => ({ pathId: String(o.pathId), classId: o.type, byteSize: o.byteSize }))
+    .sort(byPathId);
+}
+
 for (const name of fixtureNames()) {
   test(`load() unpacks ${name} byte-identically to the golden`, () => {
     assertMatchesGolden(name, load([{ name, data: loadFixture(name) }]).files);
+  });
+
+  test(`load() lists the objects of ${name} as its golden object tables do`, () => {
+    const { objects } = load([{ name, data: loadFixture(name) }]);
+    // M1 fixtures hold only opaque nodes: no tables, so no objects either.
+    const expected = Object.values(golden(name).objects).flat().sort(byPathId);
+    assert.deepEqual(objectTable(objects), expected);
+    for (const object of objects) assert.ok(object instanceof ObjectReader);
   });
 }
 
@@ -47,22 +79,101 @@ test("keeps a .resS sidecar under its own name", () => {
 });
 
 /**
- * A SerializedFile has no magic: detection accepts a header whose recorded size
- * is exactly the bytes handed over. Format version 21 keeps the 32-bit fields.
+ * A SerializedFile header with no metadata behind it. It has no magic:
+ * detection accepts a header whose recorded size is exactly the bytes handed
+ * over. Format version 21 keeps the 32-bit fields; 22 adds 64-bit ones after
+ * the reserved bytes.
  */
-function serializedFile(length: number): Uint8Array {
+function serializedFile(length: number, version = 21): Uint8Array {
   const data = new Uint8Array(length);
   const view = new DataView(data.buffer);
-  view.setUint32(0, 12); // m_MetadataSize, read but never checked
+  view.setUint32(0, 12); // m_MetadataSize
   view.setUint32(4, length); // m_FileSize
-  view.setUint32(8, 21); // m_Version
+  view.setUint32(8, version); // m_Version
   view.setUint32(12, 20); // m_DataOffset
+  if (version >= 22) {
+    view.setBigInt64(24, BigInt(length)); // m_FileSize
+    view.setBigInt64(32, 20n); // m_DataOffset
+  }
   return data;
 }
 
-test("keeps a SerializedFile input under its own name, unparsed (M2 reads it)", () => {
+const SHARED = "editor/6000.3.25f1/lz4/shared";
+const SHARED_CAB = "CAB-71fca072df859359e7a6b09ff7151c53";
+
+test("keeps a SerializedFile input under its own name and reads its objects", () => {
+  const bundle = load([{ name: SHARED, data: loadFixture(SHARED) }]);
+  const { data } = bundle.files[0]!;
+
+  const env = load([{ name: SHARED_CAB, data }]);
+  assert.deepEqual(env.files, [{ path: SHARED_CAB, data }]);
+  assert.deepEqual(objectTable(env.objects), golden(SHARED).objects[SHARED_CAB]);
+});
+
+test("keeps a header-only SerializedFile in files; objects throws, naming it", () => {
+  // Detection is satisfied by the header alone; the metadata after it is cut.
   const data = serializedFile(32);
-  assert.deepEqual(load([{ name: "CAB-loose", data }]).files, [{ path: "CAB-loose", data }]);
+  const env = load([{ name: "CAB-loose", data }]);
+  assert.deepEqual(env.files, [{ path: "CAB-loose", data }]);
+
+  // Named exactly once, also on the second throw.
+  const corrupt = (error: unknown): boolean =>
+    error instanceof CorruptError && /^CAB-loose: (?!CAB-loose)/.test(error.message);
+  assert.throws(() => env.objects, corrupt);
+  // A failed parse is not kept: the next access parses, and throws, again.
+  assert.throws(() => env.objects, corrupt);
+});
+
+test("unpacks a bundle holding a SerializedFile format it does not read; objects refuses it", () => {
+  const node = serializedFile(48, 23);
+  const env = load([{ name: "next.bundle", data: buildBundle([{ path: "CAB-next", data: node }]) }]);
+  // Unpacking is layers 1-2 and does not depend on the SerializedFile inside.
+  assert.deepEqual(env.files, [{ path: "CAB-next", data: node }]);
+
+  const unsupported = (error: unknown): boolean =>
+    error instanceof UnsupportedError &&
+    error.kind === "SerializedFile format version" &&
+    error.found === 23 &&
+    /^next\.bundle: CAB-next: unsupported/.test(error.message);
+  assert.throws(() => env.objects, unsupported);
+  // Resolving needs the same parse, so it refuses the same way.
+  const other = load([{ name: SHARED, data: loadFixture(SHARED) }]).objects[0]!;
+  assert.throws(() => env.resolve({ m_FileID: 0, m_PathID: 1n }, other), unsupported);
+});
+
+test("objects throws CorruptError, naming the file, when a path id is listed twice", () => {
+  const node = load([{ name: SHARED, data: loadFixture(SHARED) }]).files[0]!.data;
+  const sf = readSerializedFile(node);
+  const ids = sf.objects.map((o) => o.pathId);
+  // Overwrite the TextAsset's path id in the table with the AssetBundle's (1).
+  // Its id is 8 bytes nothing else in the metadata repeats, and the table
+  // comes before any object data, so the first match is the table entry.
+  const text = sf.objects.find((o) => o.classId === ClassID.TextAsset)!.pathId;
+  const data = Uint8Array.from(node);
+  const view = new DataView(data.buffer);
+  const offset = [...data.keys()].find(
+    (i) => i + 8 <= data.length && view.getBigInt64(i, true) === text,
+  );
+  assert.ok(offset !== undefined && offset < sf.header.dataOffset);
+  view.setBigInt64(offset, 1n, true);
+  assert.deepEqual(
+    readSerializedFile(data).objects.map((o) => o.pathId),
+    ids.map(() => 1n),
+  );
+
+  const env = load([{ name: "patched.bundle", data: buildBundle([{ path: SHARED_CAB, data }]) }]);
+  assert.equal(env.files.length, 1);
+  assert.throws(
+    () => env.objects,
+    (error: unknown) =>
+      error instanceof CorruptError &&
+      error.message === `patched.bundle: ${SHARED_CAB}: object table lists path id 1 twice`,
+  );
+});
+
+test("parses SerializedFiles once, on first use", () => {
+  const env = load([{ name: SHARED, data: loadFixture(SHARED) }]);
+  assert.equal(env.objects, env.objects);
 });
 
 test("accepts an ArrayBuffer and wraps it without copying", () => {
