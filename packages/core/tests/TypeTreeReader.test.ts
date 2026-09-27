@@ -516,6 +516,28 @@ test("a registry met inside another is skipped until the class holding the outer
   });
 });
 
+test("a string field keeps a leading UTF-8 BOM as U+FEFF, as UnityPy does", () => {
+  const { sf, reader } = objectOf("editor/6000.3.25f1/lzma/shared", ClassID.TextAsset);
+  assert.equal(sf.header.endianess, 0, "object data is little-endian");
+  const info = sf.objects.find((o) => o.pathId === reader.pathId)!;
+  const nodes = [
+    at(0, "Base", "Base"),
+    at(1, "string", "m_Name"),
+    at(2, "Array", "Array"),
+    at(3, "int", "size"),
+    at(3, "char", "data"),
+  ];
+  // Length 4, then EF BB BF "a": already 4-byte aligned.
+  const bytes = Uint8Array.of(4, 0, 0, 0, 0xef, 0xbb, 0xbf, 0x61);
+  const synthetic = new ObjectReader(bytes, sf, {
+    ...info,
+    byteStart: 0,
+    byteSize: bytes.length,
+    serializedType: { ...info.serializedType!, nodes },
+  });
+  assert.deepEqual(synthetic.readTypeTree(), { m_Name: "﻿a" });
+});
+
 // --- unhappy paths ----------------------------------------------------------------
 
 test("throws UnsupportedError for an object in a file built without type trees", () => {
