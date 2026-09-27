@@ -230,12 +230,13 @@ export class ObjectReader extends BinaryReader {
    *   `unityVersion` as `found`, when a version-gated class reader has no
    *   layout for the file's version: one it has no layout data for (such as
    *   below Unity 3.4), or an unknown one (`[0, 0, 0, 0]`: version-stripped, or
-   *   a loose file below format 7) unless the object's own bytes tell the
-   *   candidate layouts apart (the rule on epic #36). So `Texture2D` and
-   *   `MonoScript` refuse every version-stripped file, while `TextAsset` (from
-   *   format 7) and `AssetBundle` (from format 16) read one where the bytes
-   *   decide. An editor file's header of an unknown or pre-3.4 version is
-   *   refused the same way. Each reader's JSDoc gives its exact conditions.
+   *   a loose file below format 7) unless the file's format and the object's
+   *   own bytes leave exactly one candidate layout (the rule on epic #36). So
+   *   `Texture2D` and `MonoScript` refuse every version-stripped file, while
+   *   `TextAsset` (from format 7) and `AssetBundle` (from format 16) read one
+   *   where the bytes decide. An editor file's header of an unknown or pre-3.4
+   *   version is refused the same way. Each reader's JSDoc gives its exact
+   *   conditions.
    * @throws {UnsupportedError} of kind `"build target"`, found `"NoTarget"`,
    *   when a class reader that does not read editor-only fields gets a file
    *   built for the editor (`BuildTarget.NoTarget`), such as a `Texture2D` or
