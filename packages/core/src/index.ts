@@ -53,3 +53,12 @@ export type { Hash128, MonoScript } from "./classes/MonoScript.js";
 export { readMonoBehaviour } from "./classes/MonoBehaviour.js";
 export type { MonoBehaviour } from "./classes/MonoBehaviour.js";
 export type { MonoBehaviourData } from "./classes/registry.js";
+export { readMaterial } from "./classes/Material.js";
+export type {
+  BuildTextureStackReference,
+  ColorRGBA,
+  Material,
+  UnityPropertySheet,
+  UnityTexEnv,
+  Vector2f,
+} from "./classes/Material.js";
