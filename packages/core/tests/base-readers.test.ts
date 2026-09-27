@@ -146,28 +146,29 @@ test("the typed checks cover every dumped class in format 21 and in format 22", 
 for (const name of STRIPPED_FIXTURES) {
   test(`${name}: names and first fields match the typed build's golden`, () => {
     const twin = golden(typedTwin(name));
+
+    // Each bundle holds one SerializedFile, so the two pair up directly - by
+    // name they would not: the manifest bundle's node is named after the
+    // build, so its CAB name differs between the two. With one file, every
+    // object of the env is one of its objects and path ids are unique.
+    const [path, ...morePaths] = Object.keys(golden(name).objects);
+    const [twinPath, ...moreTwinPaths] = Object.keys(twin.objects);
+    assert.ok(path && twinPath && !morePaths.length && !moreTwinPaths.length, "not one file each");
+    assert.deepEqual(golden(name).objects[path], twin.objects[twinPath], "object tables differ");
+    assert.equal(golden(name).serialized![path]!.enableTypeTree, false);
+
     const env = load([{ name, data: loadFixture(name) }]);
+    assert.equal(env.objects.length, golden(name).objects[path]!.length);
     const byPathId = new Map(env.objects.map((o) => [String(o.pathId), o]));
 
-    // Pair the SerializedFiles by position: the manifest bundle's node is named
-    // after the build, so its CAB name differs between the two.
-    const paths = Object.keys(golden(name).objects).sort();
-    const twinPaths = Object.keys(twin.objects).sort();
-    assert.equal(paths.length, twinPaths.length);
-
     let named = 0;
-    paths.forEach((path, i) => {
-      const twinPath = twinPaths[i]!;
-      assert.deepEqual(golden(name).objects[path], twin.objects[twinPath], "object tables differ");
-      assert.equal(golden(name).serialized![path]!.enableTypeTree, false);
-      const sf = twin.serialized![twinPath]!;
-      for (const [pathId, { value }] of Object.entries(sf.typetrees)) {
-        const reader = byPathId.get(pathId);
-        assert.ok(reader, `${path} has no object ${pathId}`);
-        assert.equal(reader.serializedType?.nodes, null, "the file has a type tree after all");
-        if (checkObject(reader, sf, value as Record<string, unknown>)) named++;
-      }
-    });
+    const sf = twin.serialized![twinPath]!;
+    for (const [pathId, { value }] of Object.entries(sf.typetrees)) {
+      const reader = byPathId.get(pathId);
+      assert.ok(reader, `${path} has no object ${pathId}`);
+      assert.equal(reader.serializedType?.nodes, null, "the file has a type tree after all");
+      if (checkObject(reader, sf, value as Record<string, unknown>)) named++;
+    }
     assert.ok(named > 0, "no NamedObject was checked");
   });
 }
