@@ -216,6 +216,29 @@ test("an unterminated C string stops at the end, like upstream", () => {
   assert.equal(reader.remaining, 0);
 });
 
+// C# `Encoding.UTF8.GetString` and UnityPy's `bytes.decode("utf-8")` keep a
+// leading BOM as U+FEFF; a default `TextDecoder` strips it (#125).
+const BOM = hex("efbbbf");
+
+test("a C string keeps a leading UTF-8 BOM as U+FEFF", () => {
+  const reader = new BinaryReader(concat(BOM, utf8("abc"), hex("00")));
+  assert.equal(reader.readStringToNull(), "\uFEFFabc");
+  assert.equal(reader.position, 7);
+});
+
+test("a length-prefixed string keeps a leading UTF-8 BOM as U+FEFF", () => {
+  const reader = new BinaryReader(concat(hex("00000004"), BOM, utf8("a"), hex("2a")));
+  assert.equal(reader.readAlignedString(), "\uFEFFa");
+  assert.equal(reader.position, 8);
+  assert.equal(reader.readUInt8(), 0x2a);
+});
+
+test("readString keeps a leading UTF-8 BOM as U+FEFF and still replaces invalid bytes", () => {
+  assert.equal(new BinaryReader(concat(BOM, utf8("a"))).readString(4), "\uFEFFa");
+  assert.equal(new BinaryReader(BOM).readString(3), "\uFEFF");
+  assert.equal(new BinaryReader(concat(BOM, hex("ff"))).readString(4), "\uFEFF\uFFFD");
+});
+
 test("readBytes returns a zero-copy view aliasing the input (R7)", () => {
   const data = hex("0011223344556677");
   const reader = new BinaryReader(data);

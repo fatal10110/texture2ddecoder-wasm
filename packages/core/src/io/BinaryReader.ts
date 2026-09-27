@@ -21,14 +21,22 @@ const MAX_C_STRING = 32767;
  * package isomorphic without widening `lib` to DOM.
  */
 declare const TextDecoder: {
-  new (label?: string): { decode(input?: Uint8Array): string };
+  new (
+    label?: string,
+    options?: { fatal?: boolean; ignoreBOM?: boolean },
+  ): { decode(input?: Uint8Array): string };
 };
 
 let utf8: { decode(input?: Uint8Array): string } | undefined;
 
-/** UTF-8 decode with U+FFFD replacement, matching C# `Encoding.UTF8.GetString`. */
+/**
+ * UTF-8 decode with U+FFFD replacement, matching C# `Encoding.UTF8.GetString`.
+ *
+ * `ignoreBOM` keeps a leading `EF BB BF` as U+FEFF, as `GetString` and UnityPy
+ * do; `TextDecoder` would strip it by default.
+ */
 function decodeUtf8(bytes: Uint8Array): string {
-  if (!utf8) utf8 = new TextDecoder("utf-8");
+  if (!utf8) utf8 = new TextDecoder("utf-8", { ignoreBOM: true });
   return utf8.decode(bytes);
 }
 

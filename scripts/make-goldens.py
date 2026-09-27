@@ -73,6 +73,7 @@ DUMPED_CLASSES = {
     43: "Mesh",
     49: "TextAsset",
     114: "MonoBehaviour",
+    115: "MonoScript",  # for its hardcoded reader (#124)
     142: "AssetBundle",
     290: "AssetBundleManifest",
     # The classes whose bytes come out raw (#41). No fixture holds a

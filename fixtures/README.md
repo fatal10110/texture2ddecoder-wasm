@@ -149,6 +149,12 @@ sprites yet; M3 adds the rest.
 - `files` hashes are of the raw node bytes. For a node UnityPy parses as a
   SerializedFile they come from `entry.reader.bytes`, never `entry.save()`,
   which re-serializes and can differ from the original (#81).
+- The `Hash128`s outside the typetree dumps (`types[].scriptId`,
+  `types[].oldTypeHash`, `externals[].guid`) are hex strings, as is every
+  sha256 (`files`, `textures`, `rawData`, `synthetic`, ...). A `Hash128`
+  inside a typetree dump (a MonoScript's `m_PropertiesHash`, #124; the
+  manifest's `AssetBundleHash`) stays as its type tree lays it out: 16 `UInt8`
+  fields, `"bytes[0]"` to `"bytes[15]"`.
 - UnityPy cannot fully read a `[SerializeReference]` registry of version 1
   (2019.4, 2020.3): its type tree describes one entry, but the data holds the
   entries plus a `Terminus` / `UnityEngine.DMAT` / `FAKE_ASM` sentinel entry that
@@ -287,7 +293,9 @@ sprites yet; M3 adds the rest.
   inline image data and no `.resS`. UnityPy then looks for a resource file
   named `""` and fails, and there is nothing to hash or decode, so
   `make-goldens.py` gives such a Texture2D no texture golden (#41). Its type
-  tree is still dumped.
+  tree is still dumped. This library deliberately differs from the oracle
+  here: `obj.read()` gives it an empty `imageData` and `decodeTexture2D` a 0x0
+  image (maintainer decision on #139); AssetStudio also hands back 0 bytes.
 
 ## Regenerating
 

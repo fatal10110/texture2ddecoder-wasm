@@ -94,6 +94,12 @@ test("textAssetString: invalid UTF-8 becomes U+FFFD, as every string of the read
   assert.equal(textAssetString({ m_Script: new Uint8Array(0) }), "");
 });
 
+test("textAssetString keeps a leading UTF-8 BOM as U+FEFF, as upstream and UnityPy do", () => {
+  // A text file saved on Windows: EF BB BF, then "hi".
+  const m_Script = Uint8Array.of(0xef, 0xbb, 0xbf, 0x68, 0x69);
+  assert.equal(textAssetString({ m_Script }), "\uFEFFhi");
+});
+
 // --- m_PathName, Unity 3.4 to 2017.1 -----------------------------------------------
 
 const FROM = objectBytes("editor/6000.3.25f1/uncompressed/shared", ClassID.TextAsset);
