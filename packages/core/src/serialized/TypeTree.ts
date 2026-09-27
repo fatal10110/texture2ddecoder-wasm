@@ -1,9 +1,11 @@
 // Ported from AssetStudio/SerializedFile.cs (MIT, © Perfare / RazTools / Razviar)
 // Ported from AssetStudio/SerializedType.cs (MIT, © Perfare / RazTools / Razviar)
 // Ported from AssetStudio/TypeTreeNode.cs (MIT, © Perfare / RazTools / Razviar)
+// Ported from AssetStudio/TypeTree.cs (MIT, © Perfare / RazTools / Razviar)
 
 import { CorruptError } from "../errors.js";
 import { BinaryReader } from "../io/BinaryReader.js";
+import { commonString } from "./CommonString.js";
 import { SerializedFileFormatVersion as V } from "./FormatVersion.js";
 
 /** Size of a `Hash128` (script id, old type hash). */
@@ -20,12 +22,9 @@ const COMMON_STRING_FLAG = 0x80000000;
  * with `level` one higher.
  */
 export interface TypeTreeNode {
-  /**
-   * Type name, e.g. `"int"`, `"string"`, `"PPtr<Object>"`. Until #23, a name
-   * from Unity's common strings reads as its offset in them, e.g. `"49"`.
-   */
+  /** Type name, e.g. `"int"`, `"string"`, `"PPtr<Object>"`. */
   type: string;
-  /** Field name, e.g. `"m_Name"`; common strings read as offsets until #23. */
+  /** Field name, e.g. `"m_Name"`. */
   name: string;
   /** Serialized size in bytes, -1 when variable. */
   byteSize: number;
@@ -239,14 +238,9 @@ function readTypeTreeBlob(
 /**
  * Resolve a blob string reference: an offset into the file's own string
  * buffer, or - with the high bit set - into Unity's built-in common strings.
- *
- * ponytail: a common-string reference resolves to upstream's fallback for an
- * unknown one, the offset as text, until the `CommonString` table is ported
- * (#23). Real files use them for most node types and many names (`"Base"`,
- * `"Array"`), and those are exported, so #23 has to land before a release.
  */
 function readBlobString(buffer: Uint8Array, value: number): string {
-  if ((value & COMMON_STRING_FLAG) !== 0) return String(value & 0x7fffffff);
+  if ((value & COMMON_STRING_FLAG) !== 0) return commonString(value & 0x7fffffff);
   if (value > buffer.length) {
     throw new CorruptError(
       `type tree string offset ${value} is past the end of the ${buffer.length}-byte buffer`,
