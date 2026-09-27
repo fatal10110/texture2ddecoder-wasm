@@ -13,14 +13,14 @@ export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   reporter: "list",
   use: {
-    baseURL: `http://localhost:${PORT}`,
+    baseURL: `http://127.0.0.1:${PORT}`,
     trace: "retain-on-failure",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
     command: "node serve.mjs",
     env: { PORT: String(PORT) },
-    url: `http://localhost:${PORT}/examples/cdn.html`,
+    url: `http://127.0.0.1:${PORT}/examples/cdn.html`,
     reuseExistingServer: !process.env.CI,
   },
 });

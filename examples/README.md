@@ -40,13 +40,16 @@ Until the reader packages are published (#45), only `?local` works:
 npm ci
 npm run build                        # dist/ of every package
 npm run build:wasm                   # needs Docker, see CONTRIBUTING.md
-node examples/serve.mjs              # then open http://localhost:8080/
+node examples/serve.mjs              # then open http://127.0.0.1:8080/
 ```
 
 `serve.mjs` sends no special headers. It maps `/npm/<name>/+esm` to the
-package's browser ESM entry in `node_modules`, and rewrites bare imports the
-way jsDelivr does. The version in a URL is ignored, and the local build is
-served.
+package's browser ESM entry in `node_modules`, and rewrites the bare imports of
+import statements the way jsDelivr does. The version in a URL is ignored, and
+the local build is served. It listens on `127.0.0.1` only, and serves only the
+packages `cdn-worker.js` loads and their dependencies; anything else under
+`node_modules` or the repo is a 404. `scripts/tests/serve-examples.test.mjs`
+covers this.
 
 ## Smoke test
 
