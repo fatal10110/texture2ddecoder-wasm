@@ -10,12 +10,19 @@ AssetStudio -- https://github.com/Razviar/assetstudio (MIT)
   Copyright (c) Perfare, RazTools, Razviar
   Source of truth for AssetBundle, SerializedFile, TypeTree and class layout,
   for the plain texture format conversion (Texture2DConverter.cs, Half.cs),
-  and for which block or Crunch decoder each texture format goes to
-  (Texture2DConverter.cs).
+  for which block or Crunch decoder each texture format goes to
+  (Texture2DConverter.cs), for the Xbox 360 byte swap (Texture2DConverter.cs)
+  and for the vertical flip (Texture2DExtensions.cs).
 
 UnityPy -- https://github.com/K0lb3/UnityPy (MIT)
   Copyright (c) K0lb3
-  Secondary reference and oracle used to generate the test goldens.
+  Secondary reference and oracle used to generate the test goldens. Source of
+  the Switch texture deswizzle (helpers/TextureSwizzler.py,
+  export/Texture2DConverter.py), which AssetStudio does not have.
+
+AssetsTools.NET -- https://github.com/nesrak1/AssetsTools.NET (MIT)
+  Copyright (c) 2020 nesrak1
+  UnityPy's Switch deswizzle is based on its SwitchSwizzle.cs.
 
 texture2ddecoder-wasm -- https://github.com/fatal10110/texture2ddecoder-wasm (MIT)
   Copyright (c) K0lb3

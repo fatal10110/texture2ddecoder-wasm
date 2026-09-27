@@ -64,10 +64,18 @@ function textureGoldens(name: string): Map<string, GoldenTexture> {
   return out;
 }
 
-/** `read()` without `imageData`: what `readTexture2D` alone returns. */
-function withoutImageData(data: Texture2DData): Omit<Texture2DData, "imageData"> {
-  const { imageData: _, ...rest } = data;
+/** `read()` without `imageData` and `platform`: what `readTexture2D` alone returns. */
+function withoutImageData(data: Texture2DData): Omit<Texture2DData, "imageData" | "platform"> {
+  const { imageData: _, platform: __, ...rest } = data;
   return rest;
+}
+
+/** The oracle's `m_TargetPlatform` for a fixture whose SerializedFiles share one. */
+function targetPlatform(name: string): number {
+  const files = Object.values(golden(name).serialized ?? {});
+  const platforms = new Set(files.map((sf) => sf.targetPlatform));
+  assert.equal(platforms.size, 1, `${name}: ${[...platforms]}`);
+  return [...platforms][0]!;
 }
 
 // --- Texture2D: the registered hardcoded reader ------------------------------------
@@ -84,9 +92,16 @@ for (const name of TEXTURE_FIXTURES) {
       assert.ok(expected, `no golden for Texture2D ${obj.pathId}`);
       const data: Texture2DData = obj.read();
 
-      // The hardcoded reader's result, plus the image data and nothing else.
-      assert.deepEqual(Object.keys(data), [...Object.keys(readTexture2D(obj)), "imageData"]);
+      // The hardcoded reader's result, plus the image data and the platform, nothing else.
+      assert.deepEqual(Object.keys(data), [
+        ...Object.keys(readTexture2D(obj)),
+        "imageData",
+        "platform",
+      ]);
       assert.deepEqual(withoutImageData(data), readTexture2D(obj));
+      // The file's platform, which decoding a console texture needs (#33).
+      assert.equal(data.platform, obj.platform);
+      assert.equal(data.platform, targetPlatform(name));
       assert.equal(data.m_Name, expected.name);
       assert.equal(data.m_TextureFormat, expected.format);
       assert.equal(data.imageData.length, expected.imageSize);

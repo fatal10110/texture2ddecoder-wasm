@@ -21110,5 +21110,237 @@
       "inputSha256": "b1befe6027099040d6aaef097944b6b942c82e6228515ecfe0eefb0aa0f3f10c",
       "rgbaSha256": "0b930dbef844ba465acb19a3d0d451d87346cb1f3e5995e9e49cb63c6042cfae"
     }
+  },
+  "platform": {
+    "Switch RGBA32": {
+      "platform": 38,
+      "format": 4,
+      "width": 20,
+      "height": 10,
+      "platformBlob": "000000000000000001000000",
+      "fourColor": null,
+      "inputSize": 2048,
+      "inputSha256": "62a1193934c28184a3eec7a1dcffc26555064d6f5f3705d1d437030e67d2c0f0",
+      "rgbaSha256": "dfd88b4afbf59e5c8e73e9de0729532bd8d19d53bad421ea433c2d0547843183",
+      "rgbaTopDownSha256": "e6bba3556cf9fd34af3482d61c9ec183889397132e429593a1d5525f578597a7"
+    },
+    "Switch RGB24": {
+      "platform": 38,
+      "format": 3,
+      "width": 12,
+      "height": 6,
+      "platformBlob": "000000000000000002000000",
+      "fourColor": null,
+      "inputSize": 2048,
+      "inputSha256": "c71ff00d7156f2fa2c42fe4d1bc4effcd8fe3a67575077d7e5e345a4219cfc99",
+      "rgbaSha256": "75f3895d7e7a6e9b96e46f904141be043e2eeb06a695a3314d7ecb27631be39a",
+      "rgbaTopDownSha256": "a289ca6d929ebee520207f7a32406be85f6e1fa7b02beefd6d04dcc350d208c8"
+    },
+    "Switch ARGB4444": {
+      "platform": 38,
+      "format": 2,
+      "width": 24,
+      "height": 8,
+      "platformBlob": "000000000000000001000000",
+      "fourColor": null,
+      "inputSize": 1024,
+      "inputSha256": "bfaac1e217df5fd2f267d48ffd38aee1f2b026025548d91626eca282eb357798",
+      "rgbaSha256": "e99600af8499b6969e18e6c279fe4b2a29ad9a4b2798bd4d8a9ae55355e8051a",
+      "rgbaTopDownSha256": "fe4146f7a88fd461d30f5132429906c26e00ac6db564827e0b7ebfec9b4e5ec8"
+    },
+    "Switch DXT1": {
+      "platform": 38,
+      "format": 10,
+      "width": 36,
+      "height": 20,
+      "platformBlob": "000000000000000003000000",
+      "fourColor": [8, 1, 3],
+      "inputSize": 8192,
+      "inputSha256": "2026fc366d9722096f51b19630dbbe33b93a3bf724ec39343d1c01f8b7b8fc65",
+      "rgbaSha256": "7b7464b2f927a1c0eaa36006ff74f50853f19b86e42727aa069f70ecd5e53438",
+      "rgbaTopDownSha256": "ecf8360ce0e5db22c13a1d42f33c261d65dabbec7c8e12f71da9cc2e394d6974"
+    },
+    "Switch DXT5": {
+      "platform": 38,
+      "format": 12,
+      "width": 16,
+      "height": 16,
+      "platformBlob": "000000000000000004000000",
+      "fourColor": [16, 9, 11],
+      "inputSize": 8192,
+      "inputSha256": "e53d3a0b2c45a1a2352dd67f92a9b7a1d6dc6a1b94d65b9dd75597ce7accf7bb",
+      "rgbaSha256": "70aebd2743040e13e47a3bfcd0ba18a63339b5a82b92ccf9829afd9d0ffd3756",
+      "rgbaTopDownSha256": "0431633151b3c95274e74bff7c1bd604a860f592d40dd4483adb61af7b4fe955"
+    },
+    "Switch BC5": {
+      "platform": 38,
+      "format": 27,
+      "width": 8,
+      "height": 40,
+      "platformBlob": "000000000000000002000000",
+      "fourColor": null,
+      "inputSize": 2048,
+      "inputSha256": "4c3af6ab50cbca033405f5627d7f143544dcfd0bf34c2d72d7c3915cc0e24ff1",
+      "rgbaSha256": "a5f3bcf51388ae40a65ad3d91e09f11fcbb278b63dadfd055073bf0fe46d53d9",
+      "rgbaTopDownSha256": "3dbbcb2d4835a5b852fadb60e67903c42dfcfb45e3c5a4b50e27519f84bf51d9"
+    },
+    "XBOX360 DXT1": {
+      "platform": 11,
+      "format": 10,
+      "width": 16,
+      "height": 8,
+      "platformBlob": null,
+      "fourColor": [8, 0, 2],
+      "inputSize": 64,
+      "inputSha256": "adfd124ef15621f1d8e17704aa2a5658068121c15e29eeb4edad62e9aa627dbb",
+      "rgbaSha256": "81455eba222c7eaca926c1cfe015d2954de3bdc36e44b3e674ef83de77dd255d",
+      "rgbaTopDownSha256": "ba1cf5244a28ab38de2d81b3b937f63975562f1404e3260295e88ca53194f04f"
+    },
+    "XBOX360 DXT5": {
+      "platform": 11,
+      "format": 12,
+      "width": 16,
+      "height": 8,
+      "platformBlob": null,
+      "fourColor": [16, 8, 10],
+      "inputSize": 128,
+      "inputSha256": "1e5c45c24b085d13eacebf1ab80ef429bdf513047cedd88596557e785af1d4e6",
+      "rgbaSha256": "26f9da8709c360bb7bbce57c5c4431fb2b84f8f833fa2b72872f19750a566ca1",
+      "rgbaTopDownSha256": "0d4bc07d796194aeb835c2c484f30495838761a61b1c2f8cb7b415c1b0fe67fc"
+    }
+  },
+  "deswizzle": {
+    "16x1": {
+      "texelWidth": 16,
+      "texelHeight": 1,
+      "width": 40,
+      "height": 9,
+      "gobsPerBlock": 2,
+      "paddedWidth": 64,
+      "paddedHeight": 16,
+      "inputSize": 1024,
+      "inputSha256": "ebeb24d47c430d6f48b53ffe9b106f63a06cbcf2017e3f008382518dcb3bd42c",
+      "outputSha256": "a6d04beb744fa8e19ef4a9b401d5c1719472a371f46fefdf1eefe807ec7dbfb5"
+    },
+    "8x1": {
+      "texelWidth": 8,
+      "texelHeight": 1,
+      "width": 24,
+      "height": 8,
+      "gobsPerBlock": 4,
+      "paddedWidth": 32,
+      "paddedHeight": 32,
+      "inputSize": 2048,
+      "inputSha256": "1d8febb447a08b6caa5e23cd01483d9afc30118df92627b9353304b8bc5bc7c7",
+      "outputSha256": "47d8d45fc65d1718fd8ff3d0e5d18c64e0e1d1adf61bca38d46ccbe16e701864"
+    },
+    "4x1": {
+      "texelWidth": 4,
+      "texelHeight": 1,
+      "width": 20,
+      "height": 10,
+      "gobsPerBlock": 2,
+      "paddedWidth": 32,
+      "paddedHeight": 16,
+      "inputSize": 2048,
+      "inputSha256": "3c9cf726e27a93b45d00ef75e3f400b7f8172f379db5c1f331652527a938408b",
+      "outputSha256": "a31dd4a92f2dda09b705a19febef8cd1a062797a1235fd7fc419e6c7923192bc"
+    },
+    "1x1": {
+      "texelWidth": 1,
+      "texelHeight": 1,
+      "width": 5,
+      "height": 3,
+      "gobsPerBlock": 2,
+      "paddedWidth": 8,
+      "paddedHeight": 16,
+      "inputSize": 2048,
+      "inputSha256": "316ffb25b6e7bc1059df145beed67d614eaaab7cf8f889bedf4eb9c0d2d29062",
+      "outputSha256": "7a67cb6222210e4e75990a14e19fc388b1b70b872f3c160fe5eab52a17e4a30e"
+    },
+    "8x4": {
+      "texelWidth": 8,
+      "texelHeight": 4,
+      "width": 36,
+      "height": 20,
+      "gobsPerBlock": 8,
+      "paddedWidth": 64,
+      "paddedHeight": 256,
+      "inputSize": 8192,
+      "inputSha256": "59bd7a8eff5c1d2f0fd04815374f7068c82e84c3bfb8f168e83e1c0794bc9f14",
+      "outputSha256": "d210cc45e5d629d27251e6ca5e152070374518c53a3af8370069841628202ca1"
+    },
+    "4x4": {
+      "texelWidth": 4,
+      "texelHeight": 4,
+      "width": 16,
+      "height": 16,
+      "gobsPerBlock": 16,
+      "paddedWidth": 16,
+      "paddedHeight": 512,
+      "inputSize": 8192,
+      "inputSha256": "44481778022ed2528a553c6ba221b44250c85765d4a1ba37e5b4026293973cec",
+      "outputSha256": "01f9328b8fcd9f28208cc5ccc95e6baae04a2876259dc1955f2080fdfe64105b"
+    },
+    "5x5": {
+      "texelWidth": 5,
+      "texelHeight": 5,
+      "width": 30,
+      "height": 12,
+      "gobsPerBlock": 2,
+      "paddedWidth": 40,
+      "paddedHeight": 80,
+      "inputSize": 2048,
+      "inputSha256": "46fcd6b2cc2fa09008b30f2cf1899a1c0f7eb53900712a315001ff8e078723b2",
+      "outputSha256": "97c4682cf671b6b4ef28b1838b901e1c4dd540a1b8707e231beec6ad58892f0a"
+    },
+    "6x6": {
+      "texelWidth": 6,
+      "texelHeight": 6,
+      "width": 30,
+      "height": 30,
+      "gobsPerBlock": 4,
+      "paddedWidth": 48,
+      "paddedHeight": 192,
+      "inputSize": 4096,
+      "inputSha256": "617bb864a9aa0b22f067e44beb4c22d453626b2d98c7f48453fc183191814d2b",
+      "outputSha256": "c848e3ef24f9df1463ca486e178d203754f140d614eb4b9d00016383b4a4dd71"
+    },
+    "8x8": {
+      "texelWidth": 8,
+      "texelHeight": 8,
+      "width": 40,
+      "height": 72,
+      "gobsPerBlock": 2,
+      "paddedWidth": 64,
+      "paddedHeight": 128,
+      "inputSize": 2048,
+      "inputSha256": "a0e387a53a0ed6002ca15cee5ebed6ac6457df5114178e2be7085e6d492f9764",
+      "outputSha256": "2eff73817f561870418c95c772c603d5f7d06b5ecfa7f5d6e24a4e9af5ab3877"
+    },
+    "10x10": {
+      "texelWidth": 10,
+      "texelHeight": 10,
+      "width": 50,
+      "height": 20,
+      "gobsPerBlock": 2,
+      "paddedWidth": 80,
+      "paddedHeight": 160,
+      "inputSize": 2048,
+      "inputSha256": "c7b49393f082eac5f86d59b7be2f5f7f74bb1e8719dce0b587391db0f64968e2",
+      "outputSha256": "146abc00860d02fdb084450e7039ffef0d37e8d9d433629fa6c1873c9f3a20df"
+    },
+    "12x12": {
+      "texelWidth": 12,
+      "texelHeight": 12,
+      "width": 60,
+      "height": 36,
+      "gobsPerBlock": 32,
+      "paddedWidth": 96,
+      "paddedHeight": 3072,
+      "inputSize": 32768,
+      "inputSha256": "d3cfd3a3fc6b2a318ce162fb21fb0a92afc7b01d93fe3222ccdc099409c414bf",
+      "outputSha256": "749cc28ff1854dde9b2e14febb04064257defca1bb9d1e55f972052097b393dd"
+    }
   }
 }

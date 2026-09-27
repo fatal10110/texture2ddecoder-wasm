@@ -2,8 +2,16 @@
 
 import { CorruptError, TextureFormat, UnsupportedError } from "unity-asset-reader";
 
-/** Decoded pixels: 4 bytes per pixel, R G B A, `width * height * 4` bytes (D5). */
+/**
+ * Decoded pixels: 4 bytes per pixel, R G B A, `width * height * 4` bytes (D5).
+ *
+ * The row order is the producer's, since the two public producers differ:
+ * - `decodeTexture2D`: top row first, ready for `ImageData` or an image file.
+ * - `convertPlain`: as Unity stores it, bottom row first, like the
+ *   `texture2ddecoder-wasm` block decoders. Reverse the rows before display.
+ */
 export interface RgbaImage {
+  /** The pixels, row after row, in the producer's row order (see above). */
   data: Uint8Array;
   width: number;
   height: number;
@@ -43,9 +51,10 @@ const BYTES_PER_PIXEL: ReadonlyMap<number, number> = new Map([
  * white. Half and float channels are scaled by 255, rounded half to even and
  * clamped to 0..255, so HDR values saturate and NaN becomes 0.
  *
- * Rows stay in the order Unity stores them, bottom row first; turning the
- * image top-down is a separate step (#33). No platform byte swap is applied
- * (#33 too).
+ * A converter for linear pixel data, like `texture2ddecoder-wasm`'s block
+ * decoders: rows stay in the order Unity stores them, bottom row first, and
+ * no console layout (Xbox 360 byte order, Switch swizzle) is undone.
+ * `decodeTexture2D` does both, and returns the top row first.
  *
  * Only the first `width * height` pixels are read, so image data holding
  * further mip levels is fine.
@@ -54,7 +63,8 @@ const BYTES_PER_PIXEL: ReadonlyMap<number, number> = new Map([
  * @param width `m_Width`
  * @param height `m_Height`
  * @param format `m_TextureFormat`, Unity's `TextureFormat` value
- * @returns a new RGBA buffer; `data` is not modified
+ * @returns a new RGBA image with its rows as stored, bottom row first (not
+ *   `decodeTexture2D`'s top row first); `data` is not modified
  * @throws {UnsupportedError} when `format` is not one of the formats above,
  *   or for YUY2 of odd width (upstream reads `width / 2` pairs a row there and
  *   writes its rows out of step, so there is no behavior to match)
