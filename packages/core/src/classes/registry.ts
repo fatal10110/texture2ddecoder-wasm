@@ -34,9 +34,11 @@ export interface Texture2DData extends Texture2D {
   /**
    * The image data, every mip level, still encoded in `m_TextureFormat`:
    * `image data` when it is not empty, and otherwise `size` bytes of the
-   * resource file `m_StreamData` names. When neither holds anything,
-   * `obj.read()` throws `CorruptError` instead. Either way a view, never a
-   * copy (R7), with the aliasing of the bytes it views.
+   * resource file `m_StreamData` names. When neither holds anything, it is
+   * empty for a texture 0 pixels wide or high (such as the 0x0 "Font Texture"
+   * of every dynamic font), and otherwise `obj.read()` throws `CorruptError`
+   * instead (#139). Always a view, never a copy (R7), with the aliasing of the
+   * bytes it views.
    */
   imageData: Uint8Array;
 }
@@ -142,9 +144,12 @@ export function readObjectData(
  *
  * With neither, upstream hands back 0 bytes; UnityPy raises, and so does this
  * (R9, decided on PR #118), rather than pass an empty image on as a texture.
+ * Except when `m_Width` or `m_Height` is 0 (#139): such a texture has no
+ * pixels to store, and Unity writes one for every dynamic font (its 0x0 "Font
+ * Texture"), so its `imageData` is the empty inline data.
  *
- * @throws {CorruptError} when the inline data is empty and `m_StreamData` is
- *   missing or its `path` is empty
+ * @throws {CorruptError} when the inline data is empty, `m_StreamData` is
+ *   missing or its `path` is empty, and neither `m_Width` nor `m_Height` is 0
  */
 function readTexture2DData(
   reader: ObjectReader,
@@ -155,6 +160,10 @@ function readTexture2DData(
   if (inline.length > 0) return { ...texture, imageData: inline, platform: reader.platform };
   const stream = texture.m_StreamData;
   if (!stream?.path) {
+    // Nothing to store, not corrupt: a dynamic font's 0x0 "Font Texture" (#139).
+    if (texture.m_Width === 0 || texture.m_Height === 0) {
+      return { ...texture, imageData: inline, platform: reader.platform };
+    }
     throw new CorruptError(
       `Texture2D ${reader.pathId} has no image data, neither inline nor in a .resS ` +
         "(image data is empty and m_StreamData.path names no file)",

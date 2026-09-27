@@ -424,6 +424,59 @@ wasmTest("a texture 0 pixels wide or high is an empty image", async () => {
   }
 });
 
+wasmTest("0 x N, N x 0, 0 x 0, no image data: an empty image, whatever else (#139)", async () => {
+  // Nothing is decoded, so neither the format, nor the platform, nor the data
+  // is looked at: not even those that would be refused with pixels.
+  const blockLinear = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]);
+  const inputs: [string, Partial<Texture2DData>][] = [
+    ["RGBA32", { m_TextureFormat: TextureFormat.RGBA32 }],
+    ["BC7", { m_TextureFormat: TextureFormat.BC7 }],
+    ["DXT1Crunched", { m_TextureFormat: TextureFormat.DXT1Crunched }],
+    ["DXT3", { m_TextureFormat: TextureFormat.DXT3 }],
+    ["format 1000", { m_TextureFormat: 1000 }],
+    ["PS4 DXT1", { m_TextureFormat: TextureFormat.DXT1, platform: BuildTarget.PS4 }],
+    ["Xbox 360 DXT5", { m_TextureFormat: TextureFormat.DXT5, platform: BuildTarget.XBOX360 }],
+    [
+      "Switch-swizzled ETC_RGB4",
+      {
+        m_TextureFormat: TextureFormat.ETC_RGB4,
+        platform: BuildTarget.Switch,
+        m_PlatformBlob: blockLinear,
+      },
+    ],
+  ];
+  for (const [w, h] of [[0, 16], [16, 0], [0, 0]] as const) {
+    for (const [name, fields] of inputs) {
+      const input = { ...texture(0, w, h, new Uint8Array(0)), ...fields };
+      const out = await decodeTexture2D(input);
+      assert.deepEqual(out, { data: new Uint8Array(0), width: w, height: h }, `${name} ${w}x${h}`);
+    }
+  }
+  // With pixels, the same empty data is still refused.
+  await assert.rejects(
+    decodeTexture2D(texture(TextureFormat.RGBA32, 1, 1, new Uint8Array(0))),
+    CorruptError,
+  );
+});
+
+/** The editor fixtures holding a dynamic font, whose "Font Texture" is 0x0 (#41). */
+const FONT_FIXTURES = ["2019.4.41f2", "2020.3.30f1", "6000.3.25f1"].flatMap((editor) =>
+  ["lz4", "lz4-notypetree"].map((kind) => `editor/${editor}/${kind}/font`),
+);
+
+wasmTest("a dynamic font's 0x0 Font Texture, from obj.read(), is a 0x0 image (#139)", async () => {
+  for (const fixture of FONT_FIXTURES) {
+    const env = load([{ name: fixture, data: loadFixture(fixture) }]);
+    const textures = env.objects.filter((obj) => obj.type === ClassID.Texture2D);
+    assert.equal(textures.length, 1, fixture);
+    const input = textures[0]!.read<Texture2DData>();
+    assert.equal(input.m_Name, "Font Texture", fixture);
+    assert.equal(input.imageData.length, 0, fixture);
+    const out = await decodeTexture2D(input);
+    assert.deepEqual(out, { data: new Uint8Array(0), width: 0, height: 0 }, fixture);
+  }
+});
+
 wasmTest("a negative or non-integer size is a CorruptError, checked first", async () => {
   // A 12-byte m_PlatformBlob whose bytes 8-11 give log2 of the GOBs per block: 1.
   const blockLinear = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]);
