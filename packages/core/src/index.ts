@@ -38,3 +38,8 @@ export type { EditorExtension } from "./classes/EditorExtension.js";
 export { readNamedObject } from "./classes/NamedObject.js";
 export type { NamedObject } from "./classes/NamedObject.js";
 export type { ResourceRef } from "./env.js";
+export { readTexture } from "./classes/Texture.js";
+export type { Texture } from "./classes/Texture.js";
+export { readTexture2D } from "./classes/Texture2D.js";
+export type { GLTextureSettings, StreamingInfo, Texture2D } from "./classes/Texture2D.js";
+export { TextureFormat } from "./classes/TextureFormat.js";

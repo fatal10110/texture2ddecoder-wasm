@@ -3,9 +3,9 @@
 import { UnsupportedError } from "../errors.js";
 import { BuildTarget } from "../serialized/BuildTarget.js";
 import type { ObjectReader } from "../serialized/ObjectReader.js";
-import type { UnityVersion } from "../serialized/SerializedFile.js";
 import { readObject, type UnityObject } from "./Object.js";
 import { readPPtr, type PPtr } from "./PPtr.js";
+import { atLeast } from "./version.js";
 
 /**
  * The fields of an `EditorExtension` (upstream's base of every asset and
@@ -95,9 +95,4 @@ export function readEditorExtension(reader: ObjectReader): EditorExtension {
     reader.unityVersion,
     `object ${reader.pathId}: no known layout for an editor file's prefab pointers before 3.4`,
   );
-}
-
-/** Whether `version` is `major.minor` or later. */
-function atLeast([major, minor]: UnityVersion, wantMajor: number, wantMinor: number): boolean {
-  return major > wantMajor || (major === wantMajor && minor >= wantMinor);
 }

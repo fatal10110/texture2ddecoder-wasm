@@ -135,6 +135,7 @@ Each milestone = shippable npm prerelease. "Port" lists the AssetStudio files th
 - Split: class readers (`Texture2D`, `Texture`, `StreamingInfo`, `Sprite`, `SpriteAtlas`) and the resource resolver go to `packages/core`; everything that produces pixels goes to `packages/texture`.
 - Port: `Classes/Texture2D.cs`, `Texture.cs`, `StreamingInfo` + `ResourceReader.cs` (→ `env.ts`), `Texture2DConverter.cs` (plain formats in TS: Alpha8, RGB24, RGBA32, ARGB32, BGRA32, RGB565, ARGB/RGBA4444, R16, R/RG/RGBA Half+Float, RGB9e5, YUY2; block + Crunch → `texture2ddecoder-wasm`), platform swaps (Switch/XBOX360 byte-swap), vertical flip.
 - **Channel order:** `texture2ddecoder-wasm` and AssetStudio's converter both produce BGRA. Public output is RGBA (D5) → one in-place R/B swap after block decode (#32); plain-format converters write RGBA directly. Goldens are hashed post-swap.
+- **TextureFormat ids** follow Unity's own numbering (UnityCsReference `GraphicsEnums.cs`), not the Razviar fork's shifted `R16_Alt = 66`; decided on PR #113, recorded on #28.
 - Then: `Sprite.cs`, `SpriteAtlas.cs`, `SpriteHelper.cs` (crop, rotate/flip packing; tight-mesh mask = optional flag, polygon fill in TS).
 - Done when: RGBA output hash-equal to golden pixels for one fixture per format family; `examples/cdn.html` renders a texture from a bundle via jsDelivr with zero bundler, reader running in a Worker.
 
