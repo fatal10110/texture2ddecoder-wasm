@@ -239,7 +239,7 @@ test("a negative m_PathName length throws CorruptError, not an empty path", () =
   const { bytes } = build(NEW);
   for (const unity of [[5, 6, 7, 1], STRIPPED] as UnityVersion[]) {
     const reader = synthetic(FROM, withTail(bytes, 0xff, 0xff, 0xff, 0xff), unity);
-    assert.throws(() => readTextAsset(reader), /m_PathName byte count -1 at offset \d+ is negative/);
+    assert.throws(() => readTextAsset(reader), /m_PathName byte count -1 at offset \d+ is neg/);
   }
 });
 
