@@ -1,6 +1,6 @@
-# Contributing to texture2ddecoder-wasm
+# Contributing to unity-asset-reader
 
-Thank you for your interest in contributing to texture2ddecoder-wasm! This document provides guidelines and instructions for contributing to the project.
+Thank you for your interest in contributing to unity-asset-reader! This document provides guidelines and instructions for contributing to the project.
 
 ## Table of Contents
 
@@ -75,10 +75,10 @@ The build process has two main steps:
 npm run build:wasm
 ```
 
-From the repo root this delegates to `packages/texture2ddecoder-wasm` (npm workspaces). This command:
+From the repo root this delegates to `packages/decoder` (npm workspaces). This command:
 - Uses Docker with Emscripten SDK to compile C++ to WebAssembly; the image is pinned to
   `emscripten/emsdk:4.0.7` (the toolchain of the published 1.2.2) so every build is the same
-- Generates `packages/texture2ddecoder-wasm/wasm/texture2ddecoder.js` and `.wasm`
+- Generates `packages/decoder/wasm/texture2ddecoder.js` and `.wasm`
 - No local Emscripten installation needed
 
 ### Build TypeScript
@@ -87,7 +87,7 @@ From the repo root this delegates to `packages/texture2ddecoder-wasm` (npm works
 npm run build:rollup
 ```
 
-This bundles the TypeScript sources into `packages/texture2ddecoder-wasm/dist/`.
+This bundles the decoder's TypeScript sources into `packages/decoder/dist/`.
 
 ### Build Everything
 
@@ -105,7 +105,7 @@ npm test
 
 ### Test Structure
 
-Tests are located in `packages/texture2ddecoder-wasm/tests/`:
+The decoder's tests are located in `packages/decoder/tests/`:
 - `index.test.ts` - Unit tests for decoder functions
 - `samples.test.ts` - Integration tests with real texture samples
 
@@ -257,14 +257,15 @@ the jobs by changed paths; skipped jobs report success, so all of them can be re
 | Status check | Runs when | What |
 |---|---|---|
 | `reader (node 20)`, `reader (node 22)` | `packages/{core,texture,node}/**`, `fixtures/**`, `scripts/**`, root config | `npm ci && npm run verify` (build, test, `check:browser`, no-C# guard) |
-| `decoder` | `packages/texture2ddecoder-wasm/**`, lockfile | `build:wasm` (Docker), `build:rollup`, `npm test -w texture2ddecoder-wasm`; checks out submodules |
+| `decoder` | `packages/decoder/**`, lockfile | `build:wasm` (Docker), `build:rollup`, `npm test -w unity-asset-reader-decoder`; checks out submodules |
 
 Run the reader job locally with `npm ci && npm run verify`.
 
 ## Releases
 
-The reader packages version in lockstep; `texture2ddecoder-wasm` versions on its own. User-facing
-changes go under the `Unreleased` heading of their package line in [CHANGELOG.md](CHANGELOG.md).
+All four packages (`unity-asset-reader`, `-texture`, `-node` and `-decoder`) share one version and
+are released together. User-facing changes go under the `Unreleased` heading in
+[CHANGELOG.md](CHANGELOG.md), in their package's list.
 The publish procedure is in [RELEASING.md](RELEASING.md).
 
 ## Reporting Issues
@@ -296,11 +297,14 @@ For feature requests, describe:
 ## Project Structure
 
 ```
-texture2ddecoder-wasm/            # npm workspaces root (private)
+./                                # repo root: npm workspaces root (private)
 ├── package.json                  # workspaces: ["packages/*"]
 ├── docs/                         # plan, rules, GitHub Pages
 └── packages/
-    └── texture2ddecoder-wasm/    # the published decoder package
+    ├── core/                     # unity-asset-reader
+    ├── texture/                  # unity-asset-reader-texture
+    ├── node/                     # unity-asset-reader-node
+    └── decoder/                  # unity-asset-reader-decoder
         ├── src/                  # TypeScript source (index.ts)
         ├── tests/                # index.test.ts, samples.test.ts
         ├── scripts/              # build-wasm.sh, copy-wasm.js
@@ -333,5 +337,5 @@ The reader packages are hand-ported from AssetStudio and UnityPy (MIT); the root
 
 ---
 
-Thank you for contributing to texture2ddecoder-wasm! 🎉
+Thank you for contributing to unity-asset-reader! 🎉
 
