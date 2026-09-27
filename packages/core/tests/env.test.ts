@@ -466,6 +466,14 @@ test("a bundle's revision reaches its own nodes only, not a UnityWebData file's"
   );
 });
 
+test("a bundle nested directly in a bundle gives its nodes its own revision", () => {
+  const inner = buildBundle([{ path: "CAB-old", data: LEGACY }], "3.0.0f5");
+  const outer = buildBundle([{ path: "inner.bundle", data: inner }], "2.6.1f3");
+  const { objects } = load([{ name: "outer.bundle", data: outer }]);
+
+  assert.deepEqual(objects.map((o) => o.version), [[3, 0, 0, 5]]);
+});
+
 test("a SerializedFile of format 7 or later keeps its own version inside any bundle", () => {
   const node = load([{ name: SHARED, data: loadFixture(SHARED) }]).files[0]!.data;
   const own = readSerializedFile(node).version;
