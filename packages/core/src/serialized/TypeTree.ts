@@ -20,9 +20,12 @@ const COMMON_STRING_FLAG = 0x80000000;
  * with `level` one higher.
  */
 export interface TypeTreeNode {
-  /** Type name, e.g. `"int"`, `"string"`, `"PPtr<Object>"`. */
+  /**
+   * Type name, e.g. `"int"`, `"string"`, `"PPtr<Object>"`. Until #23, a name
+   * from Unity's common strings reads as its offset in them, e.g. `"49"`.
+   */
   type: string;
-  /** Field name, e.g. `"m_Name"`. */
+  /** Field name, e.g. `"m_Name"`; common strings read as offsets until #23. */
   name: string;
   /** Serialized size in bytes, -1 when variable. */
   byteSize: number;
@@ -182,11 +185,7 @@ function readTypeTreeLegacy(reader: BinaryReader, format: number): TypeTreeNode[
       refTypeHash: 0n,
     });
 
-    const children = reader.readInt32();
-    if (children < 0) {
-      throw new CorruptError(`type tree node "${name}" has ${children} children`);
-    }
-    pending.push(children);
+    pending.push(readCount(reader, `type tree node "${name}" child`));
   }
   return nodes;
 }
@@ -243,7 +242,8 @@ function readTypeTreeBlob(
  *
  * ponytail: a common-string reference resolves to upstream's fallback for an
  * unknown one, the offset as text, until the `CommonString` table is ported
- * (#23). Only node names are affected, and nothing reads them before #23.
+ * (#23). Real files use them for most node types and many names (`"Base"`,
+ * `"Array"`), and those are exported, so #23 has to land before a release.
  */
 function readBlobString(buffer: Uint8Array, value: number): string {
   if ((value & COMMON_STRING_FLAG) !== 0) return String(value & 0x7fffffff);
@@ -272,15 +272,24 @@ function readInt32Array(reader: BinaryReader): number[] {
 }
 
 /**
- * Read an `Int32` count and refuse a negative one, which upstream turns into
- * an empty list or an exception depending on where it is.
+ * Read an `Int32` count and refuse one that cannot be right: negative, which
+ * upstream turns into an empty list or an exception depending on where it is,
+ * or more than the bytes left, since every counted entry (and every byte of a
+ * byte count) takes at least one. The second check matters where an entry can
+ * read as empty at the end of the data, such as a format 2-4 external, which
+ * is a bare C string.
  *
  * @internal shared with `SerializedFile.ts`, not public API
- * @throws {CorruptError} when the count is negative or runs past the end
+ * @throws {CorruptError} when the count is negative or larger than what remains
  */
 export function readCount(reader: BinaryReader, what: string): number {
   const offset = reader.position;
   const value = reader.readInt32();
   if (value < 0) throw new CorruptError(`${what} count ${value} at offset ${offset} is negative`);
+  if (value > reader.remaining) {
+    throw new CorruptError(
+      `${what} count ${value} at offset ${offset} exceeds the ${reader.remaining} bytes left`,
+    );
+  }
   return value;
 }
