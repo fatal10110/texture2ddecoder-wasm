@@ -2,7 +2,7 @@
 // Ported from AssetStudio/Classes/Texture2D.cs (MIT, © Perfare / RazTools / Razviar)
 
 import type { ResourceRef } from "../env.js";
-import { ResourceNotFoundError } from "../errors.js";
+import { CorruptError, ResourceNotFoundError } from "../errors.js";
 import { ClassID } from "../serialized/ClassID.js";
 import type { ObjectReader } from "../serialized/ObjectReader.js";
 import { baseName } from "../serialized/SerializedFile.js";
@@ -16,10 +16,10 @@ import { readTexture2D, type Texture2D } from "./Texture2D.js";
 export interface Texture2DData extends Texture2D {
   /**
    * The image data, every mip level, still encoded in `m_TextureFormat`:
-   * `image data` when it is not empty, otherwise `size` bytes of the resource
-   * file `m_StreamData` names when its `path` is not empty, and otherwise
-   * `image data` (0 bytes). Either way a view, never a copy (R7), with the
-   * aliasing of the bytes it views.
+   * `image data` when it is not empty, and otherwise `size` bytes of the
+   * resource file `m_StreamData` names. When neither holds anything,
+   * `obj.read()` throws `CorruptError` instead. Either way a view, never a
+   * copy (R7), with the aliasing of the bytes it views.
    */
   imageData: Uint8Array;
 }
@@ -81,16 +81,27 @@ export function readObjectData(
  * `readTexture2D` with the image bytes resolved, as upstream's `Texture2D`
  * sets `image_data`: non-empty inline data wins, since upstream only reads
  * `m_StreamData` when the inline size is 0 (UnityPy agrees). Then a non-empty
- * `m_StreamData.path` is read, and otherwise the empty inline data is kept.
+ * `m_StreamData.path` is read.
+ *
+ * With neither, upstream hands back 0 bytes; UnityPy raises, and so does this
+ * (R9, decided on PR #118), rather than pass an empty image on as a texture.
+ *
+ * @throws {CorruptError} when the inline data is empty and `m_StreamData` is
+ *   missing or its `path` is empty
  */
 function readTexture2DData(
   reader: ObjectReader,
   resources: ResourceReader | undefined,
 ): Texture2DData {
   const texture = readTexture2D(reader);
+  const inline = texture["image data"];
+  if (inline.length > 0) return { ...texture, imageData: inline };
   const stream = texture.m_StreamData;
-  if (texture["image data"].length > 0 || !stream?.path) {
-    return { ...texture, imageData: texture["image data"] };
+  if (!stream?.path) {
+    throw new CorruptError(
+      `Texture2D ${reader.pathId} has no image data, neither inline nor in a .resS ` +
+        "(image data is empty and m_StreamData.path names no file)",
+    );
   }
   // A reader built outside `load()` has no files to look in.
   if (!resources) throw new ResourceNotFoundError(stream.path, baseName(stream.path));

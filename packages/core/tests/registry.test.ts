@@ -257,6 +257,36 @@ test("non-empty inline image data wins over a non-empty m_StreamData.path", () =
   assert.equal(sha256(data.imageData), want.imageSha256);
 });
 
+test("no image data, neither inline nor in a .resS, throws CorruptError (R9)", () => {
+  // Decided on PR #118, as UnityPy raises: the .resS-backed Texture2D with
+  // its m_StreamData.path emptied, so both sources are empty.
+  const name = "editor/6000.3.25f1/lz4/texture";
+  const node = loadName(name).files.find((f) => golden(name).serialized![f.path])!;
+  const sf = readSerializedFile(node.data);
+  assert.equal(sf.bigEndian, false);
+  const info = sf.objects.find((o) => o.classId === ClassID.Texture2D)!;
+  const object = node.data.subarray(info.byteStart, info.byteStart + info.byteSize);
+  const streamed = new ObjectReader(node.data, sf, info);
+  const { m_StreamData, "image data": inline } = readTexture2D(streamed);
+  assert.equal(inline.length, 0);
+  // The object ends with the path: an Int32 length, the bytes, padding to 4.
+  const pathBytes = 4 + Math.ceil(new TextEncoder().encode(m_StreamData!.path).length / 4) * 4;
+  const bytes = Uint8Array.from([...object.subarray(0, -pathBytes), 0, 0, 0, 0]);
+  const reader = new ObjectReader(bytes, sf, { ...info, byteStart: 0, byteSize: bytes.length });
+  const texture = readTexture2D(reader);
+  assert.equal(texture.m_StreamData?.path, "");
+  assert.equal(texture["image data"].length, 0);
+
+  assert.throws(
+    () => reader.read(),
+    (err: unknown) =>
+      err instanceof CorruptError &&
+      err.message ===
+        `Texture2D ${info.pathId} has no image data, neither inline nor in a .resS ` +
+          "(image data is empty and m_StreamData.path names no file)",
+  );
+});
+
 /**
  * A big-endian format-8 SerializedFile (Unity 3.x layout, the smallest that
  * records an editor version) whose one object, path id 1, is a Texture2D of
