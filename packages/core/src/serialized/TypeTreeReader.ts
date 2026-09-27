@@ -216,9 +216,13 @@ function readClass(walk: Walk, t: Tree, i: number): TypeTreeObject {
 function readArray(walk: Walk, t: Tree, arrayIndex: number, isMap: boolean): TypeTreeValue {
   const { reader } = walk;
   const sizeIndex = arrayIndex + 1;
-  const element = t.end[sizeIndex]!;
-  if (element >= t.end[arrayIndex]!) {
-    throw new CorruptError(`type tree Array "${t.nodes[arrayIndex]!.name}" has no element node`);
+  const arrayEnd = t.end[arrayIndex]!;
+  // Check the size child first: past the tree's last node, `t.end` has no entry.
+  const element = sizeIndex < arrayEnd ? t.end[sizeIndex]! : arrayEnd;
+  if (element >= arrayEnd) {
+    throw new CorruptError(
+      `type tree Array "${t.nodes[arrayIndex]!.name}" lacks its size or element node`,
+    );
   }
   const elementNode = t.nodes[element]!;
   // ponytail: refuses more elements than bytes left, which a vector of empty

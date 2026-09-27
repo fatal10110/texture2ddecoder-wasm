@@ -395,3 +395,29 @@ test("throws CorruptError when the data ends before the tree does", () => {
   const cut = bytes.subarray(0, bytes.length - 3);
   assert.throws(() => readerOver(cut, sf, reader).readTypeTree(), CorruptError);
 });
+
+test("throws CorruptError, not TypeError, when a tree ends in an Array with no children", () => {
+  const { sf, reader } = objectOf("editor/6000.3.25f1/lzma/shared", ClassID.TextAsset);
+  const at = (level: number, type: string, name: string): TypeTreeNode => ({
+    type,
+    name,
+    byteSize: -1,
+    index: 0,
+    typeFlags: 0,
+    version: 1,
+    metaFlag: 0,
+    level,
+    typeStrOffset: 0,
+    nameStrOffset: 0,
+    refTypeHash: 0n,
+  });
+  const info = sf.objects.find((o) => o.pathId === reader.pathId)!;
+  const nodes = [at(0, "Base", "Base"), at(1, "vector", "v"), at(2, "Array", "Array")];
+  const synthetic = new ObjectReader(new Uint8Array(8), sf, {
+    ...info,
+    byteStart: 0,
+    byteSize: 8,
+    serializedType: { ...info.serializedType!, nodes },
+  });
+  assert.throws(() => synthetic.readTypeTree(), CorruptError);
+});
