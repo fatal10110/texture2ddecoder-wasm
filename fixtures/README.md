@@ -97,6 +97,23 @@ and `stripped` (#41), built from generated source files
 2019.4.41f2's `stripped` bundles are format 21, the others' format 22. No
 fixture holds a MovieTexture (no fixture editor makes one with a movie).
 
+2019.4.41f2 (format 21) and 6000.3.25f1 (format 22) also have `sprite/sprites`
+(LZ4, #34): 22 Sprites and two Sprite Atlas V1 assets, with every source pixel
+saying where it is (R, G from x, y and B naming the image;
+[`BUILDING.md`](BUILDING.md) section 12):
+
+- four sprites cut from one inline 64x48 texture at rectangles off the origin,
+  with other pivots, a border, and one tight mesh
+- `tight`, a tight-mesh sprite on its own texture in the `.resS` node
+- `packed`, a tight-packed atlas whose packer flipped some sprites
+  (FlipHorizontal, FlipVertical, Rotate180) and trimmed one (`p_margin`:
+  `textureRect` off the pixel grid, `textureRectOffset` not 0)
+- `rect`, a rectangle-packed atlas
+
+Every texture is RGBA32. Neither editor's packer writes Rotate90, and no
+sprite has an alpha texture, secondary textures, bones or a variant atlas's
+downscale.
+
 NaN does not have one bit pattern everywhere, and that comes from Unity: every
 editor wrote `0xFFC00000` into the first variant it built (`lz4`) and
 `0x7FC00000` into the rest (see `BUILDING.md` section 4). The goldens record the
@@ -141,8 +158,8 @@ cover container shapes no current editor writes (legacy UnityWeb/UnityRaw,
 Not covered yet: UnityWeb/UnityRaw v4+ (UnityPy refuses to write them, so the
 hash/CRC and version-6 archive-layout paths are covered by hand-written bytes in
 `BundleFile.test.ts` instead), gzip/brotli around a `UnityWebData` file. The
-editor fixtures have the plain (#31) and block (#32) texture formats but no
-sprites yet; M3 adds the rest.
+editor fixtures cover the plain (#31) and block (#32) texture formats and
+sprites (#34).
 
 ## Oracle notes
 
@@ -297,6 +314,61 @@ sprites yet; M3 adds the rest.
   tree is still dumped. This library deliberately differs from the oracle
   here: `obj.read()` gives it an empty `imageData` and `decodeTexture2D` a 0x0
   image (maintainer decision on #139); AssetStudio also hands back 0 bytes.
+- Sprite goldens (`serialized.<file>.sprites`, #34) hash UnityPy's
+  `get_image_from_sprite`, which returns the top row first; `make-goldens.py`
+  flips it back, so, like the texture goldens, they hash rows as stored,
+  bottom row first, and the tests reverse `decodeSprite`'s rows. UnityPy
+  applies the sprite mesh to every sprite whose packing mode is Tight;
+  `decodeSprite` does that only with `tightMesh`. So `rgbaSha256` is UnityPy
+  with the packing mode forced to Rectangle (the crop and the undone flip,
+  nothing else), and `tightRgbaSha256` is UnityPy as it is. `rotations` turns
+  `sheet_b` every way a packer can, packed forced on, since no fixture
+  editor's packer writes Rotate90. Both oracles agree on every crop and on
+  FlipHorizontal, FlipVertical and Rotate180. Two cases carry the verdict:
+  - **Tight meshes** (`tightOracleNote`): the two oracles part in two ways.
+    - UnityPy copies the mesh's triangles out of the texture by their UVs
+      (`render_sprite_mesh`); AssetStudio cuts the rectangle and clears what
+      its triangles do not cover, filled by ImageSharp.Drawing without
+      antialiasing. They differ wherever the mesh is more than the sprite's
+      4-vertex rectangle.
+    - AssetStudio's DestOut blend clears the colour of every pixel whose
+      alpha is 0; UnityPy keeps it.
+
+    So the note is on every tight sprite whose mesh has more than 4 vertices
+    (13 per editor) or whose crop has a pixel of alpha 0 (none of today's
+    4-vertex ones). **Verdict: AssetStudio.**
+  - **Rotate90** (`rotations["4"].oracleNote`): UnityPy turns with PIL's
+    `ROTATE_270`, AssetStudio with ImageSharp's `Rotate(270)`, which turns the
+    other way. The two oracles are **not independent** here. UnityPy's
+    `export/SpriteHelper.py` keeps Perfare's
+    `RotateFlip(Rotate270FlipNone)` as a comment next to its
+    `Transpose.ROTATE_270`, so it is a mistranslation of the same System.Drawing
+    call, which turns as ImageSharp does. **Verdict: AssetStudio**, the
+    original's intent (maintainer decision on #34). The direction is
+    **unverified against Unity's packer**: no fixture editor's packer writes
+    Rotate90. #160 tracks settling it with a real Rotate90 sprite, whose mesh
+    UV0 against its positions gives the direction independently of both oracles.
+- <a id="assetstudio-sprite-cross-check"></a>**AssetStudio sprite cross-check
+  hashes** (`ASSETSTUDIO_RGBA` in `packages/texture/tests/sprite.test.ts`).
+  Cross-check values under plan §6, **not goldens**, for the golden entries
+  above that carry a note, and for three hand-made triangles (a quad, a
+  triangle with corners off the grid, and a 0.2-wide sliver, over a 16x16
+  texture holding every alpha value). Here is how they were made (#34):
+  - **Source:** `CutImage` and `GetTriangles` of
+    `AssetStudio.Utility/SpriteHelper.cs`, with `VertexData.GetStreams` and
+    `MeshHelper`'s vertex format sizes from `AssetStudio/Classes/Mesh.cs`
+    (Razviar/assetstudio `c37af7d`), copied with the sprite fields passed in
+    instead of read, against `SixLabors.ImageSharp.Drawing` 1.0.0-beta15, the
+    package `AssetStudio.Utility.csproj` references.
+  - **Input:** each sprite's texture as UnityPy decodes it (RGBA32, which both
+    decode the same), its atlas entry or `m_RD`, and its mesh, read with
+    UnityPy.
+  - **Build and run:** a .NET 8 console app on Windows x64, **outside the
+    repo** (R2).
+  - **Hashing:** the result flipped back to rows as stored, R and B swapped
+    once, then sha256 of the RGBA8. For every crop, flip and Rotate180, and
+    for the tight images of the 4-vertex meshes, the harness gives the UnityPy
+    golden exactly; both editors give the same image for the same sprite.
 
 ## Regenerating
 

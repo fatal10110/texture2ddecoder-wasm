@@ -12,9 +12,11 @@ Per fixture (keyed by its path under fixtures/bundles/):
                 read_typetree() dumps of the DUMPED_CLASSES objects  (M2);
                 plus, for a file holding a Texture2D, `textures`: the sha256 of
                 its image data and of UnityPy's RGBA decode, rows as stored  (#31);
-                and for a file holding an AudioClip, Font, VideoClip or
+                for a file holding an AudioClip, Font, VideoClip or
                 MovieTexture, `rawData`: the sha256 of the bytes each carries,
-                inline or read out of its resource file  (#41)
+                inline or read out of its resource file  (#41); and for a file
+                holding a Sprite, `sprites`: UnityPy's sprite image, rows as
+                stored, cropped only and with its mesh  (#34)
 Plus `synthetic`: UnityPy's RGBA for generated block data in the formats no
 editor on hand writes (ATC, signed EAC - #32); `platform`: the same for the
 console layouts no editor on hand builds (Switch swizzle, Xbox 360 byte swap),
@@ -42,10 +44,12 @@ import struct
 import sys
 import warnings
 
+from PIL.Image import Transpose
 import UnityPy
 from UnityPy import config
 from UnityPy.exceptions import UnityVersionFallbackWarning
-from UnityPy.enums import BuildTarget, TextureFormat
+from UnityPy.enums import BuildTarget, SpritePackingMode, SpritePackingRotation, TextureFormat
+from UnityPy.export import SpriteHelper
 from UnityPy.export.Texture2DConverter import get_image_from_texture2d, parse_image_data
 from UnityPy.helpers import TextureSwizzler
 from UnityPy.helpers.ResourceReader import get_resource_data
@@ -66,7 +70,8 @@ BYTE_TYPES = {"UInt8", "SInt8", "char"}
 # Classes whose read_typetree() output is part of the goldens (#25). AssetBundle
 # and AssetBundleManifest are the only map / pair / set in the fixtures (#84);
 # Mesh and Texture2D the only TypelessData, non-empty and empty (#86).
-# Material for its hardcoded reader (#40).
+# Material for its hardcoded reader (#40). Sprite and SpriteAtlas for theirs
+# (#34); only the #34 fixtures hold them, so no other golden changes.
 DUMPED_CLASSES = {
     21: "Material",
     28: "Texture2D",
@@ -75,7 +80,9 @@ DUMPED_CLASSES = {
     114: "MonoBehaviour",
     115: "MonoScript",  # for its hardcoded reader (#124)
     142: "AssetBundle",
+    213: "Sprite",
     290: "AssetBundleManifest",
+    687078895: "SpriteAtlas",
     # The classes whose bytes come out raw (#41). No fixture holds a
     # MovieTexture: no fixture editor can make one with movie data.
     83: "AudioClip",
@@ -97,6 +104,29 @@ REGISTRY_V1_TERMINUS = (
 )
 REGISTRY_V1_TERMINUS_TYPE = ("Terminus", "UnityEngine.DMAT", "FAKE_ASM")
 TEXTURE2D = 28
+SPRITE = 213
+# The fixture sprite whose crop is also turned every way a packer can turn it
+# (#34), since no editor packer here writes Rotate90; see sprite_golden().
+ROTATED_SPRITE = "sheet_b"
+# Where UnityPy's sprite image knowingly differs from AssetStudio's SpriteHelper,
+# the behavior source of truth (plan section 6). Established on the #34 fixtures
+# with AssetStudio's own CutImage (see fixtures/README.md, Oracle notes).
+SPRITE_TIGHT_NOTE = (
+    "Tight mesh: UnityPy copies the mesh's triangles out of the texture by their UVs "
+    "(render_sprite_mesh), AssetStudio cuts the rectangle and clears what its triangles "
+    "do not cover (ImageSharp.Drawing fill, no antialiasing); they differ wherever the "
+    "mesh is more than the sprite's rectangle. They also differ on every pixel of alpha "
+    "0: AssetStudio's DestOut blend clears its colour too, UnityPy keeps it. "
+    "Verdict: AssetStudio - see #34"
+)
+SPRITE_ROTATE90_NOTE = (
+    "Rotate90: UnityPy turns the crop with PIL's ROTATE_270, AssetStudio with ImageSharp's "
+    "Rotate(270), the other way round. Not independent oracles: UnityPy's SpriteHelper.py "
+    "keeps Perfare's System.Drawing Rotate270FlipNone as a comment beside ROTATE_270, a "
+    "mistranslation of that call, which turns as ImageSharp does. No fixture editor's "
+    "packer writes Rotate90, so the direction is unverified against Unity (#160). "
+    "Verdict: AssetStudio - see #34"
+)
 # TextureFormat -> where UnityPy's RGBA knowingly differs from AssetStudio's
 # converter, the behavior source of truth (plan section 6: the verdict is
 # recorded next to the golden). Established on the #31 fixture.
@@ -402,6 +432,14 @@ def serialized_golden(name: str, sf) -> dict:
         # Likewise: only files holding one of the RAW_DATA classes (#41).
         if raw:
             out["rawData"] = raw
+        sprites = {
+            str(obj.path_id): sprite_golden(obj)
+            for obj in sorted(sf.objects.values(), key=lambda o: str(o.path_id))
+            if obj.class_id == SPRITE
+        }
+        # Likewise only files holding a Sprite (#34).
+        if sprites:
+            out["sprites"] = sprites
     return out
 
 
@@ -470,6 +508,108 @@ def texture_golden(obj) -> dict:
     out["rgbaSha256"] = sha256(image.convert("RGBA").tobytes())
     if out["format"] in ORACLE_DISAGREES:
         out["oracleNote"] = ORACLE_DISAGREES[out["format"]]
+    return out
+
+
+class ForcedSpriteSettings(SpriteHelper.SpriteSettings):
+    """UnityPy's SpriteSettings, with fields overridden while `forced` is set.
+
+    Installed over `SpriteHelper.SpriteSettings`, which `get_image_from_sprite`
+    builds from the settingsRaw it looks up (in the atlas' render data, or the
+    sprite's own `m_RD`); `seen` records that raw value.
+    """
+
+    forced: dict = {}
+    seen: list = []
+
+    def __init__(self, settings_raw):
+        super().__init__(settings_raw)
+        ForcedSpriteSettings.seen.append(settings_raw)
+        for key, value in ForcedSpriteSettings.forced.items():
+            setattr(self, key, value)
+
+
+SpriteHelper.SpriteSettings = ForcedSpriteSettings
+
+
+def sprite_image(sprite, **forced) -> tuple[bytes, int, int, int]:
+    """UnityPy's image of a sprite, rows as stored (bottom row first), with the
+    settings in `forced` overriding the sprite's own; plus its settingsRaw.
+
+    `get_image_from_sprite` flips its result top row first, as `decodeSprite`
+    does; it is flipped back so that sprite goldens hash rows in the order
+    texture goldens do (#31).
+    """
+    ForcedSpriteSettings.forced = forced
+    ForcedSpriteSettings.seen = []
+    try:
+        image = SpriteHelper.get_image_from_sprite(sprite)
+    finally:
+        ForcedSpriteSettings.forced = {}
+    (raw,) = ForcedSpriteSettings.seen
+    stored = image.transpose(Transpose.FLIP_TOP_BOTTOM).convert("RGBA")
+    return stored.tobytes(), stored.width, stored.height, raw
+
+
+def sprite_golden(obj) -> dict:
+    """UnityPy's image of one Sprite, cut from its texture or atlas (#34).
+
+    `rgbaSha256` is the crop with the packing rotation undone and no mesh
+    applied: UnityPy with the packing mode forced to Rectangle, which is what
+    `decodeSprite` returns by default. `tightRgbaSha256`, for a sprite whose
+    packing mode is Tight, is UnityPy as it is, which applies the sprite's
+    mesh; `decodeSprite` does that only when asked (`tightMesh`). Both hash
+    rows as stored, bottom row first. For ROTATED_SPRITE, `rotations` holds
+    the crop turned each way a packer can turn it (packed forced on), by
+    SpritePackingRotation value.
+
+    `tightOracleNote` marks a tight image of a mesh that is more than the
+    sprite's 4-vertex rectangle, or of a crop with any pixel of alpha 0, and
+    `rotations["4"]` has an `oracleNote`:
+    there UnityPy and AssetStudio differ (SPRITE_TIGHT_NOTE,
+    SPRITE_ROTATE90_NOTE).
+    """
+    sprite = obj.read()
+    data, width, height, raw = sprite_image(sprite, packingMode=SpritePackingMode.kSPMRectangle)
+    out = {
+        "name": sprite.m_Name,
+        "settingsRaw": raw,
+        "width": width,
+        "height": height,
+        "rgbaSha256": sha256(data),
+    }
+    if (raw >> 1) & 1 == SpritePackingMode.kSPMTight:
+        try:
+            tight, width, height, _ = sprite_image(sprite)
+        except Exception as error:  # noqa: BLE001 - recorded, never guessed around
+            out["tightOracleError"] = f"{type(error).__name__}: {error}"
+        else:
+            out["tightWidth"] = width
+            out["tightHeight"] = height
+            out["tightRgbaSha256"] = sha256(tight)
+            # More than the rectangle's 4 vertices, or a pixel of alpha 0 in the
+            # crop: either way the two oracles part (SPRITE_TIGHT_NOTE).
+            transparent = any(data[i] == 0 for i in range(3, len(data), 4))
+            if sprite.m_RD.m_VertexData.m_VertexCount != 4 or transparent:
+                out["tightOracleNote"] = SPRITE_TIGHT_NOTE
+    if sprite.m_Name == ROTATED_SPRITE:
+        out["rotations"] = {}
+        for rotation in SpritePackingRotation:
+            if rotation == SpritePackingRotation.kSPRNone:
+                continue
+            turned, width, height, _ = sprite_image(
+                sprite,
+                packed=True,
+                packingMode=SpritePackingMode.kSPMRectangle,
+                packingRotation=rotation,
+            )
+            out["rotations"][str(int(rotation))] = {
+                "width": width,
+                "height": height,
+                "rgbaSha256": sha256(turned),
+            }
+            if rotation == SpritePackingRotation.kSPRRotate90:
+                out["rotations"][str(int(rotation))]["oracleNote"] = SPRITE_ROTATE90_NOTE
     return out
 
 

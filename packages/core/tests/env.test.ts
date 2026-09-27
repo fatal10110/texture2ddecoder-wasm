@@ -711,20 +711,24 @@ function streamedTexture(env: Env): StreamedTexture {
 for (const name of RESS_FIXTURES) {
   test(`readResource() reads ${name}'s image data out of its .resS as the golden hashes it`, () => {
     const env = load([{ name, data: loadFixture(name) }]);
-    const { texture, ref } = streamedTexture(env);
-    const expected = Object.values(golden(name).serialized ?? {})
-      .map((s) => s.textures?.[String(texture.pathId)])
-      .find((t) => t !== undefined);
-    assert.ok(expected, `${name} has no texture golden for ${texture.pathId}`);
-    assert.match(ref.path, /^archive:\/CAB-[0-9a-f]+\/CAB-[0-9a-f]+\.resS$/);
+    // The sprite fixtures (#34) hold several textures, one of them inline.
+    const streamed = streamedTextures(env).filter(({ ref }) => ref.path !== "");
+    assert.ok(streamed.length > 0, `${name} has no Texture2D in its .resS`);
+    for (const { texture, ref } of streamed) {
+      const expected = Object.values(golden(name).serialized ?? {})
+        .map((s) => s.textures?.[String(texture.pathId)])
+        .find((t) => t !== undefined);
+      assert.ok(expected, `${name} has no texture golden for ${texture.pathId}`);
+      assert.match(ref.path, /^archive:\/CAB-[0-9a-f]+\/CAB-[0-9a-f]+\.resS$/);
 
-    const data = env.readResource(ref, texture);
-    assert.equal(data.length, expected.imageSize);
-    assert.equal(sha256(data), expected.imageSha256);
+      const data = env.readResource(ref, texture);
+      assert.equal(data.length, expected.imageSize);
+      assert.equal(sha256(data), expected.imageSha256);
 
-    // A view into the unpacked node (R7), not a copy.
-    const ress = env.files.find((f) => f.path.endsWith(".resS"));
-    assert.equal(data.buffer, ress?.data.buffer);
+      // A view into the unpacked node (R7), not a copy.
+      const ress = env.files.find((f) => f.path.endsWith(".resS"));
+      assert.equal(data.buffer, ress?.data.buffer);
+    }
   });
 }
 

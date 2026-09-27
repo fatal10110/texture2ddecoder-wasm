@@ -70,6 +70,16 @@ function readField(reader: ObjectReader, [, type, name]: GoldenNode, want: unkno
   } else if (type === "vector" || type === "map") {
     actual = reader.readInt32();
     expected = (want as unknown[]).length;
+  } else if (type === "Rectf") {
+    // A Sprite's m_Rect (#34): four floats, which the golden holds by bit pattern.
+    const view = new DataView(new ArrayBuffer(4));
+    const bits = (value: number) => (view.setFloat32(0, value), view.getUint32(0));
+    actual = Object.fromEntries(
+      ["x", "y", "width", "height"].map((k) => {
+        const hex = bits(reader.readFloat32()).toString(16).padStart(8, "0");
+        return [k, `f32:${hex}`];
+      }),
+    );
   } else {
     assert.fail(`no reader for golden field ${type} ${name}`);
   }

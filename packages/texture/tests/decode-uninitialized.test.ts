@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { TextureFormat } from "unity-asset-reader";
+import { ClassID, load, TextureFormat } from "unity-asset-reader";
+import { loadFixture } from "../../../fixtures/helpers.js";
 import { decodeTexture2D } from "../src/decode.js";
+import { decodeSprite } from "../src/sprite.js";
 
 // Its own file, so its own process: nothing here has called initTexture().
 
@@ -27,3 +29,10 @@ for (const [name, format, size, imageData] of TEXTURES) {
     );
   });
 }
+
+test("decodeSprite before initTexture() says to call initTexture", async () => {
+  const name = "editor/6000.3.25f1/sprite/sprites";
+  const env = load([{ name, data: loadFixture(name) }]);
+  const sprite = env.objects.find((o) => o.type === ClassID.Sprite)!;
+  await assert.rejects(decodeSprite(sprite, env), /not initialized/);
+});

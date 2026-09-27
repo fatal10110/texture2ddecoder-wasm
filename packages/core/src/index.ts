@@ -70,3 +70,25 @@ export { readVideoClip } from "./classes/VideoClip.js";
 export type { StreamedResource, VideoClip, VideoClipData } from "./classes/VideoClip.js";
 export { readMovieTexture } from "./classes/MovieTexture.js";
 export type { MovieTexture } from "./classes/MovieTexture.js";
+export { readSprite, SpritePackingRotation } from "./classes/Sprite.js";
+export type {
+  AABB,
+  BlendShapeData,
+  BlendShapeVertex,
+  BoneWeights4,
+  ChannelInfo,
+  GUID,
+  Matrix4x4,
+  MeshBlendShape,
+  MeshBlendShapeChannel,
+  SecondarySpriteTexture,
+  Sprite,
+  SpriteBone,
+  SpriteRenderData,
+  SpriteVertex,
+  SubMesh,
+  Vector4,
+  VertexData,
+} from "./classes/Sprite.js";
+export { readSpriteAtlas } from "./classes/SpriteAtlas.js";
+export type { SpriteAtlas, SpriteAtlasData } from "./classes/SpriteAtlas.js";

@@ -65,6 +65,8 @@ export interface GoldenSerialized {
    * only files holding one of those have it (#41).
    */
   rawData?: Record<string, GoldenRawData>;
+  /** pathId -> Sprite golden; only files holding a Sprite have it (#34). */
+  sprites?: Record<string, GoldenSprite>;
 }
 
 /**
@@ -79,6 +81,34 @@ export interface GoldenRawData {
   source: string;
   size: number;
   sha256: string;
+}
+
+/**
+ * One Sprite as the oracle cuts it out of its texture or atlas (#34). Every
+ * hash is of RGBA8 rows as stored, bottom row first, like the texture
+ * goldens; UnityPy's own sprite image is top row first and is flipped back.
+ */
+export interface GoldenSprite {
+  name: string;
+  /** The packing flags the image was cut with: the atlas entry's, or `m_RD`'s. */
+  settingsRaw: number;
+  /** The rectangle with the packing rotation undone, no mesh applied. */
+  width: number;
+  height: number;
+  rgbaSha256: string;
+  /** Packing mode Tight only: UnityPy's image with the sprite mesh applied. */
+  tightWidth?: number;
+  tightHeight?: number;
+  tightRgbaSha256?: string;
+  /** Where UnityPy's tight image is known to differ from AssetStudio's, and the verdict. */
+  tightOracleNote?: string;
+  /** Why UnityPy could not apply the mesh, when it could not. */
+  tightOracleError?: string;
+  /** For one sprite: its rectangle turned each way a packer can, by `SpritePackingRotation`. */
+  rotations?: Record<
+    string,
+    { width: number; height: number; rgbaSha256: string; oracleNote?: string }
+  >;
 }
 
 /**

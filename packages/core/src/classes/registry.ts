@@ -14,6 +14,8 @@ import { readMaterial, type Material } from "./Material.js";
 import { readTexture2D, type Texture2D } from "./Texture2D.js";
 import { readMonoBehaviour, type MonoBehaviour } from "./MonoBehaviour.js";
 import { readMonoScript, type MonoScript } from "./MonoScript.js";
+import { readSprite, type Sprite } from "./Sprite.js";
+import { readSpriteAtlas, type SpriteAtlas } from "./SpriteAtlas.js";
 import { readTextAsset, type TextAsset } from "./TextAsset.js";
 import { readAudioClipData, type AudioClipData } from "./AudioClip.js";
 import { readFont, type Font } from "./Font.js";
@@ -80,6 +82,8 @@ export type ObjectData =
   | Font
   | VideoClipData
   | MovieTexture
+  | Sprite
+  | SpriteAtlas
   | TypeTreeObject;
 
 /**
@@ -108,6 +112,8 @@ const CLASS_READERS: ReadonlyMap<number, ClassReader> = new Map<number, ClassRea
   [ClassID.Font, readFont],
   [ClassID.VideoClip, readVideoClipData],
   [ClassID.MovieTexture, readMovieTexture],
+  [ClassID.Sprite, readSprite],
+  [ClassID.SpriteAtlas, readSpriteAtlas],
 ]);
 
 /**
