@@ -8,10 +8,10 @@ import { test } from "node:test";
 
 import {
   readMaterial,
-  type ColorRGBA,
+  type Color,
   type Material,
   type UnityTexEnv,
-  type Vector2f,
+  type Vector2,
 } from "../src/classes/Material.js";
 import type { PPtr } from "../src/classes/PPtr.js";
 import { CorruptError, UnsupportedError } from "../src/errors.js";
@@ -45,8 +45,8 @@ function f32(value: number): string {
   return `f32:${view.getUint32(0).toString(16).padStart(8, "0")}`;
 }
 
-const vector = ({ x, y }: Vector2f) => ({ x: f32(x), y: f32(y) });
-const color = ({ r, g, b, a }: ColorRGBA) => ({ r: f32(r), g: f32(g), b: f32(b), a: f32(a) });
+const vector = ({ x, y }: Vector2) => ({ x: f32(x), y: f32(y) });
+const color = ({ r, g, b, a }: Color) => ({ r: f32(r), g: f32(g), b: f32(b), a: f32(a) });
 
 /** A Material in the golden's form, keys in the order they come. */
 function toGolden(material: Material): unknown {
@@ -66,7 +66,7 @@ function toGolden(material: Material): unknown {
     } else if (key === "m_Floats") {
       sheet[key] = (pairs as [string, number][]).map(([name, v]) => [name, f32(v)]);
     } else if (key === "m_Colors") {
-      sheet[key] = (pairs as [string, ColorRGBA][]).map(([name, c]) => [name, color(c)]);
+      sheet[key] = (pairs as [string, Color][]).map(([name, c]) => [name, color(c)]);
     } else {
       sheet[key] = value;
     }

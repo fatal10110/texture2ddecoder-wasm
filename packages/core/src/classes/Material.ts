@@ -11,14 +11,17 @@ import { readPPtr, type PPtr } from "./PPtr.js";
 import { readStringField } from "./strings.js";
 import { atLeast } from "./version.js";
 
-/** Unity's `Vector2f`. */
-export interface Vector2f {
+/** A 2D vector (upstream's `Vector2`; `Vector2f` in Unity's type trees). */
+export interface Vector2 {
   x: number;
   y: number;
 }
 
-/** Unity's `ColorRGBA`: linear floats, not clamped to 0..1 (an HDR color exceeds 1). */
-export interface ColorRGBA {
+/**
+ * A color (upstream's `Color`; `ColorRGBA` in Unity's type trees): linear
+ * floats, not clamped to 0..1 (an HDR color exceeds 1).
+ */
+export interface Color {
   r: number;
   g: number;
   b: number;
@@ -30,8 +33,8 @@ export interface UnityTexEnv {
   /** The texture; a null pointer (`m_PathID` 0) when the slot is empty. */
   m_Texture: PPtr;
   /** Tiling. */
-  m_Scale: Vector2f;
-  m_Offset: Vector2f;
+  m_Scale: Vector2;
+  m_Offset: Vector2;
 }
 
 /**
@@ -44,7 +47,7 @@ export interface UnityPropertySheet {
   /** Unity 2021.1 and later: properties a shader declares as `Integer`. */
   m_Ints?: [string, number][];
   m_Floats: [string, number][];
-  m_Colors: [string, ColorRGBA][];
+  m_Colors: [string, Color][];
 }
 
 /** One entry of `m_BuildTextureStacks` (virtual texturing). */
@@ -265,7 +268,7 @@ function readPropertySheet(reader: ObjectReader, version: UnityVersion): UnityPr
   const out: Partial<UnityPropertySheet> = {};
   out.m_TexEnvs = readArray(reader, "m_TexEnvs", (r): [string, UnityTexEnv] => [
     readName(r, "m_TexEnvs"),
-    { m_Texture: readPPtr(r), m_Scale: readVector2f(r), m_Offset: readVector2f(r) },
+    { m_Texture: readPPtr(r), m_Scale: readVector2(r), m_Offset: readVector2(r) },
   ]);
   if (atLeast(version, 2021, 1)) {
     out.m_Ints = readArray(reader, "m_Ints", (r): [string, number] => [
@@ -277,7 +280,7 @@ function readPropertySheet(reader: ObjectReader, version: UnityVersion): UnityPr
     readName(r, "m_Floats"),
     r.readFloat32(),
   ]);
-  out.m_Colors = readArray(reader, "m_Colors", (r): [string, ColorRGBA] => [
+  out.m_Colors = readArray(reader, "m_Colors", (r): [string, Color] => [
     readName(r, "m_Colors"),
     { r: r.readFloat32(), g: r.readFloat32(), b: r.readFloat32(), a: r.readFloat32() },
   ]);
@@ -293,7 +296,7 @@ function readName(reader: ObjectReader, what: string): string {
   return readStringField(reader, "Material", `${what} name`);
 }
 
-function readVector2f(reader: ObjectReader): Vector2f {
+function readVector2(reader: ObjectReader): Vector2 {
   return { x: reader.readFloat32(), y: reader.readFloat32() };
 }
 

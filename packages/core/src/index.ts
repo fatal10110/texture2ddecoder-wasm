@@ -56,9 +56,9 @@ export type { MonoBehaviourData } from "./classes/registry.js";
 export { readMaterial } from "./classes/Material.js";
 export type {
   BuildTextureStackReference,
-  ColorRGBA,
+  Color,
   Material,
   UnityPropertySheet,
   UnityTexEnv,
-  Vector2f,
+  Vector2,
 } from "./classes/Material.js";
