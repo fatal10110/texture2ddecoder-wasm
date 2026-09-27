@@ -13,6 +13,7 @@ import {
   type GoldenTexture,
 } from "../../../fixtures/helpers.js";
 import type { Texture2DData } from "../src/classes/registry.js";
+import { textAssetString, type TextAsset } from "../src/classes/TextAsset.js";
 import { readTexture2D } from "../src/classes/Texture2D.js";
 import { load, type Env } from "../src/env.js";
 import { CorruptError, ResourceNotFoundError, UnsupportedError } from "../src/errors.js";
@@ -33,10 +34,15 @@ const TYPED = fixtureNames().filter((name) => {
   return files.length > 0 && files.every((sf) => sf.enableTypeTree);
 });
 const NO_TYPE_TREE = fixtureNames().filter((name) => name.includes("/lz4-notypetree/"));
-/** Classes with a hardcoded reader; `read()` of any other class goes through its type tree. */
+/**
+ * Classes whose `read()` never goes through the type tree. A MonoBehaviour's
+ * does when the file has one (#39), so it is not listed.
+ */
 const HARDCODED: ReadonlySet<number> = new Set([
   ClassID.Texture2D,
   ClassID.AssetBundle,
+  ClassID.TextAsset,
+  ClassID.MonoScript,
 ]);
 /** Whether a fixture holds an object of a class without a hardcoded reader. */
 const hasOthers = (name: string): boolean =>
@@ -140,6 +146,7 @@ test("a typed Texture2D is still read by the hardcoded reader, not its type tree
 
 for (const name of TYPED.filter(hasOthers)) {
   test(`${name}: read() of a class without a reader is the readTypeTree() result`, () => {
+    // A typed MonoBehaviour is among them: its read() is the whole type tree (#39).
     const others = loadName(name).objects.filter((o) => !HARDCODED.has(o.type));
     assert.ok(others.length > 0);
     for (const obj of others) assert.deepEqual(obj.read(), obj.readTypeTree(), `${obj.pathId}`);
@@ -156,8 +163,9 @@ test("read() of a TextAsset equals the oracle's dump", () => {
       .map((s) => s.typetrees[String(obj.pathId)])
       .find((d) => d !== undefined);
     assert.ok(dump, `${name}: no golden dump for ${obj.pathId}`);
-    // A TextAsset has only strings, which the §5 normalization leaves as they are.
-    assert.deepEqual(obj.read(), dump.value, name);
+    // The golden's m_Script is the string; read() gives the bytes (#39).
+    const data = obj.read<TextAsset>();
+    assert.deepEqual({ ...data, m_Script: textAssetString(data) }, dump.value, name);
   }
 });
 
@@ -165,7 +173,9 @@ test("read() of a TextAsset equals the oracle's dump", () => {
 
 for (const name of NO_TYPE_TREE.filter(hasOthers)) {
   test(`${name}: read() of a class without a reader or type tree throws UnsupportedError`, () => {
-    const others = loadName(name).objects.filter((o) => !HARDCODED.has(o.type));
+    const others = loadName(name).objects.filter(
+      (o) => !HARDCODED.has(o.type) && o.type !== ClassID.MonoBehaviour,
+    );
     assert.ok(others.length > 0);
     for (const obj of others) {
       assert.throws(

@@ -32,6 +32,8 @@ interface FixtureTexture {
 function fixtureTextures(): FixtureTexture[] {
   const out: FixtureTexture[] = [];
   for (const fixture of fixtureNames()) {
+    // Block and Crunch formats go through texture2ddecoder-wasm: decode.test.ts (#32).
+    if (fixture.includes("/block/")) continue;
     const serialized = Object.values(golden(fixture).serialized ?? {});
     if (!serialized.some((s) => s.textures)) continue;
     const env = load([{ name: fixture, data: loadFixture(fixture) }]);

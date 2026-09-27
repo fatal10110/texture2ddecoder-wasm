@@ -96,9 +96,25 @@ export interface Golden {
   oracleNote?: string;
 }
 
-const goldens: Record<string, Golden> = JSON.parse(
-  readFileSync(join(HERE, "goldens.json"), "utf8"),
-).fixtures;
+/**
+ * UnityPy's decode of generated block data, for a format no fixture editor
+ * writes (#32): `syntheticBytes(name, inputSize)` in, RGBA8 out.
+ */
+export interface GoldenSynthetic {
+  /** Unity's `TextureFormat` value. */
+  format: number;
+  width: number;
+  height: number;
+  inputSize: number;
+  inputSha256: string;
+  rgbaSha256: string;
+}
+
+const goldenFile: {
+  fixtures: Record<string, Golden>;
+  synthetic: Record<string, GoldenSynthetic>;
+} = JSON.parse(readFileSync(join(HERE, "goldens.json"), "utf8"));
+const goldens = goldenFile.fixtures;
 
 /** sha256 hex, the normalization the goldens use for byte arrays (plan §5). */
 export function sha256(data: Uint8Array): string {
@@ -122,6 +138,23 @@ export function golden(name: string): Golden {
   const g = goldens[name];
   if (!g) throw new Error(`no golden for fixture "${name}" - run scripts/make-goldens.py`);
   return g;
+}
+
+/** Every synthetic texture golden, by name (`"ATC_RGB4"`). */
+export function syntheticGoldens(): Record<string, GoldenSynthetic> {
+  return goldenFile.synthetic;
+}
+
+/**
+ * The input of a synthetic golden: `sha256("<name>/0") + sha256("<name>/1") + ...`,
+ * cut to `size` bytes, as `synthetic_bytes` in `scripts/make-goldens.py` makes it.
+ */
+export function syntheticBytes(name: string, size: number): Uint8Array {
+  const out = new Uint8Array(Math.ceil(size / 32) * 32);
+  for (let i = 0; i * 32 < size; i++) {
+    out.set(createHash("sha256").update(`${name}/${i}`).digest(), i * 32);
+  }
+  return out.subarray(0, size);
 }
 
 /**

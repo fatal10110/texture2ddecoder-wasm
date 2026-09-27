@@ -1,5 +1,6 @@
 // Ported from AssetStudio/AssetsManager.cs (MIT, © Perfare / RazTools / Razviar)
 // Ported from AssetStudio/Classes/Texture2D.cs (MIT, © Perfare / RazTools / Razviar)
+// Ported from AssetStudio/Classes/MonoBehaviour.cs (MIT, © Perfare / RazTools / Razviar)
 
 import type { ResourceRef } from "../env.js";
 import { CorruptError, ResourceNotFoundError } from "../errors.js";
@@ -9,6 +10,9 @@ import { baseName } from "../serialized/SerializedFile.js";
 import { readTypeTree, type TypeTreeObject } from "../serialized/TypeTreeReader.js";
 import { readAssetBundle, type AssetBundle } from "./AssetBundle.js";
 import { readTexture2D, type Texture2D } from "./Texture2D.js";
+import { readMonoBehaviour, type MonoBehaviour } from "./MonoBehaviour.js";
+import { readMonoScript, type MonoScript } from "./MonoScript.js";
+import { readTextAsset, type TextAsset } from "./TextAsset.js";
 
 /**
  * A `Texture2D` as `obj.read()` returns it: every field `readTexture2D` reads,
@@ -26,13 +30,32 @@ export interface Texture2DData extends Texture2D {
 }
 
 /**
+ * A `MonoBehaviour` as `obj.read()` returns it: the whole object as
+ * `readTypeTree()` reads it when the file has a type tree, and otherwise the
+ * header alone. The header fields have the same values and shapes either
+ * way; the script's own fields are there only with a type tree.
+ *
+ * In a player build the type tree starts with the header, in the same order.
+ * An editor file's (`BuildTarget.NoTarget`) type tree puts editor fields
+ * around it: `m_ObjectHideFlags` and the prefab pointers first,
+ * `m_EditorHideFlags` between `m_Enabled` and `m_Script`, and, from Unity 4.2,
+ * `m_EditorClassIdentifier` after `m_Name`. Such a file always has a type
+ * tree; the header reader alone refuses it.
+ */
+export type MonoBehaviourData = MonoBehaviour & { [field: string]: unknown };
+
+/**
  * What `obj.read()` returns: a hardcoded class reader's result for a class
- * that has one ({@link Texture2DData} for a `Texture2D`), and the
+ * that has one ({@link Texture2DData} for a `Texture2D`, `TextAsset`,
+ * `MonoScript`, {@link MonoBehaviourData} for a `MonoBehaviour`), and the
  * `readTypeTree()` result for any other class.
  */
 export type ObjectData =
   | Texture2DData
   | AssetBundle
+  | TextAsset
+  | MonoScript
+  | MonoBehaviourData
   | TypeTreeObject;
 
 /**
@@ -53,12 +76,19 @@ type ClassReader = (reader: ObjectReader, resources: ResourceReader | undefined)
 const CLASS_READERS: ReadonlyMap<number, ClassReader> = new Map<number, ClassReader>([
   [ClassID.Texture2D, readTexture2DData],
   [ClassID.AssetBundle, readAssetBundle],
+  [ClassID.TextAsset, readTextAsset],
+  [ClassID.MonoScript, readMonoScript],
+  [ClassID.MonoBehaviour, readMonoBehaviourData],
 ]);
 
 /**
  * Read an object with the hardcoded reader of its class when there is one,
  * as upstream always prefers it, and with its type tree otherwise. Internal:
  * callers use `obj.read()`.
+ *
+ * The one exception is a `MonoBehaviour` whose file has a type tree: its
+ * hardcoded reader reads only the header, so the type tree is read instead
+ * (see {@link MonoBehaviourData}).
  *
  * Upstream's switch falls back to the bare `Object` fields; the type tree
  * reads every field instead, and a file without one is refused (R9) rather
@@ -111,4 +141,24 @@ function readTexture2DData(
   // A reader built outside `load()` has no files to look in.
   if (!resources) throw new ResourceNotFoundError(stream.path, baseName(stream.path));
   return { ...texture, imageData: resources(stream, reader) };
+}
+
+/**
+ * The whole `MonoBehaviour` when there is a way to read it: its type tree,
+ * which starts with the header `readMonoBehaviour` reads and goes on through
+ * the script's fields. Without one, the header alone, which is all a file
+ * built without type trees gives up without the script's assembly (upstream
+ * reads the rest through Mono.Cecil, out of scope, plan §7).
+ *
+ * Unlike the other hardcoded readers, which read the whole object, the header
+ * reader stops where the script's fields start, so preferring it as upstream
+ * does would drop data the file holds.
+ */
+function readMonoBehaviourData(reader: ObjectReader): MonoBehaviourData {
+  const nodes = reader.serializedType?.nodes;
+  // The type tree holds the header under the same names: its first four fields
+  // in a player build, with editor fields around them in an editor file.
+  if (nodes && nodes.length > 0) return readTypeTree(reader) as MonoBehaviourData;
+  // An interface has no implicit index signature; the header has no other keys.
+  return readMonoBehaviour(reader) as MonoBehaviourData;
 }

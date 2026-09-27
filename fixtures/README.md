@@ -50,6 +50,21 @@ whose type tree carries a nested `ManagedReferencesRegistry` node
 each of the 17 plain formats the texture package converts in TS, pixels written
 by script and kept inline ([`BUILDING.md`](BUILDING.md) section 6).
 
+The block and Crunch formats (#32) are in three uncompressed bundles, one
+32x16 (PVRTC: 32x32) Texture2D per format with a full mip chain, compressed by
+the editor and kept inline ([`BUILDING.md`](BUILDING.md) sections 8 and 9):
+
+| Bundle | Target | Formats |
+|---|---|---|
+| `6000.3.25f1/block/windows` | StandaloneWindows64 | DXT1, DXT5, BC4, BC5, BC6H, BC7, DXT1Crunched, DXT5Crunched |
+| `6000.3.25f1/block/android` | Android | ETC_RGB4, ETC2_RGB, ETC2_RGBA1, ETC2_RGBA8, EAC_R, EAC_RG, ETC_RGB4Crunched, ETC2_RGBA8Crunched, ASTC 4x4/5x5/6x6/8x8/10x10/12x12, ASTC_HDR_4x4, ASTC_HDR_12x12 |
+| `2019.4.41f2/block/ios` | iOS | PVRTC_RGB2, PVRTC_RGBA2, PVRTC_RGB4, PVRTC_RGBA4 |
+
+Unity 6 no longer compresses PVRTC, hence the 2019.4 bundle. No fixture editor
+writes ATC (its `TextureFormat` no longer has it) or signed EAC (the editor
+refuses it), and every one of them writes Unity's own Crunch (2017.3+), not the
+original: those are covered without a fixture (see Oracle notes).
+
 6000.3.25f1 and 2020.3.30f1 also have `stripped/lz4` and `stripped/uncompressed`
 (#104): the `hello.txt` TextAsset built with `AssetBundleStripUnityVersion`, so
 the bundle header and the SerializedFile both record `"0.0.0"` as the editor.
@@ -101,8 +116,8 @@ cover container shapes no current editor writes (legacy UnityWeb/UnityRaw,
 Not covered yet: UnityWeb/UnityRaw v4+ (UnityPy refuses to write them, so the
 hash/CRC and version-6 archive-layout paths are covered by hand-written bytes in
 `BundleFile.test.ts` instead), gzip/brotli around a `UnityWebData` file. The
-editor fixtures have the plain texture formats (#31) but no block-compressed
-texture and no sprites yet; M3 adds the rest.
+editor fixtures have the plain (#31) and block (#32) texture formats but no
+sprites yet; M3 adds the rest.
 
 ## Oracle notes
 
@@ -153,6 +168,40 @@ texture and no sprites yet; M3 adds the rest.
   widens a 5/6-bit channel as `floor(x * 255 / max)` and AssetStudio repeats its
   top bits (`(x << 3) | (x >> 2)`), up to 1 higher. The tests prove everything
   else about those two against the UnityPy golden.
+- UnityPy decodes the ETC, EAC, PVRTC, ATC and Crunch formats with the Python
+  `texture2ddecoder`, but BCn with Pillow and ASTC with `astc-encoder`, while
+  AssetStudio (and this library) use Texture2DDecoder for all of them. Four
+  families of the #32 fixtures come out differently and carry `oracleNote`
+  with the verdict, AssetStudio: **BC4** (UnityPy grayscale, AssetStudio red
+  only), **BC6H** and **ASTC** (channels up to 1 apart), and **ASTC HDR**
+  (UnityPy's LDR `astc-encoder` gives its magenta error colour for every
+  block). The tests check those against AssetStudio's hashes below; BC4 also
+  against the golden, through the one-to-one red to grayscale map.
+- **Synthetic goldens** (`synthetic` in `goldens.json`, #32). ATC and signed EAC
+  have no fixture, so `make-goldens.py` hands UnityPy's `parse_image_data`
+  generated block data instead: `sha256("<name>/0") + sha256("<name>/1") + ...`
+  cut to the size of a 16x8 image (`syntheticBytes` in `helpers.ts` makes the
+  same bytes, and the golden records their hash). Any bytes are valid ATC and
+  EAC blocks. AssetStudio's decoder (below) gives the same four RGBA hashes.
+- <a id="assetstudio-block-cross-check"></a>**AssetStudio block cross-check
+  hashes** (`ASSETSTUDIO_RGBA` in `packages/texture/tests/decode.test.ts`).
+  Cross-check values under plan §6, **not goldens**, for the 10 block textures
+  above whose golden carries `oracleNote`, and for the original-Crunch path,
+  which no fixture editor writes. Here is how they were made (#32):
+  - **Source:** the block and Crunch branch of `DecodeTexture2D` and
+    `UnpackCrunch` in `AssetStudio.Utility/Texture2DConverter.cs`
+    (Razviar/assetstudio `c37af7d`), calling the decoder packages its
+    `AssetStudio.Utility.csproj` references there: `Kyaru.Texture2DDecoder`
+    0.17.0 and `Kyaru.Texture2DDecoder.Windows` 0.1.0.
+  - **Build and run:** a .NET 8 console app on Windows x64, **outside the
+    repo** (R2), over each texture's image data as UnityPy's
+    `get_image_data()` extracts it, and over the synthetic inputs.
+  - **Original Crunch:** the DXT1Crunched and DXT5Crunched image data again,
+    with the Unity version given as 2017.1, so `UnpackCrunch` runs instead of
+    `UnpackUnityCrunch` (the `legacy` entries).
+  - **Hashing:** R and B swapped once, then sha256 of the RGBA8, rows as
+    stored. For the 18 block textures without `oracleNote` the harness gives
+    the UnityPy golden exactly.
 - UnityPy refuses a bundle whose revision is `"0.0.0"` (version-stripped)
   unless `config.FALLBACK_UNITY_VERSION` is set, and with an editor before
   2020.3.34 as the fallback it reads a 6000.3.25f1 bundle's 0x200 as encryption.
