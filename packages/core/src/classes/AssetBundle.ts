@@ -7,6 +7,7 @@ import type { UnityVersion } from "../serialized/SerializedFile.js";
 import { readCount } from "../serialized/TypeTree.js";
 import { readNamedObject, type NamedObject } from "./NamedObject.js";
 import { readPPtr, type PPtr } from "./PPtr.js";
+import { readStringField } from "./strings.js";
 import { atLeast } from "./version.js";
 
 /**
@@ -119,7 +120,7 @@ export function readAssetBundle(reader: ObjectReader): AssetBundle {
   const out: Partial<AssetBundle> & NamedObject = readNamedObject(reader);
   out.m_PreloadTable = readArray(reader, "m_PreloadTable", readPPtr);
   out.m_Container = readArray(reader, "m_Container", (r): [string, AssetInfo] => [
-    readString(r, "m_Container path"),
+    readStringField(r, "AssetBundle", "m_Container path"),
     readAssetInfo(r),
   ]);
   out.m_MainAsset = readAssetInfo(reader);
@@ -140,9 +141,9 @@ function readTail(reader: ObjectReader, version: UnityVersion, out: Partial<Asse
   if (!atLeast(version, 5, 0)) {
     // 3.4 to 4.x; 5.0 dropped both compatibility lists.
     out.m_ScriptCompatibility = readArray(reader, "m_ScriptCompatibility", (r) => ({
-      className: readString(r, "m_ScriptCompatibility className"),
-      nameSpace: readString(r, "m_ScriptCompatibility nameSpace"),
-      assemblyName: readString(r, "m_ScriptCompatibility assemblyName"),
+      className: readStringField(r, "AssetBundle", "m_ScriptCompatibility className"),
+      nameSpace: readStringField(r, "AssetBundle", "m_ScriptCompatibility nameSpace"),
+      assemblyName: readStringField(r, "AssetBundle", "m_ScriptCompatibility assemblyName"),
       hash: r.readUInt32(),
     }));
     if (atLeast(version, 3, 5)) {
@@ -201,9 +202,9 @@ function readUnversionedTail(reader: ObjectReader, out: Partial<AssetBundle>): v
 /** 5.0+: `m_RuntimeCompatibility` to `m_IsStreamedSceneAssetBundle` and its padding. */
 function readV5Fields(reader: ObjectReader, out: Partial<AssetBundle>): void {
   out.m_RuntimeCompatibility = reader.readUInt32();
-  out.m_AssetBundleName = readString(reader, "m_AssetBundleName");
+  out.m_AssetBundleName = readStringField(reader, "AssetBundle", "m_AssetBundleName");
   out.m_Dependencies = readArray(reader, "m_Dependencies", (r) =>
-    readString(r, "m_Dependencies name"),
+    readStringField(r, "AssetBundle", "m_Dependencies name"),
   );
   out.m_IsStreamedSceneAssetBundle = reader.readUInt8() !== 0;
   reader.align();
@@ -214,8 +215,8 @@ function readV2017_3Fields(reader: ObjectReader, out: Partial<AssetBundle>): voi
   out.m_ExplicitDataLayout = reader.readInt32();
   out.m_PathFlags = reader.readInt32();
   out.m_SceneHashes = readArray(reader, "m_SceneHashes", (r): [string, string] => [
-    readString(r, "m_SceneHashes path"),
-    readString(r, "m_SceneHashes hash"),
+    readStringField(r, "AssetBundle", "m_SceneHashes path"),
+    readStringField(r, "AssetBundle", "m_SceneHashes hash"),
   ]);
 }
 
@@ -250,15 +251,4 @@ function readClassVersion(reader: ObjectReader): [number, number] {
 /** A `pair<int, int>`: 5.4's class id and class version. */
 function readIntPair(reader: ObjectReader): [number, number] {
   return [reader.readInt32(), reader.readInt32()];
-}
-
-/**
- * Unity's aligned string, with a length that is negative or runs past the
- * object's end refused: `readAlignedString` would read those as `""` and
- * carry on inside the string's bytes.
- */
-function readString(reader: ObjectReader, what: string): string {
-  const text = reader.readString(readCount(reader, `AssetBundle ${reader.pathId} ${what} byte`));
-  reader.align();
-  return text;
 }
