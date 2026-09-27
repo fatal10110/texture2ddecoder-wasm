@@ -25,6 +25,16 @@ import {
 const MAX_DEPTH = 16;
 
 /**
+ * The editor version a build with `AssetBundleStripUnityVersion` writes, in
+ * the SerializedFile and in the bundle header alike (upstream
+ * `IsVersionStripped`).
+ *
+ * A copy of `SerializedFile.ts`'s private `STRIPPED_VERSION`: export that one
+ * and drop this copy the next time that file changes (after #102).
+ */
+const STRIPPED_VERSION = "0.0.0";
+
+/**
  * The types a file inside a container may be opened as: the ones Unity writes
  * a signature for. Everything else detection decides by a magic number.
  */
@@ -77,7 +87,13 @@ export interface Env {
    *
    * A SerializedFile below format 7 does not record the editor that wrote it;
    * when it is a node of a bundle, its objects' `version` is the bundle's
-   * `unityRevision`, as upstream does, and `[0, 0, 0, 0]` otherwise.
+   * `unityRevision`, as upstream does, and `[0, 0, 0, 0]` otherwise. A
+   * SerializedFile whose version was stripped at build time (`"0.0.0"`) takes
+   * the `unityRevision` of the bundle it is a node of, too, and keeps
+   * `[0, 0, 0, 0]` when there is none - editors write `"0.0.0"` in the header
+   * of a stripped bundle as well. Its objects stay readable; a class reader
+   * that branches on `version` has to refuse `[0, 0, 0, 0]` with
+   * `UnsupportedError` rather than guess.
    *
    * The SerializedFiles are parsed on the first access of this or of
    * {@link resolve}, not by {@link load}, so a file this library cannot parse
@@ -246,6 +262,14 @@ function indexSerializedFiles(candidates: readonly SerializedCandidate[]): EnvIn
  * copies the version (upstream `LoadAssetsFromMemory`). Anywhere else it keeps
  * `[0, 0, 0, 0]`, as upstream's loose and `UnityWebData` paths do.
  *
+ * A version-stripped file (upstream `CheckStrippedVersion`) takes the revision
+ * of the bundle it is a node of too. Upstream takes the first bundle revision
+ * its whole load saw instead; the enclosing bundle is UnityPy's fallback, which
+ * names the build that wrote this file rather than whichever input came first.
+ *
+ * When that revision is missing, empty or stripped too, the file keeps
+ * `[0, 0, 0, 0]`.
+ *
  * @param revision `unityRevision` of the bundle the file is a node of
  * @throws {CorruptError} when the object table lists a path id twice. Unity
  *   never writes that, and either choice of object would leave a pointer to
@@ -258,7 +282,17 @@ function readEntry(
 ): SerializedFileEntry {
   const file = readSerializedFile(data);
   // An empty revision names nothing; upstream checks `IsNullOrEmpty`.
-  if (revision && file.header.version < V.Unknown_7) setUnityVersion(file, revision);
+  // `setUnityVersion` skips a revision that is itself stripped.
+  const stripped = file.unityVersion === STRIPPED_VERSION;
+  if (revision && (file.header.version < V.Unknown_7 || stripped)) {
+    setUnityVersion(file, revision);
+  }
+  // ponytail: a stripped file with no usable revision keeps `[0, 0, 0, 0]`,
+  // like AssetStudio does for the `"0.0.0"` header editors write (UnityPy
+  // raises earlier, in `BundleFile.parse_version`). Typetree reads do not need
+  // the version, so its objects stay readable; a version-gated class reader
+  // must refuse `[0, 0, 0, 0]` with `UnsupportedError` itself (decided on PR
+  // #107). A caller-supplied version (#105) is the upgrade path.
   const objects = new Map<bigint, ObjectReader>();
   for (const info of file.objects) {
     if (objects.has(info.pathId)) {

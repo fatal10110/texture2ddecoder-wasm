@@ -485,6 +485,141 @@ test("a SerializedFile of format 7 or later keeps its own version inside any bun
   for (const object of objects) assert.deepEqual(object.version, own);
 });
 
+// --- version-stripped: the enclosing bundle's revision -----------------------
+
+/**
+ * A format-8 SerializedFile (Unity 3.x) naming `unityVersion` as its editor:
+ * the format-6 layout plus the version string and the target platform, and
+ * `bigIDEnabled` before the object table (formats 7 to 13). Format 8 is the
+ * smallest layout that records an editor; the fallback does not depend on the
+ * format, so the `"0.0.0"` that `AssetBundleStripUnityVersion` writes goes in
+ * here rather than into an editor-built file.
+ */
+function format8SerializedFile(unityVersion: string): Uint8Array {
+  const metadata = new Writer()
+    .u8(1) // endianess: big
+    .cstring(unityVersion)
+    .u32be(19) // m_TargetPlatform: StandaloneWindows64
+    .u32be(0) // types
+    .u32be(0) // bigIDEnabled
+    .u32be(1) // objects
+    .u32be(1) // m_PathID
+    .u32be(0) // byteStart, relative to m_DataOffset
+    .u32be(4) // byteSize
+    .u32be(ClassID.TextAsset) // typeID
+    .u16be(ClassID.TextAsset) // classID
+    .u16be(0) // isDestroyed
+    .u32be(0) // externals
+    .cstring("") // userInformation
+    .done();
+  const dataOffset = 16;
+  return new Writer()
+    .u32be(metadata.length)
+    .u32be(dataOffset + 4 + metadata.length)
+    .u32be(8) // m_Version
+    .u32be(dataOffset)
+    .raw(payload(4))
+    .raw(metadata)
+    .done();
+}
+
+const STRIPPED = format8SerializedFile("0.0.0");
+
+test("the hand-written format-8 SerializedFile parses with its version stripped", () => {
+  const sf = readSerializedFile(STRIPPED);
+  assert.equal(sf.header.version, 8);
+  assert.equal(sf.unityVersion, "0.0.0");
+  assert.deepEqual(sf.version, [0, 0, 0, 0]);
+  assert.deepEqual(
+    sf.objects.map((o) => [o.pathId, o.classId, o.byteStart, o.byteSize]),
+    [[1n, ClassID.TextAsset, 16, 4]],
+  );
+  // The same builder with a real version keeps it, so nothing below is an
+  // artefact of the layout.
+  assert.deepEqual(readSerializedFile(format8SerializedFile("3.4.2f3")).version, [3, 4, 2, 3]);
+});
+
+test("an object of a version-stripped file in a bundle reports the bundle's unityRevision", () => {
+  const bundle = buildBundle([{ path: "CAB-stripped", data: STRIPPED }], "2017.4.40f1");
+  const { objects } = load([{ name: "stripped.bundle", data: bundle }]);
+
+  assert.deepEqual(
+    objects.map((o) => [o.pathId, o.format, o.version]),
+    [[1n, 8, [2017, 4, 40, 1]]],
+  );
+});
+
+test("a version-stripped file takes its own bundle's revision, not the first one loaded", () => {
+  // Upstream's fallback is the first bundle revision the load saw, which
+  // would give the second bundle's file 2017.4.40f1; UnityPy's, ported here,
+  // is the bundle the file is a node of.
+  const first = buildBundle([{ path: "CAB-first", data: STRIPPED }], "2017.4.40f1");
+  const second = buildBundle([{ path: "CAB-second", data: STRIPPED }], "2018.4.36f1");
+  const { objects } = load([
+    { name: "first.bundle", data: first },
+    { name: "second.bundle", data: second },
+  ]);
+
+  assert.deepEqual(
+    objects.map((o) => o.version),
+    [
+      [2017, 4, 40, 1],
+      [2018, 4, 36, 1],
+    ],
+  );
+});
+
+/** Objects as `[pathId, format, version]`, which is what the fallback changes. */
+const versions = (objects: ObjectReader[]): unknown[] =>
+  objects.map((o) => [o.pathId, o.format, o.version]);
+
+test("a version-stripped input keeps [0, 0, 0, 0] and stays readable", () => {
+  // The ponytail in env.ts: nothing names the editor, so the version stays
+  // unknown instead of the whole load throwing; a version-gated class reader
+  // refuses [0, 0, 0, 0] itself (decided on PR #107).
+  const env = load([{ name: "CAB-stripped", data: STRIPPED }]);
+  assert.deepEqual(env.files, [{ path: "CAB-stripped", data: STRIPPED }]);
+
+  assert.deepEqual(versions(env.objects), [[1n, 8, [0, 0, 0, 0]]]);
+  const object = env.objects[0]!;
+  assert.deepEqual(env.resolve({ m_FileID: 0, m_PathID: 1n }, object), {
+    status: "found",
+    object,
+  });
+});
+
+test("a version-stripped SerializedFile in a UnityWebData file keeps [0, 0, 0, 0]", () => {
+  // UnityWebData records no revision, and a bundle's does not reach through
+  // one (as for format < 7), so there is nothing to fall back to.
+  const web = buildWebData([{ path: "CAB-stripped", data: STRIPPED }]);
+  const outer = buildBundle([{ path: "web.data", data: web }], "2017.4.40f1");
+  const env = load([{ name: "outer.bundle", data: outer }]);
+  assert.deepEqual(env.files, [{ path: "CAB-stripped", data: STRIPPED }]);
+
+  assert.deepEqual(versions(env.objects), [[1n, 8, [0, 0, 0, 0]]]);
+});
+
+for (const revision of ["0.0.0", ""]) {
+  const shown = JSON.stringify(revision);
+  test(`a version-stripped file in a bundle whose revision is ${shown} keeps [0, 0, 0, 0]`, () => {
+    // 2019.4.41f2, 2020.3.30f1 and 6000.3.25f1 all write "0.0.0" in the bundle
+    // header of a stripped build too, so this is what a real one looks like.
+    // Another bundle in the same load names a different build: it lends the
+    // stripped file nothing, and keeps its own version and its objects.
+    const bundle = buildBundle([{ path: "CAB-stripped", data: STRIPPED }], revision);
+    const env = load([
+      { name: "real.bundle", data: buildBundle([{ path: "CAB-real", data: LEGACY }], "2.6.1f3") },
+      { name: "stripped.bundle", data: bundle },
+    ]);
+    assert.equal(env.files.length, 2);
+
+    assert.deepEqual(versions(env.objects), [
+      [1n, 6, [2, 6, 1, 3]],
+      [1n, 8, [0, 0, 0, 0]],
+    ]);
+  });
+}
+
 // --- refusals ----------------------------------------------------------------
 
 test("refuses a type this library cannot open, naming the input", () => {
