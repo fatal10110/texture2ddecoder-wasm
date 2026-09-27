@@ -195,11 +195,21 @@ sprites yet; M3 adds the rest.
     (`flip=False` and `flip=True`), which also proves `reverseRows` is UnityPy's
     flip.
   - The DXT inputs have every BC1 colour block in 4-colour mode (c0 > c1,
-    `four_color` / `fourColor`). On c0 <= c1 UnityPy's Pillow and
-    Texture2DDecoder disagree (transparent vs opaque black in BC1, 3- vs
-    4-colour mode in DXT5). Unity's own DXT data never had that in the #32
-    fixtures, while random bytes do. With 4-colour blocks the two agree on every
-    pixel.
+    `four_color` / `fourColor`). On a c0 <= c1 block the decoders part ways:
+    this library's Texture2DDecoder, AssetStudio's (Kyaru 0.17.0) and K0lb3's
+    `texture2ddecoder` 1.0.6 all give the same pixels, and only UnityPy's
+    Pillow differs (checked by hand on #131). The verdicts:
+    - **DXT1, index 3: AssetStudio**, opaque black. Pillow gives transparent
+      black (D3D BC1 semantics), but Unity's DXT1 has no alpha.
+    - **DXT5, colour half: a known decoder defect**, tracked in #137. The spec
+      (`EXT_texture_compression_s3tc`, D3D BC3) decodes DXT3/DXT5 colour as
+      though c0 > c1 always, as Pillow does. Texture2DDecoder, here and
+      upstream, switches to 3-colour mode instead. The fix belongs in
+      `texture2ddecoder-wasm` (R13), so the generated inputs avoid such blocks
+      rather than pin either result.
+    The #32 fixtures have no c0 <= c1 block (0 of 32 blocks each in DXT1,
+    DXT5 and their Crunch forms, one editor), while random bytes hit it often.
+    With 4-colour blocks every decoder agrees on every pixel.
   - `deswizzle`: UnityPy's `TextureSwizzler.deswizzle` alone, one case for each
     texel shape of its format map (16x1 to 12x12), with the padded size.
   - Xbox 360 ARGB4444 and RGB565 have no UnityPy golden. UnityPy does not swap

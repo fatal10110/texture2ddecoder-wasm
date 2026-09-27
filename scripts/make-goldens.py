@@ -135,14 +135,19 @@ SYNTHETIC = [
 # multiples of the Switch padding, so the crop back to the texture's size runs.
 #
 # BC1 colour blocks (DXT1, and the colour half of DXT5) whose c0 <= c1 are where
-# UnityPy's Pillow and AssetStudio's Texture2DDecoder part ways: Pillow gives
-# BC1 index 3 transparent black and decodes DXT5 in 4-colour mode always, while
-# Texture2DDecoder gives opaque black and 3-colour mode. Real DXT data from the
-# fixtures never hits that (#32), random bytes do. So the DXT inputs get every
-# colour block's c0 > c1, by setting the top bit of c0's high byte and clearing
-# c1's (`four_color`, mirrored by `fourColor` in the texture tests): each entry
-# is (block stride, index of c0's high byte, index of c1's), as stored, so
-# swapped for Xbox 360. With that, both decoders agree on every pixel.
+# UnityPy's Pillow parts ways with Texture2DDecoder (this library's, and
+# AssetStudio's and K0lb3's, which agree with it). Verdicts (#131):
+#   DXT1 index 3: AssetStudio, opaque black. Pillow gives transparent black,
+#     but Unity's DXT1 has no alpha.
+#   DXT5 colour: Pillow is right. The spec decodes it as though c0 > c1
+#     always, and Texture2DDecoder's 3-colour mode is a known defect, to be
+#     fixed in texture2ddecoder-wasm (#137), not pinned here.
+# The fixtures' DXT data has no such block (#32), random bytes do. So the DXT
+# inputs get every colour block's c0 > c1, by setting the top bit of c0's high
+# byte and clearing c1's (`four_color`, mirrored by `fourColor` in the texture
+# tests): each entry is (block stride, index of c0's high byte, index of c1's),
+# as stored, so swapped for Xbox 360. With that, every decoder agrees on every
+# pixel.
 PLATFORM = [
     # name, BuildTarget, TextureFormat, width, height, log2 of Switch GOBs per block, four_color
     ("Switch RGBA32", BuildTarget.Switch, 4, 20, 10, 1, None),
