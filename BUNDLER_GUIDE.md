@@ -157,10 +157,25 @@ described in [CDN, no bundler](#cdn-no-bundler):
 ```js
 // public/texture-worker.js: served as is, never bundled
 const CDN = "https://cdn.jsdelivr.net/npm";
-const { load, ClassID } = await import(`${CDN}/unity-asset-reader@1/+esm`);
-const { initTexture, decodeTexture2D } = await import(`${CDN}/unity-asset-reader-texture@1/+esm`);
-await initTexture({ wasmPath: `${CDN}/texture2ddecoder-wasm@1/wasm` });
-// ... the same onmessage handler as in the Vite Worker above
+
+// Load and initialize once. onmessage is set right away and waits for this,
+// so a message posted before the imports finish is not lost.
+const ready = (async () => {
+  const reader = await import(`${CDN}/unity-asset-reader@1/+esm`);
+  const texture = await import(`${CDN}/unity-asset-reader-texture@1/+esm`);
+  await texture.initTexture({ wasmPath: `${CDN}/texture2ddecoder-wasm@1/wasm` });
+  return { ...reader, ...texture };
+})();
+
+self.onmessage = async ({ data: { name, bytes } }) => {
+  const { load, ClassID, decodeTexture2D } = await ready;
+  const env = load([{ name, data: new Uint8Array(bytes) }]);
+  for (const obj of env.objects) {
+    if (obj.type !== ClassID.Texture2D) continue;
+    const { data, width, height } = await decodeTexture2D(obj.read());
+    self.postMessage({ width, height, rgba: data.buffer }, [data.buffer]);
+  }
+};
 ```
 
 ```js
