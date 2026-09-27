@@ -1011,3 +1011,213 @@ each object carries (`rawData`).
 No fixture holds a MovieTexture: from 2019.3 Unity's type tree for it has only
 the `Texture` fields, and none of these editors imports a movie as one. Its
 reader is checked against hand-built layouts from UnityPy's TPK data instead.
+
+## 12. The `sprite` bundles (#34)
+
+One LZ4 bundle per editor, `sprite/sprites`, built with **2019.4.41f2**
+(format 21) and **6000.3.25f1** (format 22): Sprites and SpriteAtlases
+(Sprite Atlas V1). Every source image is made by script, and each of its
+pixels says where it is: R = 5x + 3, G = 5y + 5 (y from the bottom, as Unity
+stores rows), B = 16 id + 7, all mod 256, where `id` names the image. Alpha is
+255 inside the image's shape and 0 outside, and the colour is kept outside
+too, so a crop, flip or mask that goes wrong shows in the pixels themselves.
+
+- `sheet` (`id` 1): one 64x48 texture made by script, kept inline, and four
+  sprites cut from it by `Sprite.Create` at rectangles off the origin:
+  `sheet_a`, `sheet_b` (pivot at the corner, a border), `sheet_c` (pivot
+  0.25/0.75), all full-rect, and `sheet_d` (tight mesh, over a diamond).
+- `tight` (`id` 2): one 40x36 PNG imported as a single tight-mesh sprite.
+- `packed`: a tight-packed atlas with rotation allowed, 15 sprites of
+  triangles, L shapes, diamonds and bars (`p_*`, `id` 1 to 15). Its packer
+  flipped some of them (`SpritePackingRotation` FlipHorizontal, FlipVertical
+  and Rotate180; neither editor's packer writes Rotate90), and trimmed the
+  transparent margin of `p_margin`, so its `textureRect` is not whole pixels
+  and `textureRectOffset` is not 0.
+- `rect`: a rectangle-packed atlas without rotation, `r_a` and `r_b`.
+
+The atlas textures and `tight` live in the bundle's `.resS` node. Unity only
+gives a sprite a tight mesh from 32x32 up, hence the sizes.
+
+Any project will do; the committed bundles came from fresh ones holding only
+`Assets/Editor/BuildSprites.cs`:
+
+```csharp
+using System.Collections.Generic;
+using System.IO;
+using UnityEditor;
+using UnityEditor.U2D;
+using UnityEngine;
+using UnityEngine.U2D;
+
+// Sprites and SpriteAtlases (#34): a sheet of sprites cut from one texture, a
+// tight-mesh sprite, and two V1 atlases, one tight-packed with rotation allowed
+// and one rectangle-packed. Every pixel encodes where it is, so a crop, rotation
+// or flip that goes wrong shows.
+public static class BuildSprites
+{
+    const string Dir = "Assets/Fixtures/sprite";
+
+    public static void Build()
+    {
+#pragma warning disable 618 // Unity 6 marks the V1 packer modes obsolete; they still pack.
+        EditorSettings.spritePackerMode = SpritePackerMode.AlwaysOnAtlas;
+#pragma warning restore 618
+        if (!AssetDatabase.IsValidFolder("Assets/Fixtures")) AssetDatabase.CreateFolder("Assets", "Fixtures");
+        if (!AssetDatabase.IsValidFolder(Dir)) AssetDatabase.CreateFolder("Assets/Fixtures", "sprite");
+        var assets = new List<string>();
+
+        // 1. A sheet: sprites cut out of one texture made by script, at rects off
+        // the origin, with different pivots, a border and both mesh types.
+        var sheetPath = Dir + "/sheet.asset";
+        AssetDatabase.DeleteAsset(sheetPath);
+        // Opaque, except a diamond in the rect of sheet_d, the tight one (Unity only
+        // gives a sprite a tight mesh from 32x32 up).
+        var sheet = new Texture2D(64, 48, TextureFormat.RGBA32, false) { name = "sheet", filterMode = FilterMode.Point };
+        sheet.SetPixels32(Pixels(64, 48, 1, Shape.Diamond, 44, 29, 36, 34, new RectInt(26, 12, 36, 34)));
+        sheet.Apply(false, false);
+        AssetDatabase.CreateAsset(sheet, sheetPath);
+        AddSprite(sheet, sheetPath, "sheet_a", new Rect(0, 0, 8, 6), new Vector2(0.5f, 0.5f), SpriteMeshType.FullRect, Vector4.zero);
+        AddSprite(sheet, sheetPath, "sheet_b", new Rect(10, 4, 12, 9), new Vector2(0f, 0f), SpriteMeshType.FullRect, new Vector4(1, 2, 3, 4));
+        AddSprite(sheet, sheetPath, "sheet_c", new Rect(2, 30, 11, 15), new Vector2(0.25f, 0.75f), SpriteMeshType.FullRect, Vector4.zero);
+        AddSprite(sheet, sheetPath, "sheet_d", new Rect(26, 12, 36, 34), new Vector2(0.3f, 0.6f), SpriteMeshType.Tight, Vector4.zero);
+        assets.Add(sheetPath);
+
+        // 2. A tight-mesh sprite on its own texture, imported, not packed.
+        assets.Add(Png("tight", 40, 36, 2, Shape.Diamond, SpriteMeshType.Tight, new Vector2(0.5f, 0.5f)));
+
+        // 3. A tight-packed atlas that may rotate and flip what it packs.
+        var packed = new List<Object>();
+        packed.Add(Sprite("p_tall", 8, 40, 3, Shape.Full, SpriteMeshType.FullRect));
+        packed.Add(Sprite("p_wide", 40, 8, 4, Shape.Full, SpriteMeshType.FullRect));
+        packed.Add(Sprite("p_tri", 36, 36, 5, Shape.Triangle, SpriteMeshType.Tight));
+        packed.Add(Sprite("p_tri2", 36, 36, 6, Shape.Triangle, SpriteMeshType.Tight));
+        packed.Add(Sprite("p_tri3", 32, 40, 7, Shape.TriangleFlipped, SpriteMeshType.Tight));
+        packed.Add(Sprite("p_ell", 40, 32, 8, Shape.Ell, SpriteMeshType.Tight));
+        packed.Add(Sprite("p_diamond", 34, 40, 9, Shape.Diamond, SpriteMeshType.Tight));
+        packed.Add(Sprite("p_tri4", 32, 32, 10, Shape.Triangle, SpriteMeshType.Tight));
+        packed.Add(Sprite("p_tri5", 32, 32, 11, Shape.TriangleFlipped, SpriteMeshType.Tight));
+        packed.Add(Sprite("p_ell2", 32, 32, 12, Shape.Ell, SpriteMeshType.Tight));
+        packed.Add(Sprite("p_ell3", 32, 40, 13, Shape.Ell, SpriteMeshType.Tight));
+        packed.Add(Sprite("p_bar", 36, 6, 14, Shape.Full, SpriteMeshType.FullRect));
+        packed.Add(Sprite("p_bar2", 6, 36, 15, Shape.Full, SpriteMeshType.FullRect));
+        packed.Add(Sprite("p_tri6", 40, 32, 1, Shape.Triangle, SpriteMeshType.Tight));
+        // Transparent margins, which the packer trims: textureRect is smaller
+        // than m_Rect and textureRectOffset is not zero.
+        packed.Add(Sprite("p_margin", 40, 40, 2, Shape.Inset, SpriteMeshType.Tight));
+        assets.Add(Atlas("packed", packed, true, true));
+
+        // 4. A rectangle-packed atlas without rotation.
+        var rect = new List<Object>();
+        rect.Add(Sprite("r_a", 10, 8, 11, Shape.Full, SpriteMeshType.FullRect));
+        rect.Add(Sprite("r_b", 34, 33, 12, Shape.Diamond, SpriteMeshType.Tight));
+        assets.Add(Atlas("rect", rect, false, false));
+
+        AssetDatabase.SaveAssets();
+        SpriteAtlasUtility.PackAllAtlases(BuildTarget.StandaloneWindows64);
+        foreach (var path in assets) Debug.Log("FIXTURE-ASSET " + path);
+
+        var dir = Path.Combine("Build", "sprite");
+        Directory.CreateDirectory(dir);
+        var builds = new[] { new AssetBundleBuild { assetBundleName = "sprites", assetNames = assets.ToArray() } };
+        var m = BuildPipeline.BuildAssetBundles(dir, builds, BuildAssetBundleOptions.ChunkBasedCompression,
+                                                BuildTarget.StandaloneWindows64);
+        if (m == null) throw new System.Exception("build failed: sprite");
+        Debug.Log("FIXTURE-OK sprite -> " + dir);
+    }
+
+    enum Shape { Full, Diamond, Triangle, TriangleFlipped, Ell, Inset }
+
+    // R and G count x and y (from the bottom, as Unity stores rows), B names the
+    // image, alpha is 255 inside the shape and 0 outside; colour stays outside
+    // too, so a mask that clears it shows.
+    static Color32[] Pixels(int w, int h, int id, Shape shape, float cx, float cy, float sw, float sh, RectInt? region = null)
+    {
+        var px = new Color32[w * h];
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                bool inside = shape == Shape.Full || (region.HasValue && !region.Value.Contains(new Vector2Int(x, y)));
+                float u = (x + 0.5f) / w, v = (y + 0.5f) / h;
+                if (shape == Shape.Diamond && !inside) inside = Mathf.Abs(x + 0.5f - cx) / (sw / 2) + Mathf.Abs(y + 0.5f - cy) / (sh / 2) <= 1f;
+                if (shape == Shape.Triangle) inside = v <= u;
+                if (shape == Shape.TriangleFlipped) inside = v >= u;
+                if (shape == Shape.Ell) inside = u < 0.4f || v < 0.4f;
+                if (shape == Shape.Inset) inside = Mathf.Abs(x + 0.5f - cx) + Mathf.Abs(y + 0.5f - cy) <= Mathf.Min(sw, sh) / 2 - 8;
+                px[y * w + x] = new Color32((byte)(x * 5 + 3), (byte)(y * 5 + 5), (byte)(id * 16 + 7), (byte)(inside ? 255 : 0));
+            }
+        return px;
+    }
+
+    static void AddSprite(Texture2D tex, string path, string name, Rect r, Vector2 pivot, SpriteMeshType mesh, Vector4 border)
+    {
+        var s = UnityEngine.Sprite.Create(tex, r, pivot, 4f, 0, mesh, border, true);
+        s.name = name;
+        AssetDatabase.AddObjectToAsset(s, path);
+    }
+
+    // A PNG imported as one uncompressed RGBA32 sprite, colour kept under alpha 0.
+    static string Png(string name, int w, int h, int id, Shape shape, SpriteMeshType mesh, Vector2 pivot)
+    {
+        var path = Dir + "/" + name + ".png";
+        var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
+        tex.SetPixels32(Pixels(w, h, id, shape, w / 2f, h / 2f, w, h));
+        File.WriteAllBytes(path, tex.EncodeToPNG());
+        AssetDatabase.ImportAsset(path);
+        var imp = (TextureImporter)AssetImporter.GetAtPath(path);
+        imp.textureType = TextureImporterType.Sprite;
+        imp.spriteImportMode = SpriteImportMode.Single;
+        imp.alphaIsTransparency = false;
+        imp.mipmapEnabled = false;
+        imp.filterMode = FilterMode.Point;
+        imp.textureCompression = TextureImporterCompression.Uncompressed;
+        imp.spritePixelsPerUnit = 8f;
+        var settings = new TextureImporterSettings();
+        imp.ReadTextureSettings(settings);
+        settings.spriteMeshType = mesh;
+        settings.spriteAlignment = (int)SpriteAlignment.Custom;
+        settings.spritePivot = pivot;
+        settings.spriteExtrude = 1;
+        imp.SetTextureSettings(settings);
+        imp.SetPlatformTextureSettings(new TextureImporterPlatformSettings { name = "Standalone", overridden = true, format = TextureImporterFormat.RGBA32, maxTextureSize = 256 });
+        imp.SaveAndReimport();
+        return path;
+    }
+
+    static Object Sprite(string name, int w, int h, int id, Shape shape, SpriteMeshType mesh)
+    {
+        var path = Png(name, w, h, id, shape, mesh, new Vector2(0.5f, 0.5f));
+        return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+    }
+
+    static string Atlas(string name, List<Object> sprites, bool tight, bool rotate)
+    {
+        var path = Dir + "/" + name + ".spriteatlas";
+        AssetDatabase.DeleteAsset(path);
+        var atlas = new SpriteAtlas();
+        atlas.SetPackingSettings(new SpriteAtlasPackingSettings { enableRotation = rotate, enableTightPacking = tight, padding = 2, blockOffset = 1 });
+        atlas.SetTextureSettings(new SpriteAtlasTextureSettings { readable = false, generateMipMaps = false, sRGB = true, filterMode = FilterMode.Point });
+        atlas.SetPlatformSettings(new TextureImporterPlatformSettings { name = "DefaultTexturePlatform", maxTextureSize = 256, textureCompression = TextureImporterCompression.Uncompressed, format = TextureImporterFormat.Automatic });
+        atlas.SetPlatformSettings(new TextureImporterPlatformSettings { name = "Standalone", overridden = true, maxTextureSize = 256, format = TextureImporterFormat.RGBA32 });
+        atlas.SetIncludeInBuild(true);
+        AssetDatabase.CreateAsset(atlas, path);
+        atlas.Add(sprites.ToArray());
+        return path;
+    }
+}
+```
+
+Build with `-executeMethod BuildSprites.Build` (same command as section 2).
+The log must hold four `FIXTURE-ASSET` lines and one `FIXTURE-OK sprite`.
+Copy only `Build/sprite/sprites` to
+`fixtures/bundles/editor/<editor version>/sprite/sprites` for 2019.4.41f2 and
+6000.3.25f1, about 70 KB each, then rerun `make-goldens.py`: it dumps the
+Sprite and SpriteAtlas type trees and hashes UnityPy's image of every sprite
+(`sprites`, see [`README.md`](README.md#oracle-notes)).
+
+A 2019.4 editor crashes in `SpriteAtlasUtility.PackAtlases` right after an
+atlas is created, hence one `PackAllAtlases` once every atlas is saved. Where
+the packer puts and flips each sprite depends on the editor (2019.4 packs into
+256x128, 6000.3 into 128x128), so a rebuild may flip other sprites or none;
+check the test that the fixtures still cover FlipHorizontal, FlipVertical and
+Rotate180, and regenerate the AssetStudio sprite cross-check hashes with the
+goldens.
