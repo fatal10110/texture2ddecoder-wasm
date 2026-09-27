@@ -511,7 +511,7 @@ The texture compression codecs were derived from the following sources:
 
 ## Contributing
 
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) to learn about our development process, how to propose bugfixes and improvements, and how to build and test your changes.
+Contributions are welcome! Please read our [Contributing Guide](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/CONTRIBUTING.md) to learn about our development process, how to propose bugfixes and improvements, and how to build and test your changes.
 
 ### Quick Start for Contributors
 
@@ -523,7 +523,7 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 6. Run tests: `npm test`
 7. Create a branch, make your changes, and submit a Pull Request
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+See [CONTRIBUTING.md](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/CONTRIBUTING.md) for detailed guidelines.
 
 ## Platform Support
 
