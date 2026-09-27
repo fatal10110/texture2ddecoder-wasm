@@ -8,7 +8,11 @@ import { ClassID } from "../src/serialized/ClassID.js";
 import { ObjectReader } from "../src/serialized/ObjectReader.js";
 import { readSerializedFile, type SerializedFile } from "../src/serialized/SerializedFile.js";
 import type { TypeTreeNode } from "../src/serialized/TypeTree.js";
-import { readTypeTree, type TypeTreeObject } from "../src/serialized/TypeTreeReader.js";
+import {
+  readTypeTree,
+  type TypeTreeObject,
+  type TypeTreeValue,
+} from "../src/serialized/TypeTreeReader.js";
 
 // --- plan §5 normalization, written from the golden format, not our output ---
 
@@ -151,12 +155,27 @@ const DUMPS = SERIALIZED_FIXTURES.flatMap((name) =>
   ),
 );
 
+/**
+ * `value` cut to what the oracle read. UnityPy reads only the first entry of a
+ * version 1 registry, and the golden's note says how many it left unread
+ * (#96); those are checked against Unity's YAML further down.
+ */
+function asOracleRead(value: TypeTreeObject, dump: { value: unknown; oracleNote?: string }) {
+  const registry = value.references as TypeTreeObject | undefined;
+  if (dump.oracleNote === undefined || registry === undefined) return value;
+  const read = Object.keys((dump.value as { references: object }).references);
+  const kept = Object.entries(registry).filter(([key]) => read.includes(key));
+  const left = Number(/before the other (\d+)/.exec(dump.oracleNote)?.[1] ?? 0);
+  assert.equal(Object.keys(registry).length - kept.length, left, "v1 entries past the oracle's");
+  return { ...value, references: Object.fromEntries(kept) };
+}
+
 // --- every golden dump ----------------------------------------------------------
 
 for (const { name, path, pathId, dump } of DUMPS) {
   test(`${name}: object ${pathId} reads as the golden typetree dump`, () => {
     const { sf, reader } = object(name, path, pathId);
-    const value = readTypeTree(reader);
+    const value = asOracleRead(readTypeTree(reader), dump);
     assert.equal(reader.position, reader.byteSize);
     const normalized = normalize(nest(reader.serializedType!.nodes!), value, sf);
     assert.deepEqual(normalized, dump.value);
@@ -330,6 +349,23 @@ function readerOver(bytes: Uint8Array, sf: SerializedFile, like: ObjectReader): 
   return new ObjectReader(bytes, sf, { ...info, byteStart: 0, byteSize: bytes.length });
 }
 
+/** A hand-built type tree node. */
+function at(level: number, type: string, name: string): TypeTreeNode {
+  return {
+    type,
+    name,
+    byteSize: -1,
+    index: 0,
+    typeFlags: 0,
+    version: 1,
+    metaFlag: 0,
+    level,
+    typeStrOffset: 0,
+    nameStrOffset: 0,
+    refTypeHash: 0n,
+  };
+}
+
 test("v1 registry: the golden notes UnityPy stopping 44 bytes short; we read to byteSize", () => {
   for (const name of V1_FIXTURES) {
     const { reader, bytes } = rawObject(name);
@@ -388,6 +424,98 @@ test("throws CorruptError naming the type when an entry's ref type is not in the
   );
 });
 
+const holder = { class: "RefHolder", ns: "", asm: "Assembly-CSharp" };
+const leaf = { class: "RefLeaf", ns: "", asm: "Assembly-CSharp" };
+
+// Copied by hand from Unity's YAML of the asset the `registry/refs` bundles are
+// built from (Assets/Fixtures/registry/registry.asset, the same in 2019.4.41f2
+// and 2020.3.30f1), never from our output (R12). The oracle reads only the
+// first entry, so this is what checks the rest, and their keys: Unity names a
+// v1 entry by its id in 8 uppercase hex digits, so the eleventh is 0000000A.
+const REGISTRY_YAML = {
+  version: 1,
+  "00000000": { type: holder, data: { n: 0, inner: { id: 12 } } },
+  "00000001": { type: leaf, data: { n: 1 } },
+  "00000002": { type: leaf, data: { n: 2 } },
+  "00000003": { type: leaf, data: { n: 3 } },
+  "00000004": { type: leaf, data: { n: 4 } },
+  "00000005": { type: leaf, data: { n: 5 } },
+  "00000006": { type: leaf, data: { n: 6 } },
+  "00000007": { type: leaf, data: { n: 7 } },
+  "00000008": { type: leaf, data: { n: 8 } },
+  "00000009": { type: leaf, data: { n: 9 } },
+  "0000000A": { type: leaf, data: { n: 10 } },
+  "0000000B": { type: leaf, data: { n: 11 } },
+  "0000000C": { type: leaf, data: { n: 100 } },
+};
+
+test("v1 registry: 13 entries come back named as in Unity's YAML (0000000A, not 00000010)", () => {
+  for (const editor of ["2019.4.41f2", "2020.3.30f1"]) {
+    const { reader } = objectOf(`editor/${editor}/registry/refs`, ClassID.MonoBehaviour);
+    const references = reader.readTypeTree().references as TypeTreeObject;
+    assert.equal(reader.position, reader.byteSize, editor);
+    assert.deepEqual(references, REGISTRY_YAML, editor);
+    assert.deepEqual(Object.keys(references), Object.keys(REGISTRY_YAML), editor);
+  }
+});
+
+// --- [SerializeReference] registry nested in a ref type -----------------------------
+
+test("a ref type's own registry node is in its type tree, in every editor", () => {
+  for (const editor of ["2019.4.41f2", "2020.3.30f1", "6000.3.25f1"]) {
+    const { sf } = objectOf(`editor/${editor}/registry/refs`, ClassID.MonoBehaviour);
+    const refType = sf.refTypes.find((r) => r.className === "RefHolder");
+    const nested = refType?.nodes?.filter((n) => n.type === "ManagedReferencesRegistry");
+    assert.equal(nested?.length, 1, editor);
+  }
+});
+
+test("a ref type's own registry is left out and reads no bytes, as in UnityPy (v1 and v2)", () => {
+  for (const editor of ["2019.4.41f2", "2020.3.30f1", "6000.3.25f1"]) {
+    const { reader } = objectOf(`editor/${editor}/registry/refs`, ClassID.MonoBehaviour);
+    const references = reader.readTypeTree().references as TypeTreeObject;
+    assert.equal(reader.position, reader.byteSize, editor);
+    const entries =
+      references.version === 1
+        ? Object.values(references).slice(1)
+        : (references.RefIds as TypeTreeValue[]);
+    const first = entries[0] as { type: TypeTreeObject; data: TypeTreeObject };
+    assert.equal(first.type.class, "RefHolder", editor);
+    assert.deepEqual(Object.keys(first.data), ["n", "inner"], editor);
+  }
+});
+
+test("a registry met inside another is skipped until the class holding the outer one ends", () => {
+  const { sf, reader } = objectOf("editor/6000.3.25f1/lzma/shared", ClassID.TextAsset);
+  const info = sf.objects.find((o) => o.pathId === reader.pathId)!;
+  const registry = (level: number) => [
+    at(level, "ManagedReferencesRegistry", "references"),
+    at(level + 1, "int", "version"),
+  ];
+  const nodes = [
+    at(0, "Base", "Base"),
+    at(1, "Holder", "a"),
+    ...registry(2), // read: the flag set inside `a` ends with `a`
+    ...registry(1), // read, and sets the flag for the rest of Base
+    at(1, "Holder", "b"),
+    ...registry(2), // skipped: inside Base's registry flag
+  ];
+  const bytes = new Uint8Array(8);
+  new DataView(bytes.buffer).setInt32(0, 1, true);
+  new DataView(bytes.buffer).setInt32(4, 2, true);
+  const synthetic = new ObjectReader(bytes, sf, {
+    ...info,
+    byteStart: 0,
+    byteSize: bytes.length,
+    serializedType: { ...info.serializedType!, nodes },
+  });
+  assert.deepEqual(synthetic.readTypeTree(), {
+    a: { references: { version: 1 } },
+    references: { version: 2 },
+    b: {},
+  });
+});
+
 // --- unhappy paths ----------------------------------------------------------------
 
 test("throws UnsupportedError for an object in a file built without type trees", () => {
@@ -419,19 +547,6 @@ test("throws CorruptError when the data ends before the tree does", () => {
 
 test("throws CorruptError, not TypeError, when a tree ends in an Array with no children", () => {
   const { sf, reader } = objectOf("editor/6000.3.25f1/lzma/shared", ClassID.TextAsset);
-  const at = (level: number, type: string, name: string): TypeTreeNode => ({
-    type,
-    name,
-    byteSize: -1,
-    index: 0,
-    typeFlags: 0,
-    version: 1,
-    metaFlag: 0,
-    level,
-    typeStrOffset: 0,
-    nameStrOffset: 0,
-    refTypeHash: 0n,
-  });
   const info = sf.objects.find((o) => o.pathId === reader.pathId)!;
   const nodes = [at(0, "Base", "Base"), at(1, "vector", "v"), at(2, "Array", "Array")];
   const synthetic = new ObjectReader(new Uint8Array(8), sf, {

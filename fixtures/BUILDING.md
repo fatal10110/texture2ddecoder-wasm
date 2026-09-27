@@ -207,3 +207,78 @@ changes the `lz4` NaN golden.
 The oracle cannot fully read the version 1 `[SerializeReference]` registry
 (2019.4, 2020.3); `make-goldens.py` handles that one case and records an
 `oracleNote` on the object (see #25).
+
+## 5. The `registry` bundle (#96)
+
+One more bundle per editor, `registry/refs`: a ScriptableObject whose
+`[SerializeReference]` list holds 13 entries, so a version 1 registry has
+entry keys past `00000009`, and whose first entry is a ref type with a
+`[SerializeReference]` field of its own, so its type tree carries a nested
+`ManagedReferencesRegistry` node. It is built by a separate method into its own
+folder, so the bundles of sections 1-3 and their manifests stay as they are.
+
+Add two files to the same project:
+
+`Assets/Scripts/RegistryData.cs`:
+
+```csharp
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+
+[Serializable] public class RefLeaf { public int n; }
+[Serializable] public class RefHolder : RefLeaf { [SerializeReference] public RefLeaf inner; }
+
+// 13 [SerializeReference] entries (v1 keys past 9) and a ref type with a
+// [SerializeReference] field of its own (a nested registry node), #96.
+public class RegistryData : ScriptableObject
+{
+    [SerializeReference] public List<RefLeaf> refs = new List<RefLeaf>();
+}
+```
+
+`Assets/Editor/BuildRegistry.cs`:
+
+```csharp
+using System.IO;
+using UnityEditor;
+using UnityEngine;
+
+public static class BuildRegistry
+{
+    const string Asset = "Assets/Fixtures/registry/registry.asset";
+
+    public static void Build()
+    {
+        if (!AssetDatabase.IsValidFolder("Assets/Fixtures/registry")) AssetDatabase.CreateFolder("Assets/Fixtures", "registry");
+        var data = AssetDatabase.LoadAssetAtPath<RegistryData>(Asset);
+        if (data == null) { data = ScriptableObject.CreateInstance<RegistryData>(); AssetDatabase.CreateAsset(data, Asset); }
+        // The holder first: UnityPy reads only the first v1 entry, so the oracle walks its ref type.
+        data.refs.Clear();
+        data.refs.Add(new RefHolder { n = 0, inner = new RefLeaf { n = 100 } });
+        for (int i = 1; i <= 11; i++) data.refs.Add(new RefLeaf { n = i });
+        EditorUtility.SetDirty(data);
+        AssetDatabase.SaveAssets();
+
+        var dir = Path.Combine("Build", "registry");
+        Directory.CreateDirectory(dir);
+        var builds = new[] { new AssetBundleBuild { assetBundleName = "refs", assetNames = new[] { Asset } } };
+        var m = BuildPipeline.BuildAssetBundles(dir, builds, BuildAssetBundleOptions.UncompressedAssetBundle,
+                                                BuildTarget.StandaloneWindows64);
+        if (m == null) throw new System.Exception("build failed: registry");
+        Debug.Log("FIXTURE-OK registry -> " + dir);
+    }
+}
+```
+
+Build with `-executeMethod BuildRegistry.Build` (same command as section 2;
+the log must contain one `FIXTURE-OK registry` line), then copy only
+`Build/registry/refs` to `fixtures/bundles/editor/<editor version>/registry/refs`
+and rerun `make-goldens.py`.
+
+The oracle reads only the first of the 13 version 1 entries, so the rest,
+and the names Unity gives them, are checked against the asset's YAML
+(`Assets/Fixtures/registry/registry.asset`), which the test copies by hand.
+In 2019.4.41f2 and 2020.3.30f1 it names the entries `00000000` to
+`00000009`, then `0000000A`, `0000000B`, `0000000C`: the id in 8 uppercase
+hex digits. If you rebuild, check the YAML still says so.
