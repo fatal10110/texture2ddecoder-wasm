@@ -1,5 +1,6 @@
 // Ported from AssetStudio.Utility/SpriteHelper.cs (MIT, © Perfare / RazTools / Razviar)
 // Ported from AssetStudio/Classes/Mesh.cs (MIT, © Perfare / RazTools / Razviar)
+// Derived from SixLabors/ImageSharp.Drawing src/ImageSharp.Drawing/Shapes/Rasterization/*.cs @ v1.0.0-beta15 (Apache-2.0, © Six Labors): the triangle fill at the end of this file, see there
 
 import {
   ClassID,
@@ -66,10 +67,18 @@ export interface SpriteSource {
  * The rectangle is cut out of the texture (`textureRect`, from its bottom-left
  * corner, widened to whole pixels), and a packer's flip or rotation
  * (`SpritePackingRotation`) is undone. With `tightMesh`, pixels outside the
- * sprite's mesh are cleared, as upstream fills its triangles into a mask
- * (ImageSharp.Drawing without antialiasing: a pixel is inside a triangle when
- * at least half of it is, measured along eight rows per pixel, with the
- * vertices' y snapped to eighths).
+ * sprite's mesh are cleared, as upstream fills its triangles into a mask with
+ * ImageSharp.Drawing 1.0.0-beta15 without antialiasing: a pixel is inside a
+ * triangle when at least half of it is, measured along eight rows per pixel,
+ * with the vertices' y snapped to eighths. That fill is derived from
+ * ImageSharp.Drawing's code and is under the Apache License 2.0 (this
+ * package's `NOTICE` and `LICENSE-APACHE`).
+ *
+ * `Rotate90` is turned back the way upstream turns it (ImageSharp
+ * `Rotate(270)`). That direction is not verified against Unity's packer: no
+ * fixture editor's packer writes `Rotate90`, and UnityPy, which turns the
+ * other way, mistranslates the same upstream call rather than checking it
+ * independently (#34, tracked in the follow-up named in `fixtures/README.md`).
  *
  * Every call decodes the texture again. ponytail: an atlas with many sprites
  * is decoded once per sprite; a cache of decoded textures (or a variant that
@@ -536,11 +545,35 @@ function vertexFormatSize(format: number, [major]: UnityVersion): number {
   return size;
 }
 
+// --- the triangle fill: derived from ImageSharp.Drawing (Apache-2.0) -----------------
+//
+// Everything from here to the end of this file is derived from ImageSharp.Drawing
+// v1.0.0-beta15 (https://github.com/SixLabors/ImageSharp.Drawing, tag
+// v1.0.0-beta15), Copyright (c) Six Labors, licensed under the Apache License,
+// Version 2.0 (see LICENSE-APACHE in this package). It is a modified TypeScript
+// translation of parts of these files of that tag:
+//   src/ImageSharp.Drawing/Shapes/Rasterization/ScanEdge.cs (`line`)
+//   src/ImageSharp.Drawing/Shapes/Rasterization/ScanEdgeCollection.Build.cs
+//     (`scanEdges`: EdgeCategory, ApplyVertexCategory; `snap`: RoundY)
+//   src/ImageSharp.Drawing/Shapes/Rasterization/RasterizerExtensions.cs
+//     (`addSpan`: ScanCurrentSubpixelLineInto)
+//   src/ImageSharp.Drawing/Shapes/Rasterization/PolygonScanner.cs and
+//     ActiveEdgeList.cs (ScanOddEven), and
+//     Processing/Processors/Drawing/FillPathProcessor{TPixel}.cs (`fillTriangle`)
+//   src/ImageSharp.Drawing/Shapes/InternalPath.cs (Simplify: `near`, `collinear`)
+//   src/ImageSharp.Drawing/Shapes/Helpers/TopologyUtilities.cs (EnsureOrientation)
+// Changes: translated from C# to TypeScript; cut down to filling one closed
+// triangle into a 0/1 mask, without antialiasing, with the odd-even rule; the
+// memory pools, sort helpers and spans are replaced by plain arrays. It is kept
+// derived on purpose: upstream AssetStudio fills sprite meshes with this exact
+// version, and the mask has to match its output to the pixel.
+
 /**
- * Fill one triangle into `mask` (rows bottom first) the way upstream's
- * ImageSharp.Drawing 1.0.0-beta15 fills a polygon without antialiasing, so the
- * mask agrees with upstream's to the pixel (#34). Reimplemented from its
- * behavior, in 32-bit floats as it computes:
+ * Fill one triangle into `mask` (rows bottom first) as ImageSharp.Drawing
+ * 1.0.0-beta15's `FillPathProcessor` fills a polygon without antialiasing,
+ * which is what upstream's mask uses, so the mask agrees with upstream's to
+ * the pixel (#34). Derived from its code (see above), in 32-bit floats as it
+ * computes:
  *
  * - A triangle whose last corner is within 0.2 px of its first (on both axes),
  *   or whose corners are collinear (cross product within 0.003), is dropped.

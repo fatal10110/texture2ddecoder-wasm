@@ -23,7 +23,7 @@ test("the CJS entry point loads via require()", () => {
   assert.ok(require(dist("index.cjs")));
 });
 
-test("the published tarball holds dist, LICENSE and NOTICE only", () => {
+test("the published tarball holds dist, LICENSE, LICENSE-APACHE and NOTICE only", () => {
   const result = spawnSync("npm", ["pack", "--dry-run", "--json"], {
     cwd: packageRoot,
     encoding: "utf8",
@@ -34,7 +34,8 @@ test("the published tarball holds dist, LICENSE and NOTICE only", () => {
   const files: string[] = JSON.parse(result.stdout)[0].files.map((f: { path: string }) => f.path);
   assert.deepStrictEqual(
     files.filter((path) => !path.startsWith("dist/")).sort(),
-    ["LICENSE", "NOTICE", "package.json"],
+    // LICENSE-APACHE: the tight-mesh fill is derived from ImageSharp.Drawing (#34).
+    ["LICENSE", "LICENSE-APACHE", "NOTICE", "package.json"],
   );
   assert.deepStrictEqual(
     files.filter((path) => path.endsWith(".tsbuildinfo") || /(?<!\.d)\.ts$/.test(path)),

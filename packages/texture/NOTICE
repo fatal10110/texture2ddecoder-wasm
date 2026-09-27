@@ -14,9 +14,27 @@ AssetStudio -- https://github.com/Razviar/assetstudio (MIT)
   (Texture2DConverter.cs), for the Xbox 360 byte swap (Texture2DConverter.cs),
   for the vertical flip (Texture2DExtensions.cs), and for sprites: the crop,
   the packing rotation and the tight-mesh mask (SpriteHelper.cs, Mesh.cs).
-  The mask's triangle fill reproduces the behaviour of the ImageSharp.Drawing
-  version AssetStudio uses (Six Labors, Apache-2.0); it is reimplemented, and
-  no ImageSharp code is copied.
+
+ImageSharp.Drawing -- https://github.com/SixLabors/ImageSharp.Drawing
+  (Apache License 2.0, full text in LICENSE-APACHE)
+  Copyright (c) Six Labors
+  The triangle fill of the tight-mesh mask in src/sprite.ts is derived from
+  ImageSharp.Drawing v1.0.0-beta15, the version AssetStudio fills sprite
+  meshes with, so that the mask matches AssetStudio's to the pixel. It is a
+  modified TypeScript translation of parts of:
+    src/ImageSharp.Drawing/Shapes/Rasterization/ScanEdge.cs
+    src/ImageSharp.Drawing/Shapes/Rasterization/ScanEdgeCollection.Build.cs
+    src/ImageSharp.Drawing/Shapes/Rasterization/RasterizerExtensions.cs
+    src/ImageSharp.Drawing/Shapes/Rasterization/PolygonScanner.cs
+    src/ImageSharp.Drawing/Shapes/Rasterization/ActiveEdgeList.cs
+    src/ImageSharp.Drawing/Shapes/InternalPath.cs
+    src/ImageSharp.Drawing/Shapes/Helpers/TopologyUtilities.cs
+    src/ImageSharp.Drawing/Processing/Processors/Drawing/FillPathProcessor{TPixel}.cs
+  Changes: translated from C# to TypeScript; cut down to filling one closed
+  triangle without antialiasing, with the odd-even rule, into a 0/1 mask;
+  the memory pools, sorting helpers and span types are replaced by arrays.
+  That code, and only that code, is under the Apache License 2.0; the rest
+  of this package is under the MIT License (LICENSE).
 
 UnityPy -- https://github.com/K0lb3/UnityPy (MIT)
   Copyright (c) K0lb3

@@ -17,6 +17,7 @@
   "files": [
     "dist/**/*",
     "LICENSE",
+    "LICENSE-APACHE",
     "NOTICE"
   ],
   "scripts": {
