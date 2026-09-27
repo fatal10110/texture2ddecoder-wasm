@@ -50,8 +50,11 @@ interface Walk {
   reader: ObjectReader;
   /** Ref type trees built so far, for `[SerializeReference]` data. */
   refTrees: Map<SerializedType, Tree>;
-  /** In a class whose `ManagedReferencesRegistry` field is being read (UnityPy `has_registry`). */
-  inRegistry: boolean;
+  /**
+   * Set by the class that holds a `ManagedReferencesRegistry` field, for the
+   * rest of that class and everything read under it (UnityPy `has_registry`).
+   */
+  classHasRegistry: boolean;
 }
 
 /**
@@ -99,7 +102,7 @@ export function readTypeTree(reader: ObjectReader): TypeTreeObject {
     );
   }
 
-  const walk: Walk = { reader, refTrees: new Map(), inRegistry: false };
+  const walk: Walk = { reader, refTrees: new Map(), classHasRegistry: false };
   reader.position = 0;
   // The root's own align flag is not applied, as upstream reads its children only.
   const value = readClass(walk, tree(nodes), 0);
@@ -211,25 +214,25 @@ function readValue(walk: Walk, t: Tree, i: number): TypeTreeValue {
 /**
  * Every child of node `i`, by name. A node without children reads as `{}`.
  *
- * A `ManagedReferencesRegistry` field met while another one is being read is
- * left out, as UnityPy's `has_registry` does: the type tree of a ref type
- * whose class has `[SerializeReference]` fields carries a registry node of its
- * own, but the host object's one registry holds every entry, so the data has
- * no bytes for it. The flag covers the rest of this class and everything read
- * under it, and is cleared when this class ends, as upstream does.
+ * A class with a `ManagedReferencesRegistry` field sets `classHasRegistry` for
+ * the rest of itself and everything read under it, and clears it when it
+ * ends, as UnityPy's `has_registry` does. Any registry field met while it is
+ * set is left out: the type tree of a ref type whose class has
+ * `[SerializeReference]` fields carries a registry node of its own, but the
+ * host object's one registry holds every entry, so the data has no bytes for it.
  */
 function readClass(walk: Walk, t: Tree, i: number): TypeTreeObject {
-  const outer = walk.inRegistry;
+  const outer = walk.classHasRegistry;
   const out: TypeTreeObject = {};
   for (let c = i + 1; c < t.end[i]!; c = t.end[c]!) {
     const child = t.nodes[c]!;
     if (child.type === "ManagedReferencesRegistry") {
-      if (walk.inRegistry) continue;
-      walk.inRegistry = true;
+      if (walk.classHasRegistry) continue;
+      walk.classHasRegistry = true;
     }
     setField(out, child.name, readValue(walk, t, c));
   }
-  walk.inRegistry = outer;
+  walk.classHasRegistry = outer;
   return out;
 }
 
