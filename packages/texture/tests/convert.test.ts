@@ -128,9 +128,10 @@ test("image bytes, inline or sliced from .resS, match the golden", () => {
 
 test("RGBA sha256 = UnityPy golden where the oracle and AssetStudio agree", () => {
   const agreed = TEXTURES.filter((t) => t.golden.rgbaSha256 && !t.golden.oracleNote);
-  // RGBA32 x 9 editor-built `texture` bundles, plus ARGB4444, RGB24, RGBA32,
-  // ARGB32, RGBA4444 and BGRA32 from the plain fixture.
-  assert.equal(agreed.length, 15);
+  // RGBA32 x 9 editor-built `texture` bundles and 4 in each of the 2 `sprite`
+  // bundles (#34), plus ARGB4444, RGB24, RGBA32, ARGB32, RGBA4444 and BGRA32
+  // from the plain fixture.
+  assert.equal(agreed.length, 23);
   for (const t of agreed) {
     assert.equal(sha256(decode(t)), t.golden.rgbaSha256, `${t.fixture} ${t.golden.name}`);
   }
