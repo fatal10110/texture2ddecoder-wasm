@@ -55,7 +55,7 @@ export type MonoBehaviourData = MonoBehaviour & { [field: string]: unknown };
 /**
  * What `obj.read()` returns: a hardcoded class reader's result for a class
  * that has one ({@link Texture2DData} for a `Texture2D`, `TextAsset`,
- * `MonoScript`, {@link MonoBehaviourData} for a `MonoBehaviour`), and the
+ * `MonoScript`, {@link MonoBehaviourData} for a `MonoBehaviour`, `Material`), and the
  * `readTypeTree()` result for any other class.
  */
 export type ObjectData =

@@ -385,6 +385,7 @@ const NAMED: { classId: number; name: string }[] = [
   { classId: ClassID.TextAsset, name: "editor/6000.3.25f1/uncompressed/shared" },
   { classId: ClassID.MonoScript, name: "editor/6000.3.25f1/uncompressed/main" },
   { classId: ClassID.AssetBundle, name: "editor/6000.3.25f1/uncompressed/shared" },
+  { classId: ClassID.Material, name: "editor/6000.3.25f1/material/lz4/material" },
 ];
 
 for (const { classId, name } of NAMED) {
