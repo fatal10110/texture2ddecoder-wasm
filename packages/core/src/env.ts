@@ -139,8 +139,18 @@ export interface Env {
    *
    * `m_FileID` 0 means `from`'s own file; anything above picks one of that
    * file's externals, matched to a loaded SerializedFile by file name, ignoring
-   * case, like upstream. When two loaded files share that name, the first one
-   * loaded wins, as with upstream's `FindIndex`.
+   * case, like upstream. When several loaded files have that name, the one in
+   * the same container as `from`'s file wins and otherwise the first one loaded,
+   * the rule {@link readResource} uses for resource files. So with two builds
+   * loaded together, a pointer stays in its own build wherever both files sit
+   * in one container: one bundle or `UnityWebData` file, or the caller's loose
+   * inputs. A pointer into another bundle leaves its container either way, and
+   * there the first one loaded wins, as with upstream's `FindIndex`. A bundle
+   * inside a `UnityWebData` file (`data.unity3d` in a `.data`) is a container
+   * of its own too, apart from the `.data`'s loose files. An ordinary (not
+   * scene) AssetBundle holds one SerializedFile, so every external pointer of
+   * its objects leaves its container. To keep two builds apart when their
+   * pointers cross containers, load each build with its own `load()`.
    *
    * @param pptr the pointer, as a typetree holds it
    * @param from the object whose data the pointer was read from
@@ -193,7 +203,7 @@ export interface SerializedFileEntry {
   file: SerializedFile;
   /** Objects by path id, which are unique within a file. */
   objects: Map<bigint, ObjectReader>;
-  /** The container it came out of, for {@link Env.readResource}. */
+  /** The container it came out of, for {@link Env.resolve} and {@link Env.readResource}. */
   container: ContainerId;
 }
 
@@ -240,8 +250,8 @@ interface Collected {
 interface EnvIndex {
   objects: ObjectReader[];
   sourceOf: Map<ObjectReader, SerializedFileEntry>;
-  /** By lower-cased name, first loaded only. */
-  byName: Map<string, SerializedFileEntry>;
+  /** Every entry by lower-cased name, in load order. */
+  byName: Map<string, SerializedFileEntry[]>;
 }
 
 /**
@@ -291,7 +301,10 @@ export function load(inputs: readonly LoadInput[]): Env {
       if (!source) {
         throw new Error(`object ${from.pathId} was not loaded by this env`);
       }
-      return resolvePPtr(pptr, source, (fileName) => byName.get(fileName.toLowerCase()));
+      return resolvePPtr(pptr, source, (fileName) => {
+        const candidates = byName.get(fileName.toLowerCase());
+        return candidates && pickByContainer(candidates, source.container);
+      });
     },
     readResource(ref, from) {
       const source = indexed().sourceOf.get(from);
@@ -325,8 +338,23 @@ function findResource(
   const fileName = baseName(path);
   const candidates = fileName ? byName.get(fileName.toLowerCase()) : undefined;
   if (!candidates) throw new ResourceNotFoundError(path, fileName);
-  const kept = candidates.find((c) => c.container === container) ?? candidates[0]!;
-  return kept.file;
+  return pickByContainer(candidates, container).file;
+}
+
+/**
+ * Which of several loaded files of one name a requester in `container` means:
+ * the first one in that container, otherwise the first one loaded. Shared by
+ * {@link Env.resolve} and {@link Env.readResource} so an object's pointers and
+ * its resource files are picked by one rule; see {@link findResource} for why
+ * it is this one.
+ *
+ * @param candidates the files of that name, in load order; never empty
+ */
+function pickByContainer<T extends { container: ContainerId }>(
+  candidates: readonly T[],
+  container: ContainerId,
+): T {
+  return candidates.find((c) => c.container === container) ?? candidates[0]!;
 }
 
 /**
@@ -379,7 +407,10 @@ function indexSerializedFiles(candidates: readonly SerializedCandidate[]): EnvIn
   const sourceOf = new Map<ObjectReader, SerializedFileEntry>();
   // Upstream matches externals with `OrdinalIgnoreCase`; lower-casing agrees
   // with it on every name Unity writes (`CAB-<hex>`, `sharedassets0.assets`).
-  const byName = new Map<string, SerializedFileEntry>();
+  // Every entry is kept, since which one a pointer means depends on who asks.
+  // Upstream keeps one file per name when loading (the first, or a bundle's
+  // over a loose one) and drops the rest with their objects.
+  const byName = new Map<string, SerializedFileEntry[]>();
   for (const { source, path, data, revision, container } of candidates) {
     let entry: SerializedFileEntry;
     try {
@@ -392,7 +423,9 @@ function indexSerializedFiles(candidates: readonly SerializedCandidate[]): EnvIn
       sourceOf.set(object, entry);
     }
     const key = entry.name.toLowerCase();
-    if (!byName.has(key)) byName.set(key, entry);
+    const same = byName.get(key);
+    if (same) same.push(entry);
+    else byName.set(key, [entry]);
   }
   return { objects, sourceOf, byName };
 }
