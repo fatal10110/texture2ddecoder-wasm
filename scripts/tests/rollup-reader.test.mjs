@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { after, test } from "node:test";
 import { declaredDependencies } from "../../rollup.reader.mjs";
+import { importSpecifiers } from "../check-browser.mjs";
 
 const repo = resolve(import.meta.dirname, "../..");
 const tmp = mkdtempSync(join(tmpdir(), "rollup-reader-"));
@@ -39,29 +40,15 @@ test("a package with no dependencies externalizes nothing", () => {
   assert.deepEqual(declaredDependencies(manifest("bare", { name: "x" })), []);
 });
 
-// Anchored at the start of a line, so a quoted `from "..."` inside an error
-// message is not mistaken for an import (core has several: `... from "corrupt"`).
-const STATEMENT = [
-  /^\s*(?:import|export)\b[^"']*?\bfrom\s*["']([^"']+)["']/, // import x from "y", export * from "y"
-  /^\s*\}\s*from\s*["']([^"']+)["']/, //                        closing line of a multi-line import
-  /^\s*import\s*["']([^"']+)["']/, //                           side-effect import
-];
-/** Dynamic `import("y")` / `require("y")`, which can sit anywhere on a line. */
-const DYNAMIC = /\b(?:import|require)\s*\(\s*["']([^"']+)["']\s*\)/g;
-
 /** Package specifiers `src/` reaches for, bare ones only (no `./` relatives). */
 function importedPackages(dir) {
   const files = readdirSync(dir, { withFileTypes: true, recursive: true })
     .filter((e) => e.isFile() && /\.ts$/.test(e.name))
     .map((e) => join(e.parentPath, e.name));
   const specs = new Set();
-  const add = (spec) => {
-    if (spec && !spec.startsWith(".")) specs.add(spec);
-  };
   for (const file of files) {
-    for (const line of readFileSync(file, "utf8").split("\n")) {
-      for (const re of STATEMENT) add(line.match(re)?.[1]);
-      for (const [, spec] of line.matchAll(DYNAMIC)) add(spec);
+    for (const spec of importSpecifiers(readFileSync(file, "utf8"))) {
+      if (!spec.startsWith(".")) specs.add(spec);
     }
   }
   return [...specs];
