@@ -273,7 +273,7 @@ function readInt32Array(reader: BinaryReader): number[] {
  * read as empty at the end of the data, such as a format 2-4 external, which
  * is a bare C string.
  *
- * @internal shared with `SerializedFile.ts`, not public API
+ * @internal shared with `SerializedFile.ts` and `ObjectReader.ts`, not public API
  * @throws {CorruptError} when the count is negative or larger than what remains
  */
 export function readCount(reader: BinaryReader, what: string): number {
