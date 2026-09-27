@@ -46,6 +46,10 @@ with 13 `[SerializeReference]` entries, so version 1 entry keys go past
 whose type tree carries a nested `ManagedReferencesRegistry` node
 ([`BUILDING.md`](BUILDING.md) section 5).
 
+6000.3.25f1 also has `plain/textures` (uncompressed, #31): one 8x5 Texture2D in
+each of the 17 plain formats the texture package converts in TS, pixels written
+by script and kept inline ([`BUILDING.md`](BUILDING.md) section 6).
+
 NaN does not have one bit pattern everywhere, and that comes from Unity: every
 editor wrote `0xFFC00000` into the first variant it built (`lz4`) and
 `0x7FC00000` into the rest (see `BUILDING.md` section 4). The goldens record the
@@ -90,7 +94,8 @@ cover container shapes no current editor writes (legacy UnityWeb/UnityRaw,
 Not covered yet: UnityWeb/UnityRaw v4+ (UnityPy refuses to write them, so the
 hash/CRC and version-6 archive-layout paths are covered by hand-written bytes in
 `BundleFile.test.ts` instead), gzip/brotli around a `UnityWebData` file. The
-editor fixtures have one RGBA32 texture and no sprites; M3 adds the rest.
+editor fixtures have the plain texture formats (#31) but no block-compressed
+texture and no sprites yet; M3 adds the rest.
 
 ## Oracle notes
 
@@ -106,6 +111,41 @@ editor fixtures have one RGBA32 texture and no sprites; M3 adds the rest.
   `check_read=False`, and records `oracleNote` on the object, with the number of
   entries left unread (#25, #96).
 
+- Texture goldens (`serialized.<file>.textures`, #31) hash UnityPy's
+  `get_image_from_texture2d(flip=False)`: RGBA8 with the rows in the order Unity
+  stores them, bottom row first. Turning them top-down is #33, and the texture
+  package's converters do not flip either. `imageSha256` is the image data
+  itself, inline or from the `.resS` node.
+- UnityPy 1.25.3 (with Pillow 12.3) cannot decode 9 of the 17 plain formats:
+  R16, RHalf, RGHalf, RGBAHalf, RFloat, RGFloat, RGBAFloat and RGB9e5Float fail
+  inside its converter, and YUY2 is not implemented. Those goldens carry
+  `oracleError` and no RGBA hash; the texture tests check them against
+  AssetStudio's own decode methods instead (plan §6), plus hand-derived values.
+- <a id="assetstudio-cross-check"></a>**AssetStudio cross-check hashes**
+  (`ASSETSTUDIO_RGBA` in `packages/texture/tests/convert.test.ts`). They cover the
+  9 formats above and the 2 below. They are cross-check values under plan §6,
+  **not goldens**: UnityPy 1.25.3 raises on the 9, and they never go into
+  `goldens.json`. Here is how they were made (#31):
+  - **Source:** Razviar/assetstudio at `c37af7d`. The plain-format `Decode*`
+    methods of `AssetStudio.Utility/Texture2DConverter.cs` (Alpha8, ARGB4444,
+    RGB24, RGBA32, ARGB32, RGB565, R16, RGBA4444, BGRA32, RHalf, RGHalf,
+    RGBAHalf, RFloat, RGFloat, RGBAFloat, YUY2, RGB9e5Float, plus
+    `DownScaleFrom16BitTo8Bit`) were copied verbatim, together with
+    `AssetStudio/Math/Half.cs` and `HalfHelper.cs`.
+  - **Build and run:** a .NET 8 console app, built and run on Windows x64,
+    **outside the repo** (R2). It ran over the `plain/textures` image bytes as
+    UnityPy's `get_image_data()` extracts them.
+  - **Hashing:** upstream writes BGRA. The harness swapped R and B once, then
+    the RGBA8 was sha256-hashed, with rows as stored.
+  - **Runtime caveat:** on .NET 8 an out-of-range `(byte)Math.Round(x)` wraps,
+    while .NET 9+ saturates. None of the fixture values is out of range, so the
+    hashes do not depend on the runtime.
+- Two formats decode, but not as AssetStudio (the behavior source of truth)
+  does, and carry `oracleNote` with the verdict: **Alpha8**, where UnityPy
+  leaves R G B at 0 and AssetStudio sets 255, and **RGB565**, where Pillow
+  widens a 5/6-bit channel as `floor(x * 255 / max)` and AssetStudio repeats its
+  top bits (`(x << 3) | (x >> 2)`), up to 1 higher. The tests prove everything
+  else about those two against the UnityPy golden.
 - UnityPy only unwraps gzip when it wraps a `UnityWebData` file, **not** when it
   wraps a bundle. `make-goldens.py` gunzips with stdlib before handing the
   stream to the oracle, and records `oracleNote` on that fixture. The reader

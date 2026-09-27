@@ -9,7 +9,9 @@ Per fixture (keyed by its path under fixtures/bundles/):
   files       - node path -> sha256 of the unpacked bytes  (what M1's env.files must match)
   objects     - per unpacked SerializedFile, the object table
   serialized  - per unpacked SerializedFile: header, externals, type trees, and
-                read_typetree() dumps of the DUMPED_CLASSES objects  (M2)
+                read_typetree() dumps of the DUMPED_CLASSES objects  (M2);
+                plus, for a file holding a Texture2D, `textures`: the sha256 of
+                its image data and of UnityPy's RGBA decode, rows as stored  (#31)
 
 Normalization (plan section 5), applied by walking the type tree next to the
 value so the node type decides, not the Python type:
@@ -33,6 +35,7 @@ import struct
 import sys
 
 import UnityPy
+from UnityPy.export.Texture2DConverter import get_image_from_texture2d
 from UnityPy.helpers.TypeTreeHelper import (
     TypeTreeConfig,
     get_ref_type_node,
@@ -63,6 +66,21 @@ REGISTRY_V1_TERMINUS = (
     b"\x08\x00\x00\x00Terminus" b"\x10\x00\x00\x00UnityEngine.DMAT" b"\x08\x00\x00\x00FAKE_ASM"
 )
 REGISTRY_V1_TERMINUS_TYPE = ("Terminus", "UnityEngine.DMAT", "FAKE_ASM")
+TEXTURE2D = 28
+# TextureFormat -> where UnityPy's RGBA knowingly differs from AssetStudio's
+# converter, the behavior source of truth (plan section 6: the verdict is
+# recorded next to the golden). Established on the #31 fixture.
+ORACLE_DISAGREES = {
+    1: (
+        "Alpha8: UnityPy leaves R G B at 0, AssetStudio sets them to 255; alpha agrees. "
+        "Verdict: AssetStudio (255) - see #31"
+    ),
+    7: (
+        "RGB565: UnityPy widens each channel as floor(x * 255 / max), AssetStudio by "
+        "repeating its top bits ((x << 3) | (x >> 2)), which is up to 1 higher. "
+        "Verdict: AssetStudio - see #31"
+    ),
+}
 
 
 def sha256(data: bytes) -> str:
@@ -251,6 +269,43 @@ def serialized_golden(name: str, sf) -> dict:
         for obj in sorted(sf.objects.values(), key=lambda o: str(o.path_id)):
             if obj.class_id in DUMPED_CLASSES:
                 out["typetrees"][str(obj.path_id)] = dump_typetree(name, obj, sf)
+        textures = {
+            str(obj.path_id): texture_golden(obj)
+            for obj in sorted(sf.objects.values(), key=lambda o: str(o.path_id))
+            if obj.class_id == TEXTURE2D
+        }
+        # Only files holding a Texture2D get the key, so every other golden
+        # stays byte-identical to what it was before #31.
+        if textures:
+            out["textures"] = textures
+    return out
+
+
+def texture_golden(obj) -> dict:
+    """Image data and decoded RGBA of one Texture2D, as UnityPy sees them (#31).
+
+    `rgbaSha256` is the RGBA8 image with its rows in the order Unity stores
+    them, bottom row first (`flip=False`); turning it top-down is #33. Where
+    UnityPy cannot decode the format, `oracleError` says why instead.
+    """
+    tex = obj.read()
+    data = bytes(tex.get_image_data())
+    out = {
+        "name": tex.m_Name,
+        "format": int(tex.m_TextureFormat),
+        "width": int(tex.m_Width),
+        "height": int(tex.m_Height),
+        "imageSize": len(data),
+        "imageSha256": sha256(data),
+    }
+    try:
+        image = get_image_from_texture2d(tex, flip=False)
+    except Exception as error:  # noqa: BLE001 - any failure is recorded, never guessed around
+        out["oracleError"] = f"{type(error).__name__}: {error}"
+        return out
+    out["rgbaSha256"] = sha256(image.convert("RGBA").tobytes())
+    if out["format"] in ORACLE_DISAGREES:
+        out["oracleNote"] = ORACLE_DISAGREES[out["format"]]
     return out
 
 

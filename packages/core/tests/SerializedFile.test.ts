@@ -128,17 +128,35 @@ test("keeps the stripped-file version suffix but parses only its leading numbers
   }
 });
 
-test("setUnityVersion sets both version fields but skips the stripped placeholder", () => {
+test("setUnityVersion sets all three version fields but skips the stripped placeholder", () => {
   const sf = readSerializedFile(node(FORMAT_22.name, MAIN_CAB));
   const written = sf.unityVersion;
 
   setUnityVersion(sf, "0.0.0");
   assert.equal(sf.unityVersion, written);
   assert.deepEqual(sf.version, FORMAT_22.editor);
+  assert.equal(sf.buildType, "f");
 
-  setUnityVersion(sf, "2.6.1f3");
-  assert.equal(sf.unityVersion, "2.6.1f3");
+  setUnityVersion(sf, "2.6.1p3");
+  assert.equal(sf.unityVersion, "2.6.1p3");
   assert.deepEqual(sf.version, [2, 6, 1, 3]);
+  assert.equal(sf.buildType, "p");
+});
+
+test("setUnityVersion reads the build type from the leading version only", () => {
+  const sf = readSerializedFile(node(FORMAT_22.name, MAIN_CAB));
+  for (const [text, buildType, version] of [
+    ["5.4.1p3", "p", [5, 4, 1, 3]],
+    ["2019.1.0a1", "a", [2019, 1, 0, 1]],
+    ["2018.3.0b12", "b", [2018, 3, 0, 12]],
+    ["2017.3.1p4\n2", "p", [2017, 3, 1, 4]],
+    ["6000.3.25f1", "f", [6000, 3, 25, 1]],
+    ["5.6.0", "", [5, 6, 0, 0]],
+  ] as const) {
+    setUnityVersion(sf, text);
+    assert.equal(sf.buildType, buildType, JSON.stringify(text));
+    assert.deepEqual(sf.version, version);
+  }
 });
 
 test("reads script types and ref types of the MonoBehaviour fixture", () => {
@@ -365,4 +383,30 @@ test("maps a target platform upstream does not know to UnknownPlatform", () => {
   w.setLittle(true);
   w.str("2018.4.0f1").i32(22).u8(0).i32(0).i32(0).i32(0).i32(0).str("");
   assert.equal(readSerializedFile(w.done()).targetPlatform, BuildTarget.UnknownPlatform);
+});
+
+test("reads the build type of a hand-built patch-release header", () => {
+  const w = new Writer(false);
+  w.u32(0).u32(0).u32(17).u32(0).u8(0).raw([0, 0, 0]);
+  w.setLittle(true);
+  w.str("5.4.1p3").i32(BuildTarget.StandaloneWindows).u8(0).i32(0).i32(0).i32(0).i32(0).str("");
+  const sf = readSerializedFile(w.done());
+  assert.equal(sf.buildType, "p");
+  assert.deepEqual(sf.version, [5, 4, 1, 3]);
+});
+
+test("format 6 names no build type until setUnityVersion gives it one", () => {
+  const meta = new Writer(false);
+  meta.u8(0).setLittle(true);
+  meta.i32(0).i32(0).i32(0).str(""); // no types, objects or externals; user info
+  const metadata = meta.done();
+  const w = new Writer(false);
+  w.u32(metadata.length).u32(16 + metadata.length).u32(6).u32(16).raw(metadata);
+  const sf = readSerializedFile(w.done());
+  assert.equal(sf.unityVersion, "2.5.0f5");
+  assert.deepEqual(sf.version, [0, 0, 0, 0]);
+  assert.equal(sf.buildType, "");
+
+  setUnityVersion(sf, "5.4.1p3");
+  assert.equal(sf.buildType, "p");
 });

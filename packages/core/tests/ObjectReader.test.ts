@@ -6,7 +6,7 @@ import { load } from "../src/env.js";
 import { CorruptError } from "../src/errors.js";
 import { ClassID, classIdName } from "../src/serialized/ClassID.js";
 import { ObjectReader } from "../src/serialized/ObjectReader.js";
-import { readSerializedFile } from "../src/serialized/SerializedFile.js";
+import { readSerializedFile, setUnityVersion } from "../src/serialized/SerializedFile.js";
 
 /** Every fixture whose golden describes at least one SerializedFile. */
 const SERIALIZED_FIXTURES = fixtureNames().filter((name) => golden(name).serialized);
@@ -166,4 +166,127 @@ test("an object with a class id outside ClassID keeps its number", () => {
   const r = new ObjectReader(data, sf, { ...sf.objects[0]!, classId: 123456 });
   assert.equal(r.type, 123456);
   assert.equal(classIdName(r.type), undefined);
+});
+
+// --- build type -----------------------------------------------------------------
+
+test("the build type is f for every editor-built fixture, stripped-suffix ones included", () => {
+  let suffixed = 0;
+  for (const name of SERIALIZED_FIXTURES) {
+    for (const path of Object.keys(golden(name).serialized!)) {
+      const data = node(name, path);
+      const sf = readSerializedFile(data);
+      if (sf.unityVersion.includes("\n")) suffixed++;
+      assert.equal(sf.buildType, "f", `${name} ${path}`);
+      for (const r of readers(data)) assert.equal(r.buildType, "f");
+    }
+  }
+  assert.ok(suffixed > 0, "no fixture carries the typetree-stripped suffix");
+});
+
+test("an object reader takes the build type setUnityVersion gives its file", () => {
+  const data = node(MAIN, MAIN_CAB);
+  const sf = readSerializedFile(data);
+  setUnityVersion(sf, "5.4.1p3");
+  const r = new ObjectReader(data, sf, sf.objects[0]!);
+  assert.equal(r.buildType, "p");
+  assert.deepEqual(r.version, [5, 4, 1, 3]);
+});
+
+// --- vector helpers on hand-built bytes -------------------------------------------
+
+/** Little-endian float32s 1, 2, 3, ... `count`. */
+function floats(count: number): Uint8Array {
+  const view = new DataView(new ArrayBuffer(count * 4));
+  for (let i = 0; i < count; i++) view.setFloat32(i * 4, i + 1, true);
+  return new Uint8Array(view.buffer);
+}
+
+/** A little-endian reader over `bytes` as if written by editor `version`. */
+function handBuilt(bytes: Uint8Array, version: string): ObjectReader {
+  const sf = readSerializedFile(node(MAIN, MAIN_CAB));
+  setUnityVersion(sf, version);
+  assert.equal(sf.bigEndian, false);
+  const info = { ...sf.objects[0]!, byteStart: 0, byteSize: bytes.length };
+  return new ObjectReader(bytes, sf, info);
+}
+
+const V3 = { x: 1, y: 2, z: 3 };
+
+test("readVector3 reads 12 bytes on 5.4 and later", () => {
+  for (const version of ["5.4.0f3", "5.6.7f1", "2019.4.41f2", "6000.3.25f1"]) {
+    const r = handBuilt(floats(5), version);
+    assert.deepEqual(r.readVector3(), V3);
+    assert.equal(r.position, 12, version);
+  }
+});
+
+test("readVector3 reads a 16-byte Vector4 and drops w before 5.4", () => {
+  for (const version of ["5.3.8f2", "5.0.0f4", "4.7.2f1", "3.4.2f1"]) {
+    const r = handBuilt(floats(5), version);
+    assert.deepEqual(r.readVector3(), V3);
+    assert.equal(r.position, 16, version);
+    assert.equal(r.readFloat32(), 5);
+  }
+});
+
+test("readVector3Array reads an Int32 count, or the length it is given", () => {
+  const counted = new Uint8Array(4 + 6 * 4);
+  new DataView(counted.buffer).setInt32(0, 2, true);
+  counted.set(floats(6), 4);
+  const r = handBuilt(counted, "2019.4.41f2");
+  assert.deepEqual(r.readVector3Array(), [V3, { x: 4, y: 5, z: 6 }]);
+  assert.equal(r.remaining, 0);
+
+  const old = handBuilt(floats(8), "5.3.8f2");
+  assert.deepEqual(old.readVector3Array(2), [V3, { x: 5, y: 6, z: 7 }]);
+  assert.equal(old.remaining, 0);
+});
+
+test("readVector3Array refuses a negative count and a count past the object", () => {
+  for (const count of [-1, 1000]) {
+    const bytes = new Uint8Array(16);
+    new DataView(bytes.buffer).setInt32(0, count, true);
+    assert.throws(
+      () => handBuilt(bytes, "2019.4.41f2").readVector3Array(),
+      (e) => e instanceof CorruptError && e.message.includes(`Vector3 count ${count}`),
+    );
+  }
+  assert.throws(() => handBuilt(floats(5), "2019.4.41f2").readVector3Array(2), CorruptError);
+});
+
+test("readXForm reads Vector3, Quaternion, Vector3 with the 5.4 gate", () => {
+  const r = handBuilt(floats(12), "2019.4.41f2");
+  assert.deepEqual(r.readXForm(), {
+    t: V3,
+    q: { x: 4, y: 5, z: 6, w: 7 },
+    s: { x: 8, y: 9, z: 10 },
+  });
+  assert.equal(r.position, 40);
+
+  const old = handBuilt(floats(12), "5.3.8f2");
+  assert.deepEqual(old.readXForm(), {
+    t: V3,
+    q: { x: 5, y: 6, z: 7, w: 8 },
+    s: { x: 9, y: 10, z: 11 },
+  });
+  assert.equal(old.position, 48);
+});
+
+test("readXForm4 reads Vector4, Quaternion, Vector4 in every version and drops w", () => {
+  for (const version of ["2019.4.41f2", "5.3.8f2"]) {
+    const r = handBuilt(floats(12), version);
+    assert.deepEqual(r.readXForm4(), {
+      t: V3,
+      q: { x: 5, y: 6, z: 7, w: 8 },
+      s: { x: 9, y: 10, z: 11 },
+    });
+    assert.equal(r.position, 48, version);
+  }
+});
+
+test("vector helpers throw CorruptError past the end of the object", () => {
+  assert.throws(() => handBuilt(floats(2), "2019.4.41f2").readVector3(), CorruptError);
+  assert.throws(() => handBuilt(floats(3), "5.3.8f2").readVector3(), CorruptError);
+  assert.throws(() => handBuilt(floats(11), "2019.4.41f2").readXForm4(), CorruptError);
 });
