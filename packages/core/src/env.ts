@@ -171,7 +171,7 @@ export interface Env {
    * @throws {Error} when `from` is not one of this env's {@link objects}
    * @throws {ResourceNotFoundError} when no loaded file has that name
    * @throws {RangeError} when `ref.offset` or `ref.size` is not a whole number
-   *   in 0..2^53 (D9)
+   *   in 0..2^53, or is a `bigint` (D9)
    * @throws {CorruptError} when the range runs past the end of the file,
    *   naming the file, the range and the file's size
    * @throws {UnsupportedError} / {CorruptError} as {@link objects} does, since
@@ -331,11 +331,20 @@ function findResource(
  * `ResourceReader.GetData`, which seeks and reads without a check and so hands
  * back short data past the end).
  *
- * @throws {RangeError} when the offset or size is not a whole number in 0..2^53
+ * @throws {RangeError} when the offset or size is a bigint, or not a whole
+ *   number in 0..2^53
  * @throws {CorruptError} when the range runs past the end of the file
  */
 function readRange({ path, data }: LoadedFile, { offset, size }: ResourceRef): Uint8Array {
   for (const [what, value] of [["offset", offset], ["size", size]] as const) {
+    // A 2020.1+ typetree reads `offset` as UInt64, so a caller passing
+    // `readTypeTree()` output straight through hands over a bigint (D9).
+    if (typeof value === "bigint") {
+      throw new RangeError(
+        `${path}: resource ${what} ${value}n is a bigint; ` +
+          "convert it to a number, refusing 2^53 and above (D9)",
+      );
+    }
     if (!Number.isSafeInteger(value) || value < 0) {
       throw new RangeError(
         `${path}: resource ${what} ${value} is not a whole number in 0..2^53 (D9)`,

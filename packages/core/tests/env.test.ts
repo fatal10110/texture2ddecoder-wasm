@@ -820,6 +820,18 @@ test("readResource() refuses an offset or size a number cannot hold exactly (D9)
   }
 });
 
+test("readResource() names a bigint offset as a bigint rather than a bad number", () => {
+  // What `readTypeTree()` gives for `m_StreamData.offset` from 2020.1 on.
+  const env = load([{ name: TEXTURE, data: loadFixture(TEXTURE) }]);
+  const { texture, ref } = streamedTexture(env);
+  const offset = 0n as unknown as number;
+  assert.throws(
+    () => env.readResource({ path: ref.path, offset, size: 1 }, texture),
+    (error: unknown) =>
+      error instanceof RangeError && /resource offset 0n is a bigint; convert/.test(error.message),
+  );
+});
+
 test("readResource() refuses an object another env loaded", () => {
   const { texture, ref } = streamedTexture(load([{ name: TEXTURE, data: loadFixture(TEXTURE) }]));
   const other = load([{ name: TEXTURE, data: loadFixture(TEXTURE) }]);
