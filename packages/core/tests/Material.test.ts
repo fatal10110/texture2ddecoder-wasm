@@ -28,6 +28,12 @@ import {
 } from "./class-readers.js";
 
 const FIXTURES = fixturesWith(ClassID.Material);
+/**
+ * This PR's `material/*` bundles (fixtures/BUILDING.md section 10), whose
+ * values the build script set. Other fixtures may hold a Material too (a
+ * font's), checked only against the oracle.
+ */
+const MATERIAL_FIXTURES = FIXTURES.filter((name) => name.includes("/material/"));
 const STRIPPED: UnityVersion = [0, 0, 0, 0];
 const isStripped = (version: UnityVersion): boolean => version.every((part) => part === 0);
 
@@ -123,7 +129,7 @@ for (const name of FIXTURES) {
 
 test("the Material checks cover formats 21 and 22, typed, notypetree and version-stripped", () => {
   const seen = new Set<string>();
-  for (const name of FIXTURES) {
+  for (const name of MATERIAL_FIXTURES) {
     for (const { formatVersion, unityVersion, enableTypeTree, reader } of objectsOf(
       name,
       ClassID.Material,
@@ -158,7 +164,9 @@ test("the three editors cover three layouts: 2019.4, 2020.3 and 6000.3", () => {
 });
 
 test("the fixture holds what the build script set (fixtures/BUILDING.md)", () => {
-  for (const name of FIXTURES) {
+  // Three editors, three variants each.
+  assert.equal(MATERIAL_FIXTURES.length, 9);
+  for (const name of MATERIAL_FIXTURES) {
     for (const { reader } of objectsOf(name, ClassID.Material)) {
       if (isStripped(reader.version) && reader.format >= 22) continue;
       const m = readMaterial(reader);
