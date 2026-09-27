@@ -30,11 +30,16 @@ import {
 const TYPED = fixtureNames().filter((name) =>
   Object.values(golden(name).serialized ?? {}).some((sf) => Object.keys(sf.textures ?? {}).length),
 );
-/** Fixtures built without type trees that hold a Texture2D. */
+/**
+ * Fixtures built without type trees whose typed twin has Texture2D goldens. A
+ * dynamic font's 0x0 "Font Texture" has no image data and so no golden (#41).
+ */
 const STRIPPED = fixtureNames().filter(
   (name) =>
     name.includes("/lz4-notypetree/") &&
-    Object.values(golden(name).objects).some((objs) => objs.some((o) => o.classId === 28)),
+    Object.values(golden(name.replace(/lz4-notypetree/g, "lz4")).serialized ?? {}).some(
+      (sf) => Object.keys(sf.textures ?? {}).length,
+    ),
 );
 
 interface Loaded {

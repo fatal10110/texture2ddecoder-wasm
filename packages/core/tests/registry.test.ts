@@ -22,12 +22,12 @@ import { ObjectReader } from "../src/serialized/ObjectReader.js";
 import { readSerializedFile } from "../src/serialized/SerializedFile.js";
 import { objectBytes, synthetic } from "./class-readers.js";
 
-/** Fixtures holding a Texture2D, per their golden object tables. */
-const TEXTURE_FIXTURES = fixtureNames().filter((name) =>
-  Object.values(golden(name).objects).some((objs) =>
-    objs.some((o) => o.classId === ClassID.Texture2D),
-  ),
-);
+/**
+ * Fixtures holding a Texture2D with image data, per their (or their typed
+ * twin's) texture goldens. A dynamic font's 0x0 "Font Texture" has none, so no
+ * golden (#41); `Font.test.ts` checks that `read()` refuses it.
+ */
+const TEXTURE_FIXTURES = fixtureNames().filter((name) => textureGoldens(name).size > 0);
 
 /** Fixtures whose SerializedFiles all carry type trees, and those built without. */
 const TYPED = fixtureNames().filter((name) => {
@@ -45,6 +45,10 @@ const HARDCODED: ReadonlySet<number> = new Set([
   ClassID.TextAsset,
   ClassID.MonoScript,
   ClassID.Material,
+  ClassID.AudioClip,
+  ClassID.Font,
+  ClassID.VideoClip,
+  ClassID.MovieTexture,
 ]);
 /** Whether a fixture holds an object of a class without a hardcoded reader. */
 const hasOthers = (name: string): boolean =>
@@ -386,6 +390,10 @@ const NAMED: { classId: number; name: string }[] = [
   { classId: ClassID.MonoScript, name: "editor/6000.3.25f1/uncompressed/main" },
   { classId: ClassID.AssetBundle, name: "editor/6000.3.25f1/uncompressed/shared" },
   { classId: ClassID.Material, name: "editor/6000.3.25f1/material/lz4/material" },
+  // #41. MovieTexture has no fixture; MovieTexture.test.ts checks it the same way.
+  { classId: ClassID.AudioClip, name: "editor/6000.3.25f1/lz4/audio" },
+  { classId: ClassID.Font, name: "editor/6000.3.25f1/lz4/font" },
+  { classId: ClassID.VideoClip, name: "editor/6000.3.25f1/lz4/video" },
 ];
 
 for (const { classId, name } of NAMED) {

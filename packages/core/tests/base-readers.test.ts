@@ -63,6 +63,8 @@ function readField(reader: ObjectReader, [, type, name]: GoldenNode, want: unkno
   if (type === "string") actual = reader.readAlignedString();
   else if (type === "int") actual = reader.readInt32();
   else if (type === "bool") actual = reader.readUInt8() !== 0;
+  // By bit pattern, as the golden has it (plan §5): a Font's m_LineSpacing (#41).
+  else if (type === "float") actual = `f32:${reader.readUInt32().toString(16).padStart(8, "0")}`;
   else if (type.startsWith("PPtr<")) {
     actual = { m_FileID: reader.readInt32(), m_PathID: String(reader.readInt64()) };
   } else if (type === "vector" || type === "map") {

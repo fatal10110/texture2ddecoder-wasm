@@ -62,3 +62,11 @@ export type {
   UnityTexEnv,
   Vector2,
 } from "./classes/Material.js";
+export { readAudioClip } from "./classes/AudioClip.js";
+export type { AudioClip, AudioClipData } from "./classes/AudioClip.js";
+export { readFont } from "./classes/Font.js";
+export type { CharacterInfo, Font, Rectf } from "./classes/Font.js";
+export { readVideoClip } from "./classes/VideoClip.js";
+export type { StreamedResource, VideoClip, VideoClipData } from "./classes/VideoClip.js";
+export { readMovieTexture } from "./classes/MovieTexture.js";
+export type { MovieTexture } from "./classes/MovieTexture.js";

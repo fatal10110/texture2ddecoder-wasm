@@ -15,6 +15,10 @@ import { readTexture2D, type Texture2D } from "./Texture2D.js";
 import { readMonoBehaviour, type MonoBehaviour } from "./MonoBehaviour.js";
 import { readMonoScript, type MonoScript } from "./MonoScript.js";
 import { readTextAsset, type TextAsset } from "./TextAsset.js";
+import { readAudioClipData, type AudioClipData } from "./AudioClip.js";
+import { readFont, type Font } from "./Font.js";
+import { readMovieTexture, type MovieTexture } from "./MovieTexture.js";
+import { readVideoClipData, type VideoClipData } from "./VideoClip.js";
 
 /**
  * A `Texture2D` as `obj.read()` returns it: every field `readTexture2D` reads,
@@ -65,6 +69,10 @@ export type ObjectData =
   | MonoScript
   | MonoBehaviourData
   | Material
+  | AudioClipData
+  | Font
+  | VideoClipData
+  | MovieTexture
   | TypeTreeObject;
 
 /**
@@ -89,6 +97,10 @@ const CLASS_READERS: ReadonlyMap<number, ClassReader> = new Map<number, ClassRea
   [ClassID.MonoScript, readMonoScript],
   [ClassID.MonoBehaviour, readMonoBehaviourData],
   [ClassID.Material, readMaterial],
+  [ClassID.AudioClip, readAudioClipData],
+  [ClassID.Font, readFont],
+  [ClassID.VideoClip, readVideoClipData],
+  [ClassID.MovieTexture, readMovieTexture],
 ]);
 
 /**
