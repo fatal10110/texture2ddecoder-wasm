@@ -63,6 +63,8 @@ function readField(reader: ObjectReader, [, type, name]: GoldenNode, want: unkno
   if (type === "string") actual = reader.readAlignedString();
   else if (type === "int") actual = reader.readInt32();
   else if (type === "bool") actual = reader.readUInt8() !== 0;
+  // By bit pattern, as the golden has it (plan §5): a Font's m_LineSpacing (#41).
+  else if (type === "float") actual = `f32:${reader.readUInt32().toString(16).padStart(8, "0")}`;
   else if (type.startsWith("PPtr<")) {
     actual = { m_FileID: reader.readInt32(), m_PathID: String(reader.readInt64()) };
   } else if (type === "vector" || type === "map") {
@@ -372,4 +374,57 @@ test("every reader starts from the object's first byte, as upstream's Reset() do
 test("throws CorruptError when an object ends before m_Name's length", () => {
   const reader = synthetic(new Uint8Array(2), BuildTarget.StandaloneWindows64, ...PLAYER_6000);
   assert.throws(() => readNamedObject(reader), CorruptError);
+});
+
+// --- m_Name's length: strict, unlike readAlignedString (#129) ------------------------
+
+/**
+ * A player file, where `m_Name` is the object's first field, and an editor
+ * one, where it follows the 2018.3+ EditorExtension header.
+ */
+const NAME_AT: { label: string; platform: BuildTarget; header: Field[] }[] = [
+  { label: "player", platform: BuildTarget.StandaloneWindows64, header: [] },
+  {
+    label: "NoTarget",
+    platform: BuildTarget.NoTarget,
+    header: [["u32", 0], ["i32", 0], ["i64", 0n], ["i32", 0], ["i64", 0n], ["i32", 0], ["i64", 0n]],
+  },
+];
+
+for (const { label, platform, header } of NAME_AT) {
+  const at = bytesOf(header).length;
+  /** The error `readNamedObject` must throw for an `m_Name` byte count of `length`. */
+  const refuses = (length: number, why: string) => () => {
+    // Four bytes after the count: the lenient read would return "" and go on.
+    const bytes = bytesOf([...header, ["i32", length], ["i32", 0]]);
+    const reader = synthetic(bytes, platform, ...PLAYER_6000);
+    const message = `TextAsset ${reader.pathId} m_Name byte count ${length} at offset ${at} ${why}`;
+    assert.throws(
+      () => readNamedObject(reader),
+      (err: unknown) => err instanceof CorruptError && err.message === message,
+    );
+  };
+
+  test(`${label}: a negative m_Name length throws CorruptError, not ""`, refuses(-1, "is negative"));
+  test(
+    `${label}: an m_Name length past the object's end throws CorruptError, not ""`,
+    refuses(5, "exceeds the 4 bytes left"),
+  );
+}
+
+test("a bad m_Name length in a class ClassID does not name: the error gives the class id", () => {
+  const { sf, info } = textAsset();
+  const bytes = bytesOf([["i32", -1]]);
+  const reader = new ObjectReader(bytes, sf, {
+    ...info,
+    classId: 9999,
+    byteStart: 0,
+    byteSize: bytes.length,
+  });
+  assert.throws(
+    () => readNamedObject(reader),
+    (err: unknown) =>
+      err instanceof CorruptError &&
+      err.message === `class 9999 ${reader.pathId} m_Name byte count -1 at offset 0 is negative`,
+  );
 });

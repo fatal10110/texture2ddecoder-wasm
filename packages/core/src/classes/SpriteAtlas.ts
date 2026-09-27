@@ -2,6 +2,8 @@
 
 import { UnsupportedError } from "../errors.js";
 import type { ObjectReader } from "../serialized/ObjectReader.js";
+import type { Rectf } from "./Font.js";
+import type { Vector2 } from "./Material.js";
 import { readNamedObject, type NamedObject } from "./NamedObject.js";
 import { readPPtr, type PPtr } from "./PPtr.js";
 import {
@@ -15,9 +17,7 @@ import {
   readVector4,
   refuseUnreadable,
   type GUID,
-  type Rectf,
   type SecondarySpriteTexture,
-  type Vector2,
   type Vector4,
 } from "./Sprite.js";
 import { readStringField } from "./strings.js";

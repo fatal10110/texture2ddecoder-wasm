@@ -10,12 +10,17 @@ import type { ObjectReader } from "../serialized/ObjectReader.js";
 import { baseName } from "../serialized/SerializedFile.js";
 import { readTypeTree, type TypeTreeObject } from "../serialized/TypeTreeReader.js";
 import { readAssetBundle, type AssetBundle } from "./AssetBundle.js";
+import { readMaterial, type Material } from "./Material.js";
 import { readTexture2D, type Texture2D } from "./Texture2D.js";
 import { readMonoBehaviour, type MonoBehaviour } from "./MonoBehaviour.js";
 import { readMonoScript, type MonoScript } from "./MonoScript.js";
 import { readSprite, type Sprite } from "./Sprite.js";
 import { readSpriteAtlas, type SpriteAtlas } from "./SpriteAtlas.js";
 import { readTextAsset, type TextAsset } from "./TextAsset.js";
+import { readAudioClipData, type AudioClipData } from "./AudioClip.js";
+import { readFont, type Font } from "./Font.js";
+import { readMovieTexture, type MovieTexture } from "./MovieTexture.js";
+import { readVideoClipData, type VideoClipData } from "./VideoClip.js";
 
 /**
  * A `Texture2D` as `obj.read()` returns it: every field `readTexture2D` reads,
@@ -56,8 +61,8 @@ export type MonoBehaviourData = MonoBehaviour & { [field: string]: unknown };
 /**
  * What `obj.read()` returns: a hardcoded class reader's result for a class
  * that has one ({@link Texture2DData} for a `Texture2D`, `TextAsset`,
- * `MonoScript`, {@link MonoBehaviourData} for a `MonoBehaviour`, `Sprite`,
- * `SpriteAtlas`), and the `readTypeTree()` result for any other class.
+ * `MonoScript`, {@link MonoBehaviourData} for a `MonoBehaviour`, `Material`,
+ * `Sprite`, `SpriteAtlas`), and the `readTypeTree()` result for any other class.
  */
 export type ObjectData =
   | Texture2DData
@@ -65,6 +70,11 @@ export type ObjectData =
   | TextAsset
   | MonoScript
   | MonoBehaviourData
+  | Material
+  | AudioClipData
+  | Font
+  | VideoClipData
+  | MovieTexture
   | Sprite
   | SpriteAtlas
   | TypeTreeObject;
@@ -90,6 +100,11 @@ const CLASS_READERS: ReadonlyMap<number, ClassReader> = new Map<number, ClassRea
   [ClassID.TextAsset, readTextAsset],
   [ClassID.MonoScript, readMonoScript],
   [ClassID.MonoBehaviour, readMonoBehaviourData],
+  [ClassID.Material, readMaterial],
+  [ClassID.AudioClip, readAudioClipData],
+  [ClassID.Font, readFont],
+  [ClassID.VideoClip, readVideoClipData],
+  [ClassID.MovieTexture, readMovieTexture],
   [ClassID.Sprite, readSprite],
   [ClassID.SpriteAtlas, readSpriteAtlas],
 ]);

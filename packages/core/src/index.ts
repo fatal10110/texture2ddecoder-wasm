@@ -53,6 +53,23 @@ export type { Hash128, MonoScript } from "./classes/MonoScript.js";
 export { readMonoBehaviour } from "./classes/MonoBehaviour.js";
 export type { MonoBehaviour } from "./classes/MonoBehaviour.js";
 export type { MonoBehaviourData } from "./classes/registry.js";
+export { readMaterial } from "./classes/Material.js";
+export type {
+  BuildTextureStackReference,
+  Color,
+  Material,
+  UnityPropertySheet,
+  UnityTexEnv,
+  Vector2,
+} from "./classes/Material.js";
+export { readAudioClip } from "./classes/AudioClip.js";
+export type { AudioClip, AudioClipData } from "./classes/AudioClip.js";
+export { readFont } from "./classes/Font.js";
+export type { CharacterInfo, Font, Rectf } from "./classes/Font.js";
+export { readVideoClip } from "./classes/VideoClip.js";
+export type { StreamedResource, VideoClip, VideoClipData } from "./classes/VideoClip.js";
+export { readMovieTexture } from "./classes/MovieTexture.js";
+export type { MovieTexture } from "./classes/MovieTexture.js";
 export { readSprite, SpritePackingRotation } from "./classes/Sprite.js";
 export type {
   AABB,
@@ -64,14 +81,12 @@ export type {
   Matrix4x4,
   MeshBlendShape,
   MeshBlendShapeChannel,
-  Rectf,
   SecondarySpriteTexture,
   Sprite,
   SpriteBone,
   SpriteRenderData,
   SpriteVertex,
   SubMesh,
-  Vector2,
   Vector4,
   VertexData,
 } from "./classes/Sprite.js";

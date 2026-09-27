@@ -12,8 +12,11 @@ Per fixture (keyed by its path under fixtures/bundles/):
                 read_typetree() dumps of the DUMPED_CLASSES objects  (M2);
                 plus, for a file holding a Texture2D, `textures`: the sha256 of
                 its image data and of UnityPy's RGBA decode, rows as stored  (#31);
-                and for a file holding a Sprite, `sprites`: UnityPy's sprite
-                image, rows as stored, cropped only and with its mesh  (#34)
+                for a file holding an AudioClip, Font, VideoClip or
+                MovieTexture, `rawData`: the sha256 of the bytes each carries,
+                inline or read out of its resource file  (#41); and for a file
+                holding a Sprite, `sprites`: UnityPy's sprite image, rows as
+                stored, cropped only and with its mesh  (#34)
 Plus `synthetic`: UnityPy's RGBA for generated block data in the formats no
 editor on hand writes (ATC, signed EAC - #32); `platform`: the same for the
 console layouts no editor on hand builds (Switch swizzle, Xbox 360 byte swap),
@@ -49,6 +52,7 @@ from UnityPy.enums import BuildTarget, SpritePackingMode, SpritePackingRotation,
 from UnityPy.export import SpriteHelper
 from UnityPy.export.Texture2DConverter import get_image_from_texture2d, parse_image_data
 from UnityPy.helpers import TextureSwizzler
+from UnityPy.helpers.ResourceReader import get_resource_data
 from UnityPy.helpers.TypeTreeHelper import (
     TypeTreeConfig,
     get_ref_type_node,
@@ -65,17 +69,34 @@ INT64_TYPES = {"SInt64", "UInt64", "long long", "unsigned long long", "FileSize"
 BYTE_TYPES = {"UInt8", "SInt8", "char"}
 # Classes whose read_typetree() output is part of the goldens (#25). AssetBundle
 # and AssetBundleManifest are the only map / pair / set in the fixtures (#84);
-# Mesh and Texture2D the only TypelessData, non-empty and empty (#86). Sprite
-# and SpriteAtlas are only in the #34 fixtures, so no other golden changes.
+# Mesh and Texture2D the only TypelessData, non-empty and empty (#86).
+# Material for its hardcoded reader (#40). Sprite and SpriteAtlas for theirs
+# (#34); only the #34 fixtures hold them, so no other golden changes.
 DUMPED_CLASSES = {
+    21: "Material",
     28: "Texture2D",
     43: "Mesh",
     49: "TextAsset",
     114: "MonoBehaviour",
+    115: "MonoScript",  # for its hardcoded reader (#124)
     142: "AssetBundle",
     213: "Sprite",
     290: "AssetBundleManifest",
     687078895: "SpriteAtlas",
+    # The classes whose bytes come out raw (#41). No fixture holds a
+    # MovieTexture: no fixture editor can make one with movie data.
+    83: "AudioClip",
+    128: "Font",
+    152: "MovieTexture",
+    329: "VideoClip",
+}
+# Class id -> how to get at the raw bytes an object carries (#41), in the
+# `rawData` golden: its own field when inline, else its StreamedResource.
+RAW_DATA = {
+    83: ("m_AudioData", "m_Resource"),  # before 5.0 inline, from 5.0 in a .resource
+    128: ("m_FontData", None),
+    152: ("m_MovieData", None),
+    329: (None, "m_ExternalResources"),
 }
 # Sentinel entry that ends a ManagedReferencesRegistry version 1 list (#25).
 REGISTRY_V1_TERMINUS = (
@@ -392,12 +413,20 @@ def serialized_golden(name: str, sf) -> dict:
         textures = {
             str(obj.path_id): texture_golden(obj)
             for obj in sorted(sf.objects.values(), key=lambda o: str(o.path_id))
-            if obj.class_id == TEXTURE2D
+            if obj.class_id == TEXTURE2D and has_image_data(obj)
         }
         # Only files holding a Texture2D get the key, so every other golden
         # stays byte-identical to what it was before #31.
         if textures:
             out["textures"] = textures
+        raw = {
+            str(obj.path_id): raw_data_golden(obj)
+            for obj in sorted(sf.objects.values(), key=lambda o: str(o.path_id))
+            if obj.class_id in RAW_DATA
+        }
+        # Likewise: only files holding one of the RAW_DATA classes (#41).
+        if raw:
+            out["rawData"] = raw
         sprites = {
             str(obj.path_id): sprite_golden(obj)
             for obj in sorted(sf.objects.values(), key=lambda o: str(o.path_id))
@@ -407,6 +436,46 @@ def serialized_golden(name: str, sf) -> dict:
         if sprites:
             out["sprites"] = sprites
     return out
+
+
+def has_image_data(obj) -> bool:
+    """Whether a Texture2D has image data, inline or in a resource file (#41).
+
+    A dynamic font's "Font Texture" is 0x0 with neither; UnityPy then looks
+    for a resource file named "" and fails. There is nothing to hash or decode,
+    so such a texture gets no texture golden; its type tree is still dumped.
+    """
+    tex = obj.read()
+    return bool(tex.image_data) or bool(tex.m_StreamData and tex.m_StreamData.path)
+
+
+def raw_data_golden(obj) -> dict:
+    """The bytes an AudioClip, Font, VideoClip or MovieTexture carries (#41).
+
+    Inline bytes as UnityPy reads the field; otherwise the StreamedResource,
+    read by UnityPy's own resource lookup (`get_resource_data`), as its
+    AudioClip export does. `source` is the resource file's name, or "inline".
+    """
+    inline_field, resource_field = RAW_DATA[obj.class_id]
+    value = obj.read()
+    inline = getattr(value, inline_field, None) if inline_field else None
+    resource = getattr(value, resource_field, None) if resource_field else None
+    if inline:
+        data, source = bytes(v & 0xFF for v in inline), "inline"
+    elif resource is not None and resource.m_Source:
+        data = bytes(
+            get_resource_data(resource.m_Source, obj.assets_file, resource.m_Offset, resource.m_Size)
+        )
+        source = resource.m_Source.rsplit("/", 1)[-1]
+    else:
+        raise SystemExit(f"{DUMPED_CLASSES[obj.class_id]} {obj.path_id}: no raw data")
+    return {
+        "classId": int(obj.class_id),
+        "name": value.m_Name,
+        "source": source,
+        "size": len(data),
+        "sha256": sha256(data),
+    }
 
 
 def texture_golden(obj) -> dict:

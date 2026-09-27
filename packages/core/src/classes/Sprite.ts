@@ -5,16 +5,12 @@ import { CorruptError, UnsupportedError } from "../errors.js";
 import { BuildTarget } from "../serialized/BuildTarget.js";
 import type { ObjectReader, Quaternion, Vector3 } from "../serialized/ObjectReader.js";
 import { readCount } from "../serialized/TypeTree.js";
+import type { Rectf } from "./Font.js";
+import type { Vector2 } from "./Material.js";
 import { readNamedObject, type NamedObject } from "./NamedObject.js";
 import { readPPtr, type PPtr } from "./PPtr.js";
 import { readStringField } from "./strings.js";
 import { atLeast } from "./version.js";
-
-/** Two floats (Unity's `Vector2f`). */
-export interface Vector2 {
-  x: number;
-  y: number;
-}
 
 /** Four floats (Unity's `Vector4f`). */
 export interface Vector4 {
@@ -22,14 +18,6 @@ export interface Vector4 {
   y: number;
   z: number;
   w: number;
-}
-
-/** A rectangle (Unity's `Rectf`): its corner nearest the origin, then its size. */
-export interface Rectf {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
 }
 
 /**

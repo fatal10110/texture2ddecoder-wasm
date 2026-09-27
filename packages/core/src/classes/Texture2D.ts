@@ -4,6 +4,7 @@ import type { ResourceRef } from "../env.js";
 import { CorruptError } from "../errors.js";
 import type { ObjectReader } from "../serialized/ObjectReader.js";
 import { readCount } from "../serialized/TypeTree.js";
+import { readStringField } from "./strings.js";
 import { readTexture, type Texture } from "./Texture.js";
 import { atLeast } from "./version.js";
 
@@ -116,9 +117,11 @@ export interface Texture2D extends Texture {
  * @param reader the object's reader, rewound first and left at its end
  * @throws {UnsupportedError} for an unknown Unity version or an editor file,
  *   as `readTexture` does
- * @throws {CorruptError} when the object ends early, a length or count runs
- *   past its end, `m_StreamData.offset` is 2^53 or above, or bytes are left
- *   over after the last field
+ * @throws {CorruptError} when the object ends early, the `m_Name`,
+ *   `m_MipmapLimitGroupName`, `m_PlatformBlob`, `image data` or
+ *   `m_StreamData.path` byte count is negative or runs past its end,
+ *   `m_StreamData.offset` is 2^53 or above, or bytes are left over after the
+ *   last field
  */
 export function readTexture2D(reader: ObjectReader): Texture2D {
   const base = readTexture(reader);
@@ -190,7 +193,7 @@ function readMipmapLimit(reader: ObjectReader, out: Partial<Texture2D>): void {
   if (atLeast(reader.version, 2022, 2)) {
     out.m_IgnoreMipmapLimit = readBool(reader);
     reader.align();
-    out.m_MipmapLimitGroupName = reader.readAlignedString();
+    out.m_MipmapLimitGroupName = readStringField(reader, "Texture2D", "m_MipmapLimitGroupName");
   } else if (atLeast(reader.version, 2019, 3)) {
     out.m_IgnoreMasterTextureLimit = readBool(reader);
   }
@@ -219,8 +222,8 @@ function readTextureSettings(reader: ObjectReader): GLTextureSettings {
  * Upstream `StreamingInfo(ObjectReader)`.
  *
  * @throws {CorruptError} when the offset is 2^53 or above (R6), or the path's
- *   length runs past the object's end: upstream would read that as an empty
- *   path, and so call truncated data inline
+ *   byte count is negative or runs past the object's end: upstream reads
+ *   either as an empty path, and so calls garbled or truncated data inline
  */
 function readStreamingInfo(reader: ObjectReader): StreamingInfo {
   // 2020.1+: the offset is 64-bit.
@@ -237,17 +240,7 @@ function readStreamingInfo(reader: ObjectReader): StreamingInfo {
     offset = reader.readUInt32();
   }
   const size = reader.readUInt32();
-
-  const at = reader.position;
-  const length = reader.readInt32();
-  if (length > reader.remaining) {
-    throw new CorruptError(
-      `Texture2D ${reader.pathId} m_StreamData path of ${length} bytes at offset ${at} ` +
-        `runs past the ${reader.remaining} bytes left`,
-    );
-  }
-  reader.position = at;
-  return { offset, size, path: reader.readAlignedString() };
+  return { offset, size, path: readStringField(reader, "Texture2D", "m_StreamData path") };
 }
 
 /** A one-byte bool, as Unity writes it. */

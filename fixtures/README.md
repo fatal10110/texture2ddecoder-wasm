@@ -72,6 +72,31 @@ The 6000.3.25f1 pair sets archive flag 0x200 (block padding, flags `0x243`); the
 2020.3.30f1 pair predates that and does not (`0x43`)
 ([`BUILDING.md`](BUILDING.md) section 7).
 
+Each editor also has `material/lz4/material`, `material/lz4-notypetree/material`
+and `material/lz4-stripped/material` (#40): one Material with its serialized
+fields set to values other than their defaults, except an empty
+`m_BuildTextureStacks`, a null `_BumpMap` texture and `_NegZero`, which Unity
+saves as `+0`. Each is built with type trees, without (`DisableWriteTypeTree`) and
+version-stripped (`AssetBundleStripUnityVersion`, `"0.0.0"`). Its shader and
+texture are in a dependency bundle that is not committed, so `m_Shader` and the
+`_MainTex` slot point at an external file. The three editors give three of
+Unity's Material layouts: 2019.4's, 2020.3's (adds `m_BuildTextureStacks`) and
+6000.3's (`m_ValidKeywords` / `m_InvalidKeywords` and `m_Ints`)
+([`BUILDING.md`](BUILDING.md) section 10).
+
+Every editor also has `audio`, `font` and `video` in `lz4`, `lz4-notypetree`
+and `stripped` (#41), built from generated source files
+([`BUILDING.md`](BUILDING.md) section 11):
+
+- `audio` - two AudioClips, PCM and Vorbis, each an FSB5 sound bank in the
+  bundle's `.resource` node
+- `font` - one dynamic Font with its TrueType file inline in `m_FontData`, plus
+  the Material and the empty 0x0 "Font Texture" the importer adds
+- `video` - one VideoClip, the WebM file in the bundle's `.resource` node
+
+2019.4.41f2's `stripped` bundles are format 21, the others' format 22. No
+fixture holds a MovieTexture (no fixture editor makes one with a movie).
+
 NaN does not have one bit pattern everywhere, and that comes from Unity: every
 editor wrote `0xFFC00000` into the first variant it built (`lz4`) and
 `0x7FC00000` into the rest (see `BUILDING.md` section 4). The goldens record the
@@ -124,6 +149,12 @@ sprites yet; M3 adds the rest.
 - `files` hashes are of the raw node bytes. For a node UnityPy parses as a
   SerializedFile they come from `entry.reader.bytes`, never `entry.save()`,
   which re-serializes and can differ from the original (#81).
+- The `Hash128`s outside the typetree dumps (`types[].scriptId`,
+  `types[].oldTypeHash`, `externals[].guid`) are hex strings, as is every
+  sha256 (`files`, `textures`, `rawData`, `synthetic`, ...). A `Hash128`
+  inside a typetree dump (a MonoScript's `m_PropertiesHash`, #124; the
+  manifest's `AssetBundleHash`) stays as its type tree lays it out: 16 `UInt8`
+  fields, `"bytes[0]"` to `"bytes[15]"`.
 - UnityPy cannot fully read a `[SerializeReference]` registry of version 1
   (2019.4, 2020.3): its type tree describes one entry, but the data holds the
   entries plus a `Terminus` / `UnityEngine.DMAT` / `FAKE_ASM` sentinel entry that
@@ -251,6 +282,18 @@ sprites yet; M3 adds the rest.
   `(block_info_flag, data_flag)`; the code takes `(data_flag, block_info_flag)`.
   Despite the names, `data_flag`'s low bits compress the *blocks-info* and
   `block_info_flag` compresses the *data blocks*. Established by round-trip.
+- Raw-data goldens (`serialized.<file>.rawData`, #41) hash the bytes an
+  AudioClip, Font, VideoClip or MovieTexture carries: the inline field
+  (`m_FontData`, `m_MovieData`, a pre-5.0 `m_AudioData`) as UnityPy reads it,
+  or the `StreamedResource` (`m_Resource`, `m_ExternalResources`) read with
+  UnityPy's own `get_resource_data`, as its AudioClip export does. `source`
+  names the resource file or says `inline`. Only files holding one of these
+  classes get the key, so the other goldens are unchanged.
+- A dynamic font's "Font Texture" (in every `font` bundle) is 0x0, with no
+  inline image data and no `.resS`. UnityPy then looks for a resource file
+  named `""` and fails, and there is nothing to hash or decode, so
+  `make-goldens.py` gives such a Texture2D no texture golden (#41). Its type
+  tree is still dumped.
 
 ## Regenerating
 

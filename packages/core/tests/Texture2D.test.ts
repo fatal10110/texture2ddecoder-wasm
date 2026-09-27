@@ -30,11 +30,16 @@ import {
 const TYPED = fixtureNames().filter((name) =>
   Object.values(golden(name).serialized ?? {}).some((sf) => Object.keys(sf.textures ?? {}).length),
 );
-/** Fixtures built without type trees that hold a Texture2D. */
+/**
+ * Fixtures built without type trees whose typed twin has Texture2D goldens. A
+ * dynamic font's 0x0 "Font Texture" has no image data and so no golden (#41).
+ */
 const STRIPPED = fixtureNames().filter(
   (name) =>
     name.includes("/lz4-notypetree/") &&
-    Object.values(golden(name).objects).some((objs) => objs.some((o) => o.classId === 28)),
+    Object.values(golden(name.replace(/lz4-notypetree/g, "lz4")).serialized ?? {}).some(
+      (sf) => Object.keys(sf.textures ?? {}).length,
+    ),
 );
 
 interface Loaded {
@@ -490,6 +495,75 @@ test("bytes left after m_StreamData throw CorruptError", () => {
       err instanceof CorruptError && err.message.includes(`ends at ${bytes.length} of its`),
   );
 });
+
+// --- string byte counts (#128, #134) ------------------------------------------------
+
+/**
+ * A layout's bytes with the string field `name` empty and its byte count set
+ * to `length`, and where that count sits. With a count of 0 the object is
+ * whole, so any other count is all that is wrong with it.
+ */
+function withStringLength(
+  fields: string[],
+  name: string,
+  length: (left: number) => number,
+): { bytes: Uint8Array; at: number; left: number } {
+  const index = fields.indexOf(`str ${name}`);
+  assert.ok(index !== -1, `no string ${name}`);
+  // An i32 in its place takes the 4 bytes of an empty string's count.
+  const bytes = build(fields.map((f, i) => (i === index ? `i32 ${name}` : f))).bytes;
+  const at = build(fields.slice(0, index)).bytes.length;
+  const left = bytes.length - at - 4;
+  new DataView(bytes.buffer).setInt32(at, length(left), true);
+  return { bytes, at, left };
+}
+
+const STRING_COUNTS: { unity: UnityVersion; fields: string[]; name: string; field: string }[] = [
+  {
+    unity: [2022, 2, 0, 1],
+    fields: L2022_2,
+    name: "m_MipmapLimitGroupName",
+    field: "m_MipmapLimitGroupName",
+  },
+  { unity: [5, 3, 0, 1], fields: L5_3, name: "d.path", field: "m_StreamData path" },
+  { unity: [2023, 2, 0, 1], fields: L2023_2, name: "d.path", field: "m_StreamData path" },
+];
+
+for (const { unity, fields, name, field } of STRING_COUNTS) {
+  const label = `Unity ${unity.slice(0, 3).join(".")}: ${field}`;
+
+  test(`${label}: an empty string reads as "" (the control)`, () => {
+    const { bytes } = withStringLength(fields, name, () => 0);
+    const texture = readTexture2D(synthetic(bytes, unity));
+    const value = name === "d.path" ? texture.m_StreamData?.path : texture.m_MipmapLimitGroupName;
+    assert.equal(value, "");
+  });
+
+  test(`${label}: a negative byte count throws CorruptError, not ""`, () => {
+    const { bytes, at } = withStringLength(fields, name, () => -1);
+    const reader = synthetic(bytes, unity);
+    assert.throws(
+      () => readTexture2D(reader),
+      (err: unknown) =>
+        err instanceof CorruptError &&
+        err.message ===
+          `Texture2D ${reader.pathId} ${field} byte count -1 at offset ${at} is negative`,
+    );
+  });
+
+  test(`${label}: a byte count past the object's end throws CorruptError`, () => {
+    const { bytes, at, left } = withStringLength(fields, name, (n) => n + 1);
+    const reader = synthetic(bytes, unity);
+    assert.throws(
+      () => readTexture2D(reader),
+      (err: unknown) =>
+        err instanceof CorruptError &&
+        err.message ===
+          `Texture2D ${reader.pathId} ${field} byte count ${left + 1} at offset ${at} ` +
+            `exceeds the ${left} bytes left`,
+    );
+  });
+}
 
 // --- StreamingInfo --------------------------------------------------------------------
 
