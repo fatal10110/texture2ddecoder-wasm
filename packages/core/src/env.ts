@@ -6,7 +6,7 @@ import { detectContainer, detectFileType, type FileType } from "./bundle/detect.
 import { readWebFile } from "./bundle/WebFile.js";
 import { resolvePPtr, type PPtr, type PPtrResolution } from "./classes/PPtr.js";
 import { gunzip } from "./codec/inflate.js";
-import { CorruptError, UnsupportedError } from "./errors.js";
+import { CorruptError, ResourceNotFoundError, UnsupportedError } from "./errors.js";
 import { SerializedFileFormatVersion as V } from "./serialized/FormatVersion.js";
 import { ObjectReader } from "./serialized/ObjectReader.js";
 import {
@@ -91,29 +91,6 @@ export interface ResourceRef {
   offset: number;
   /** Byte count. */
   size: number;
-}
-
-/**
- * The resource file a {@link ResourceRef} names is not among the loaded files.
- * Pass it to {@link load} alongside the file that references it.
- *
- * Neither {@link UnsupportedError} nor {@link CorruptError}: the file may be
- * fine, it just was not handed over.
- */
-export class ResourceNotFoundError extends Error {
-  override readonly name = "ResourceNotFoundError";
-
-  /** The path as the reference holds it. */
-  readonly path: string;
-
-  /** The file name that was looked for: the last component of {@link path}. */
-  readonly fileName: string;
-
-  constructor(path: string, fileName: string) {
-    super(`resource file ${fileName} is not loaded (referenced as ${path})`);
-    this.path = path;
-    this.fileName = fileName;
-  }
 }
 
 /** Everything {@link load} was given, unpacked. */

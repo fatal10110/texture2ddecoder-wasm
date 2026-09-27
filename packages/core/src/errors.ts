@@ -6,8 +6,13 @@
  * Those are different classes rather than a flag, so a `catch` can branch on
  * them directly.
  *
- * ponytail: no shared base class - two classes, and `instanceof` on each covers
- * every caller so far. Add one if something needs to catch all reader errors.
+ * A resource file that was not handed over is a third case, neither of those:
+ * {@link ResourceNotFoundError}, which a caller can answer by loading it.
+ *
+ * ponytail: no shared base class - three classes, and `instanceof` on each
+ * covers every caller so far (the M5 node adapter needs to catch only the
+ * third, to fall back to a directory search). Add one if something needs to
+ * catch all reader errors.
  */
 
 /**
@@ -49,5 +54,29 @@ export class CorruptError extends Error {
 
   constructor(message: string) {
     super(message);
+  }
+}
+
+/**
+ * The resource file a reference names (`ResourceRef`, `.resS` / `.resource`) is
+ * not among the loaded files. Pass it to `load()` alongside the file that
+ * references it.
+ *
+ * Neither {@link UnsupportedError} nor {@link CorruptError}: the file may be
+ * fine, it just was not handed over.
+ */
+export class ResourceNotFoundError extends Error {
+  override readonly name = "ResourceNotFoundError";
+
+  /** The path as the reference holds it. */
+  readonly path: string;
+
+  /** The file name that was looked for: the last component of {@link path}. */
+  readonly fileName: string;
+
+  constructor(path: string, fileName: string) {
+    super(`resource file ${fileName} is not loaded (referenced as ${path})`);
+    this.path = path;
+    this.fileName = fileName;
   }
 }

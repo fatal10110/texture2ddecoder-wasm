@@ -10,14 +10,8 @@ import {
   sha256,
 } from "../../../fixtures/helpers.js";
 import { NodeFlags } from "../src/bundle/BundleFile.js";
-import {
-  load,
-  ResourceNotFoundError,
-  type Env,
-  type LoadedFile,
-  type ResourceRef,
-} from "../src/env.js";
-import { CorruptError, UnsupportedError } from "../src/errors.js";
+import { load, type Env, type LoadedFile, type ResourceRef } from "../src/env.js";
+import { CorruptError, ResourceNotFoundError, UnsupportedError } from "../src/errors.js";
 import { ClassID } from "../src/serialized/ClassID.js";
 import { ObjectReader } from "../src/serialized/ObjectReader.js";
 import { readSerializedFile } from "../src/serialized/SerializedFile.js";
