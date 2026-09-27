@@ -1,12 +1,12 @@
 // Ported from AssetStudio/Classes/AssetBundle.cs (MIT, © Perfare / RazTools / Razviar)
 
-import type { Env } from "../env.js";
 import { CorruptError, UnsupportedError } from "../errors.js";
-import { ClassID } from "../serialized/ClassID.js";
+import { SerializedFileFormatVersion as V } from "../serialized/FormatVersion.js";
 import type { ObjectReader } from "../serialized/ObjectReader.js";
+import type { UnityVersion } from "../serialized/SerializedFile.js";
 import { readCount } from "../serialized/TypeTree.js";
 import { readNamedObject, type NamedObject } from "./NamedObject.js";
-import { readPPtr, type PPtr, type PPtrResolution } from "./PPtr.js";
+import { readPPtr, type PPtr } from "./PPtr.js";
 import { atLeast } from "./version.js";
 
 /**
@@ -78,6 +78,12 @@ export interface AssetBundle extends NamedObject {
  * are read. Unity changed it at 3.5, 4.2, 5.0, 5.4, 5.5, 2017.1 and 2017.3, and
  * has kept it since (checked up to 6000.6).
  *
+ * A file whose Unity version is unknown (`[0, 0, 0, 0]`, as
+ * `AssetBundleStripUnityVersion` leaves it) is still read when its format is
+ * 16 (5.5) or later: the layouts that format allows share every field up to
+ * `m_IsStreamedSceneAssetBundle`, and the bytes left after it tell them apart
+ * (see `readUnversionedTail`).
+ *
  * The object must end exactly where the last field does, so a layout this
  * reader does not know is refused rather than returned half-read.
  *
@@ -88,32 +94,25 @@ export interface AssetBundle extends NamedObject {
  *
  * @param reader the object's reader, rewound first and left at its end
  * @throws {UnsupportedError} of kind `"Unity version"`, with the file's own
- *   `unityVersion` as `found`, when the version is unknown (`[0, 0, 0, 0]`:
- *   stripped, or a loose file below format 7), since every field past
- *   `m_Container` depends on it, or older than 3.4, for which no type tree
- *   data says what it holds
+ *   `unityVersion` as `found`: for a version older than 3.4, for which no type
+ *   tree data says what it holds, and for an unknown version (`[0, 0, 0, 0]`)
+ *   when the file's format is below 16 or the bytes after
+ *   `m_IsStreamedSceneAssetBundle` fit none of the layouts format 16 allows;
+ *   and as `readNamedObject` does, for an editor file of unknown version
  * @throws {CorruptError} when the object ends early, a count or string length
  *   is negative or runs past its end, or bytes are left over after the last
  *   field
  */
 export function readAssetBundle(reader: ObjectReader): AssetBundle {
   const { version } = reader;
-  // Rule for version-gated class readers (#36): an unknown version must not
-  // fall through to the oldest branch, so refuse it.
-  if (version.every((part) => part === 0)) {
-    throw new UnsupportedError(
-      "Unity version",
-      reader.unityVersion,
-      `object ${reader.pathId}: an AssetBundle's fields depend on the Unity version, ` +
-        "and this file does not record one",
-    );
+  // Rule for version-gated class readers (#36, amended on #123/#126): an
+  // unknown version is read only where the bytes decide the layout.
+  const unknown = version.every((part) => part === 0);
+  if (unknown && reader.format < V.RefactoredClassId) {
+    throw refuse(reader, "before format 16 the bytes do not decide an AssetBundle's layout");
   }
-  if (!atLeast(version, 3, 4)) {
-    throw new UnsupportedError(
-      "Unity version",
-      reader.unityVersion,
-      `object ${reader.pathId}: no known AssetBundle layout before 3.4`,
-    );
+  if (!unknown && !atLeast(version, 3, 4)) {
+    throw refuse(reader, "no known AssetBundle layout before 3.4");
   }
 
   // Filled in field order, so the keys come out in the order Unity wrote them.
@@ -124,7 +123,20 @@ export function readAssetBundle(reader: ObjectReader): AssetBundle {
     readAssetInfo(r),
   ]);
   out.m_MainAsset = readAssetInfo(reader);
+  if (unknown) readUnversionedTail(reader, out);
+  else readTail(reader, version, out);
 
+  if (reader.remaining !== 0) {
+    throw new CorruptError(
+      `AssetBundle ${reader.pathId} ends at ${reader.position} of its ${reader.byteSize} bytes`,
+    );
+  }
+  // Every required field was set above.
+  return out as AssetBundle;
+}
+
+/** The fields after `m_MainAsset`, by the gates of Unity's type trees. */
+function readTail(reader: ObjectReader, version: UnityVersion, out: Partial<AssetBundle>): void {
   if (!atLeast(version, 5, 0)) {
     // 3.4 to 4.x; 5.0 dropped both compatibility lists.
     out.m_ScriptCompatibility = readArray(reader, "m_ScriptCompatibility", (r) => ({
@@ -138,67 +150,79 @@ export function readAssetBundle(reader: ObjectReader): AssetBundle {
     }
     // 4.2+: last here, after m_MainAsset (or 5.4's m_ClassVersionMap) from 5.0.
     if (atLeast(version, 4, 2)) out.m_RuntimeCompatibility = reader.readUInt32();
-  } else {
-    // 5.4 only.
-    if (atLeast(version, 5, 4) && !atLeast(version, 5, 5)) {
-      out.m_ClassVersionMap = readArray(reader, "m_ClassVersionMap", readIntPair);
-    }
-    out.m_RuntimeCompatibility = reader.readUInt32();
-    out.m_AssetBundleName = readString(reader, "m_AssetBundleName");
-    out.m_Dependencies = readArray(reader, "m_Dependencies", (r) =>
-      readString(r, "m_Dependencies name"),
-    );
-    out.m_IsStreamedSceneAssetBundle = reader.readUInt8() !== 0;
-    reader.align();
-    // 2017.3+: m_ExplicitDataLayout before 2017.1's m_PathFlags, m_SceneHashes after.
-    const v2017_3 = atLeast(version, 2017, 3);
-    if (v2017_3) out.m_ExplicitDataLayout = reader.readInt32();
-    if (atLeast(version, 2017, 1)) out.m_PathFlags = reader.readInt32();
-    if (v2017_3) {
-      out.m_SceneHashes = readArray(reader, "m_SceneHashes", (r): [string, string] => [
-        readString(r, "m_SceneHashes path"),
-        readString(r, "m_SceneHashes hash"),
-      ]);
-    }
+    return;
   }
-
-  if (reader.remaining !== 0) {
-    throw new CorruptError(
-      `AssetBundle ${reader.pathId} ends at ${reader.position} of its ${reader.byteSize} bytes`,
-    );
+  // 5.4 only.
+  if (atLeast(version, 5, 4) && !atLeast(version, 5, 5)) {
+    out.m_ClassVersionMap = readArray(reader, "m_ClassVersionMap", readIntPair);
   }
-  // Every required field was set above.
-  return out as AssetBundle;
+  readV5Fields(reader, out);
+  // 2017.3+: m_ExplicitDataLayout before 2017.1's m_PathFlags, m_SceneHashes after.
+  if (atLeast(version, 2017, 3)) readV2017_3Fields(reader, out);
+  else if (atLeast(version, 2017, 1)) out.m_PathFlags = reader.readInt32();
 }
 
 /**
- * Find the objects the AssetBundles of `env` list under an asset path: the
- * `asset` of every `m_Container` entry whose path is exactly `path`, resolved
- * with `env.resolve` from the AssetBundle object. This is what Unity's
- * `AssetBundle.LoadAsset(path)` answers, so the preload table is not consulted.
+ * The fields after `m_MainAsset` of a file of unknown version and format 16
+ * (5.5) or later (#36 rule, amended on #123/#126). Those formats allow three
+ * layouts: 5.5's, which ends with `m_IsStreamedSceneAssetBundle` and its
+ * padding; 2017.1's, one `Int32` more; and 2017.3's, at least two `Int32`s and
+ * a map count more. So 0, 4 or at least 12 bytes left after the shared fields
+ * pick exactly one, and the end-of-object check confirms it. Format 15 and
+ * below would add 5.4's `m_ClassVersionMap` or the 3.x/4.x lists in the middle,
+ * which the bytes left cannot tell apart; those are refused before this.
  *
- * Paths are compared as they are, as upstream and UnityPy do; Unity writes
- * them lower-cased (`"assets/ui/logo.png"`). Every call reads every
- * AssetBundle object again; to list or index the whole container, read them
- * once with `obj.read()` and resolve their `m_Container` entries instead.
- *
- * @param env the loaded files to look in
- * @param path an `m_Container` path, such as `"assets/ui/logo.png"`
- * @returns one resolution per matching entry, in `env.objects` order and then
- *   container order; empty when no bundle lists the path. A dangling pointer
- *   is a result, as with `env.resolve`, not dropped.
- * @throws {UnsupportedError} / {CorruptError} as {@link readAssetBundle} does,
- *   for any AssetBundle object of `env`, and as `env.objects` does
+ * @throws {UnsupportedError} when the bytes left fit none of the three
+ * @throws {CorruptError} when the object ends inside the shared fields
  */
-export function findAssets(env: Env, path: string): PPtrResolution[] {
-  const found: PPtrResolution[] = [];
-  for (const object of env.objects) {
-    if (object.type !== ClassID.AssetBundle) continue;
-    for (const [entryPath, { asset }] of readAssetBundle(object).m_Container) {
-      if (entryPath === path) found.push(env.resolve(asset, object));
+function readUnversionedTail(reader: ObjectReader, out: Partial<AssetBundle>): void {
+  readV5Fields(reader, out);
+  const left = reader.remaining;
+  if (left === 0) return;
+  if (left === 4) {
+    out.m_PathFlags = reader.readInt32();
+    return;
+  }
+  if (left >= 12) {
+    try {
+      readV2017_3Fields(reader, out);
+      if (reader.remaining === 0) return;
+    } catch (error) {
+      if (!(error instanceof CorruptError)) throw error;
     }
   }
-  return found;
+  throw refuse(
+    reader,
+    `the ${left} bytes after m_IsStreamedSceneAssetBundle fit none of the layouts ` +
+      "of format 16 and later (5.5, 2017.1, 2017.3)",
+  );
+}
+
+/** 5.0+: `m_RuntimeCompatibility` to `m_IsStreamedSceneAssetBundle` and its padding. */
+function readV5Fields(reader: ObjectReader, out: Partial<AssetBundle>): void {
+  out.m_RuntimeCompatibility = reader.readUInt32();
+  out.m_AssetBundleName = readString(reader, "m_AssetBundleName");
+  out.m_Dependencies = readArray(reader, "m_Dependencies", (r) =>
+    readString(r, "m_Dependencies name"),
+  );
+  out.m_IsStreamedSceneAssetBundle = reader.readUInt8() !== 0;
+  reader.align();
+}
+
+/** 2017.3+: the fields after `m_IsStreamedSceneAssetBundle`. */
+function readV2017_3Fields(reader: ObjectReader, out: Partial<AssetBundle>): void {
+  out.m_ExplicitDataLayout = reader.readInt32();
+  out.m_PathFlags = reader.readInt32();
+  out.m_SceneHashes = readArray(reader, "m_SceneHashes", (r): [string, string] => [
+    readString(r, "m_SceneHashes path"),
+    readString(r, "m_SceneHashes hash"),
+  ]);
+}
+
+/** Refuse a version this reader has no layout for, naming the file's own version string. */
+function refuse(reader: ObjectReader, why: string): UnsupportedError {
+  const hint = `object ${reader.pathId}: ${why}`;
+  return new UnsupportedError("Unity version", reader.unityVersion, hint);
 }
 
 /** Unity's `AssetInfo`: two `Int32`s and the asset pointer. */

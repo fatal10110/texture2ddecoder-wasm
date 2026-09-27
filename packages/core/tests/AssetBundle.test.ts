@@ -1,13 +1,14 @@
 // AssetBundle and its container map (#38): the hardcoded reader checked against
 // the oracle's typetree dumps (R12) and readTypeTree() on the same objects,
-// `obj.read()`, lookup by asset path, and the refusals.
+// `obj.read()`, its entries resolved by `env.resolve`, the version-stripped
+// case read from the bytes (the #36 rule as amended on #123/#126), and the
+// refusals.
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { fixtureNames, golden, loadFixture, type Golden } from "../../../fixtures/helpers.js";
-import { findAssets, readAssetBundle, type AssetBundle } from "../src/classes/AssetBundle.js";
-import type { Texture2DData } from "../src/classes/registry.js";
+import { readAssetBundle, type AssetBundle } from "../src/classes/AssetBundle.js";
 import { load, type Env } from "../src/env.js";
 import { CorruptError, UnsupportedError } from "../src/errors.js";
 import { BuildTarget } from "../src/serialized/BuildTarget.js";
@@ -25,11 +26,12 @@ const BUNDLES = fixtureNames().filter((name) =>
     objs.some((o) => o.classId === ClassID.AssetBundle),
   ),
 );
-/** Built with `AssetBundleStripUnityVersion`: no Unity version left to gate on. */
-const VERSION_STRIPPED = BUNDLES.filter((name) => name.includes("/stripped/"));
 /** Built without type trees: the hardcoded reader is the only way in. */
 const NO_TYPE_TREE = BUNDLES.filter((name) => name.includes("/lz4-notypetree/"));
-const TYPED = BUNDLES.filter((n) => !VERSION_STRIPPED.includes(n) && !NO_TYPE_TREE.includes(n));
+/** With type trees; the `stripped/*` ones among them record no Unity version. */
+const TYPED = BUNDLES.filter((name) => !NO_TYPE_TREE.includes(name));
+/** Built with `AssetBundleStripUnityVersion`: no Unity version left to gate on. */
+const VERSION_STRIPPED = TYPED.filter((name) => name.includes("/stripped/"));
 
 const loadName = (name: string): Env => load([{ name, data: loadFixture(name) }]);
 const bundlesOf = (env: Env): ObjectReader[] =>
@@ -125,7 +127,7 @@ test("the AssetBundle checks cover formats 21 and 22, typed and not, every edito
   assert.equal(NO_TYPE_TREE.length, 12);
 });
 
-// --- lookup by asset path ---------------------------------------------------------
+// --- m_Container entries, resolved ----------------------------------------------
 
 interface GoldenAsset {
   path: string;
@@ -154,117 +156,40 @@ function goldenEntries(g: Golden): GoldenAsset[] {
 }
 
 for (const name of [...TYPED, ...NO_TYPE_TREE]) {
-  test(`${name}: findAssets resolves every golden container path to its object`, () => {
+  test(`${name}: read() m_Container entries resolve with env.resolve to the golden objects`, () => {
     const env = loadName(name);
-    const entries = goldenEntries(golden(name.replace(/lz4-notypetree/g, "lz4")));
-    assert.ok(entries.length > 0);
-    for (const { path } of entries) {
-      const found = findAssets(env, path);
-      const same = entries.filter((e) => e.path === path);
-      assert.equal(found.length, same.length, path);
-      found.forEach((hit, i) => {
-        assert.equal(hit.status, "found", path);
-        if (hit.status !== "found") return;
-        assert.equal(String(hit.object.pathId), same[i]!.pathId, path);
-        assert.equal(hit.object.type, same[i]!.classId, path);
-        // The env's own reader, so read() and resolve() work on it.
+    const got: GoldenAsset[] = [];
+    for (const bundle of bundlesOf(env)) {
+      for (const [path, { asset }] of bundle.read<AssetBundle>().m_Container) {
+        const hit = env.resolve(asset, bundle);
+        assert.ok(hit.status === "found", `${path}: ${hit.status}`);
         assert.ok(env.objects.includes(hit.object));
-      });
+        got.push({ path, pathId: String(hit.object.pathId), classId: hit.object.type });
+      }
     }
-    assert.deepEqual(findAssets(env, "assets/no/such/asset.asset"), []);
+    const want = goldenEntries(golden(name.replace(/lz4-notypetree/g, "lz4")));
+    assert.ok(want.length > 0);
+    assert.deepEqual(got, want);
   });
 }
 
-test("findAssets over a whole build: each path from its own bundle, texture readable", () => {
-  const variant = "editor/2020.3.30f1/lz4-notypetree";
-  const names = ["lz4-notypetree", "main", "shared", "texture"].map((b) => `${variant}/${b}`);
-  const env = load(names.map((name) => ({ name, data: loadFixture(name) })));
-  assert.equal(bundlesOf(env).length, 4);
+// --- a version-stripped build, read from its bytes ----------------------------------
 
-  let checked = 0;
-  for (const name of names) {
-    const typed = golden(name.replace(/lz4-notypetree/g, "lz4"));
-    for (const { path, pathId, classId } of goldenEntries(typed)) {
-      const [hit, ...more] = findAssets(env, path);
-      assert.ok(hit?.status === "found" && more.length === 0, path);
-      assert.equal(String(hit.object.pathId), pathId);
-      assert.equal(hit.object.type, classId);
-      checked++;
-    }
-  }
-  assert.ok(checked >= 5);
-
-  // The texture's container path leads to its pixels, read through the .resS.
-  const texturePath = goldenEntries(golden("editor/2020.3.30f1/lz4/texture")).find(
-    (e) => e.classId === ClassID.Texture2D,
-  )!.path;
-  const [hit] = findAssets(env, texturePath);
-  assert.ok(hit?.status === "found");
-  const texture = hit.object.read<Texture2DData>();
-  const want = Object.values(golden("editor/2020.3.30f1/lz4/texture").serialized!)[0]!.textures!;
-  assert.equal(texture.m_Name, want[String(hit.object.pathId)]!.name);
-  assert.equal(texture.imageData.length, want[String(hit.object.pathId)]!.imageSize);
-});
-
-test("findAssets compares paths exactly: Unity writes them lower-cased", () => {
-  const env = loadName("editor/6000.3.25f1/lz4/main");
-  const [path] = goldenEntries(golden("editor/6000.3.25f1/lz4/main")).map((e) => e.path);
-  assert.ok(path && path === path.toLowerCase());
-  assert.equal(findAssets(env, path).length, 1);
-  assert.deepEqual(findAssets(env, path.replace("assets/", "Assets/")), []);
-});
-
-test("findAssets passes a dangling asset pointer on as env.resolve's result", () => {
-  // The shared bundle's SerializedFile, loaded loose, with its one container
-  // entry pointed at a path id the file does not hold.
-  const name = "editor/6000.3.25f1/uncompressed/shared";
-  const node = loadName(name).files.find((f) => golden(name).serialized![f.path])!;
-  const data = node.data.slice();
-  const sf = readSerializedFile(data);
-  const info = sf.objects.find((o) => o.classId === ClassID.AssetBundle)!;
-  const object = data.subarray(info.byteStart, info.byteStart + info.byteSize);
-  const [entry, ...more] = readAssetBundle(synthetic(object, U6000)).m_Container;
-  assert.ok(entry && more.length === 0);
-  const [path, { asset }] = entry;
-  // The entry is the path, then preloadIndex, preloadSize and m_FileID.
-  const pathBytes = new TextEncoder().encode(path).length;
-  const at = containerPathAt(object) + 4 + Math.ceil(pathBytes / 4) * 4 + 12;
-  const view = new DataView(object.buffer, object.byteOffset, object.byteLength);
-  assert.equal(view.getBigInt64(at, true), asset.m_PathID);
-  view.setBigInt64(at, 424242n, true);
-
-  const env = load([{ name: node.path, data }]);
-  assert.equal(findAssets(loadName(name), path)[0]?.status, "found");
-  assert.deepEqual(findAssets(env, path), [{ status: "objectNotFound", fileName: node.path }]);
-});
-
-// --- refusals: a version-stripped build -------------------------------------------
-
-for (const name of VERSION_STRIPPED) {
-  test(`${name}: version "0.0.0" is refused; the type tree still reads`, () => {
-    const env = loadName(name);
-    const [reader] = bundlesOf(env);
-    assert.ok(reader);
-    assert.deepEqual(reader.version, [0, 0, 0, 0]);
-    const refused = (err: unknown) =>
-      err instanceof UnsupportedError &&
-      err.kind === "Unity version" &&
-      err.found === "0.0.0" &&
-      err.message.includes(`object ${reader.pathId}`);
-    assert.throws(() => readAssetBundle(reader), refused);
-    assert.throws(() => reader.read(), refused);
-    assert.throws(() => findAssets(env, "assets/fixtures/strip/hello.txt"), refused);
-    // The oracle's dump is still there for a caller who reads the type tree.
-    const dump = bundleGoldens(name).get(String(reader.pathId));
-    assert.deepEqual(normalize(reader.readTypeTree()), dump);
-  });
-}
-
-test("the version-stripped refusal covers both stripped editors", () => {
+test("the version-stripped fixtures record no version, and cover both stripped editors", () => {
+  // Their AssetBundles go through the typed checks above: read() equals the
+  // oracle's dump and readTypeTree(), the 2017.3+ layout picked by the bytes.
   assert.deepEqual(
     [...new Set(VERSION_STRIPPED.map((n) => n.split("/")[1]))].sort(),
     ["2020.3.30f1", "6000.3.25f1"],
   );
+  for (const name of VERSION_STRIPPED) {
+    const [reader, ...more] = bundlesOf(loadName(name));
+    assert.ok(reader && more.length === 0);
+    assert.deepEqual(reader.version, [0, 0, 0, 0]);
+    assert.equal(reader.unityVersion, "0.0.0");
+    assert.equal(reader.format, 22);
+    assert.ok("m_SceneHashes" in reader.read<AssetBundle>());
+  }
 });
 
 // --- synthetic objects ------------------------------------------------------------
@@ -449,31 +374,104 @@ test("an editor file (NoTarget): the EditorExtension fields, then the same layou
   });
 });
 
+// --- unknown version (#36 rule, amended on #123/#126) -----------------------------
+
+const UNKNOWN: UnityVersion = [0, 0, 0, 0];
+
 /**
- * Per the class-reader rule on #36: an all-zero version is refused with the
- * file's own version string, from a stripped file (`"0.0.0"`) or a loose file
- * below format 7 (`"2.5.0f5"`, #98). Before 3.4 no type tree data says what an
- * AssetBundle holds.
+ * From format 16 (5.5) on, the bytes after `m_IsStreamedSceneAssetBundle`
+ * pick the layout: 0 left is 5.5's, 4 is 2017.1's, 12 or more is 2017.3's.
  */
-const REFUSED: { unity: UnityVersion; text: string }[] = [
-  { unity: [0, 0, 0, 0], text: "0.0.0" },
-  { unity: [0, 0, 0, 0], text: "2.5.0f5" },
-  { unity: [3, 3, 0, 1], text: "3.3.0f1" },
+const UNVERSIONED: { layout: string; fields: string[] }[] = [
+  { layout: "5.5", fields: L5_0 },
+  { layout: "2017.1", fields: L2017_1 },
+  { layout: "2017.3", fields: L2017_3 },
 ];
 
-for (const { unity, text } of REFUSED) {
-  test(`Unity "${text}": UnsupportedError("Unity version")`, () => {
-    const reader = synthetic(bundleObject().bytes, unity, { text });
+for (const { layout, fields } of UNVERSIONED) {
+  for (const format of [16, 22]) {
+    test(`version "0.0.0", format ${format}: the bytes left pick the ${layout} layout`, () => {
+      const { bytes, expected } = build(fields);
+      const reader = synthetic(bytes, UNKNOWN, { text: "0.0.0", format });
+      const bundle = readAssetBundle(reader);
+      assert.deepEqual(Object.keys(bundle), Object.keys(expected));
+      assert.deepEqual(bundle, expected);
+      assert.equal(reader.remaining, 0);
+    });
+  }
+}
+
+/** The refusal of a version this reader has no layout for, with the file's own string. */
+function refusedAs(text: string, reader: ObjectReader, hint: string) {
+  return (err: unknown) =>
+    err instanceof UnsupportedError &&
+    err.kind === "Unity version" &&
+    err.found === text &&
+    err.message.includes(`object ${reader.pathId}: `) &&
+    err.message.includes(hint);
+}
+
+/** Tails that fit none of the three layouts, as bytes after a full layout. */
+const NO_FIT: { what: string; fields: string[]; extra: number[] }[] = [
+  { what: "2 bytes", fields: L5_0, extra: [0, 0] },
+  { what: "8 bytes", fields: L5_0, extra: [0, 0, 0, 0, 0, 0, 0, 0] },
+  { what: "bytes after m_SceneHashes", fields: L2017_3, extra: [0, 0, 0, 0] },
+  // 12 bytes whose map count runs past the end.
+  { what: "a bad m_SceneHashes count", fields: L5_0, extra: [0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0] },
+];
+
+for (const { what, fields, extra } of NO_FIT) {
+  test(`version "0.0.0": a tail of ${what} fits no layout, UnsupportedError`, () => {
+    const { bytes } = build(fields);
+    const reader = synthetic(Uint8Array.from([...bytes, ...extra]), UNKNOWN, { text: "0.0.0" });
+    // build() gives both layouts the same values up to the shared fields' end.
+    const left = reader.length - build(L5_0).bytes.length;
     assert.throws(
       () => readAssetBundle(reader),
-      (err: unknown) =>
-        err instanceof UnsupportedError &&
-        err.kind === "Unity version" &&
-        err.found === text &&
-        err.message.includes(`object ${reader.pathId}`),
+      refusedAs("0.0.0", reader, `the ${left} bytes after m_IsStreamedSceneAssetBundle fit none`),
     );
   });
 }
+
+test(`version "0.0.0": a cut up to m_IsStreamedSceneAssetBundle is still CorruptError`, () => {
+  // 6000.3's main ends with the bool and its padding, then 12 bytes of
+  // 2017.3 fields. A cut after the bool leaves a shorter object that is a
+  // valid 5.5 or 2017.1 layout: the length is all that decides it.
+  const { bytes } = bundleObject();
+  for (let cut = 0; cut <= bytes.length - 16; cut++) {
+    const reader = synthetic(bytes.subarray(0, cut), UNKNOWN, { text: "0.0.0" });
+    assert.throws(() => readAssetBundle(reader), CorruptError, `cut at ${cut}`);
+  }
+});
+
+/**
+ * Refused with the file's own version string: an all-zero version where the
+ * bytes do not decide (format 15 and below, which add 5.4's or 3.x/4.x's
+ * fields in the middle; a loose file below format 7, `"2.5.0f5"`, #98), and a
+ * known version before 3.4, for which no type tree data says what an
+ * AssetBundle holds.
+ */
+const REFUSED: { unity: UnityVersion; text: string; format: number; hint: string }[] = [
+  { unity: UNKNOWN, text: "0.0.0", format: 15, hint: "before format 16" },
+  { unity: UNKNOWN, text: "0.0.0", format: 9, hint: "before format 16" },
+  { unity: UNKNOWN, text: "2.5.0f5", format: 6, hint: "before format 16" },
+  { unity: [3, 3, 0, 1], text: "3.3.0f1", format: 8, hint: "no known AssetBundle layout" },
+];
+
+for (const { unity, text, format, hint } of REFUSED) {
+  test(`Unity "${text}", format ${format}: UnsupportedError("Unity version")`, () => {
+    const reader = synthetic(bundleObject().bytes, unity, { text, format });
+    assert.throws(() => readAssetBundle(reader), refusedAs(text, reader, hint));
+  });
+}
+
+test(`version "0.0.0" in an editor file: refused by its EditorExtension fields`, () => {
+  const reader = synthetic(bundleObject().bytes, UNKNOWN, {
+    text: "0.0.0",
+    platform: BuildTarget.NoTarget,
+  });
+  assert.throws(() => readAssetBundle(reader), refusedAs("0.0.0", reader, "prefab pointers"));
+});
 
 // --- truncated, oversized and corrupt objects ---------------------------------------
 
