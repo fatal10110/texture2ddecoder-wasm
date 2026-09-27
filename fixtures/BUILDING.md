@@ -680,3 +680,167 @@ A rebuild of either section gives new pathIDs (section 4) and may give other
 compressed bytes. Then regenerate the goldens and the AssetStudio cross-check
 hashes of `decode.test.ts` together
 ([`README.md`](README.md#assetstudio-block-cross-check)).
+
+## 10. The media bundles (#41)
+
+Three more bundles per editor, `audio`, `font` and `video`, built with
+**2019.4.41f2**, **2020.3.30f1** and **6000.3.25f1** into three variants:
+`lz4`, `lz4-notypetree` (`DisableWriteTypeTree`) and `stripped`
+(`AssetBundleStripUnityVersion`, so the SerializedFile says `"0.0.0"`). They go
+into the variant folders of sections 3 and 7 next to the bundles already there;
+the manifest bundle of this build is not copied.
+
+| Bundle | Objects | Where the bytes are |
+|---|---|---|
+| `audio` | two AudioClips from one WAV: `tone-pcm` (PCM) and `tone-vorbis` (Vorbis, load in background) | an FMOD sound bank (FSB5) each, in the bundle's `.resource` node |
+| `font` | one Font (dynamic, font data included), with the Material and the 0x0 "Font Texture" the importer makes | the TrueType file, inline in `m_FontData` |
+| `video` | one VideoClip, imported without transcoding | the WebM file as it went in, in the bundle's `.resource` node |
+
+The dynamic font's "Font Texture" has no image data at all (0x0, no `.resS`),
+so it gets no texture golden; see [`README.md`](README.md#oracle-notes).
+
+### Source assets
+
+All three are generated, so every byte is ours (R11): a sine tone, a font whose
+three glyphs are rectangles drawn by the script below, and a solid-colour clip
+with a sine tone made by ffmpeg's own `lavfi` sources. No third-party media is
+involved, and no tool's license extends to what it outputs; the font is part of
+this repository's fixtures under its MIT license.
+
+| File | Bytes | sha256 |
+|---|---|---|
+| `tone.wav` | 11068 | `8edec60ce5b7c3c12eaec3a6cece2e442b4b12f47c77cbc8857a2be8118c4fac` |
+| `glyphs.ttf` | 672 | `f69124a81f4347a08c2d0f68bd970fb755d7d6dda8003976b51ad8274e8045ab` |
+| `clip.webm` | 4860 | `3772a3e4275b99ebeecba8d52b90cc9192cce137af06c6889459107b460e7459` |
+
+`tone.wav` and `glyphs.ttf` are byte-exact from the script below with Python
+3.12 and fontTools 4.60.1. `clip.webm` came from ffmpeg 7.0.2, the static build
+`imageio-ffmpeg` 0.6.0 ships (libvpx, libvorbis), with the bitexact flags, so
+no encoder version or random UID is in it; another ffmpeg or libvpx build may
+encode other bytes. The goldens hold whatever the editor put in the bundle, and
+the font and video goldens hash to the two files above, since Unity stores both
+as they are.
+
+```bash
+python3 -m venv .venv-media && .venv-media/bin/pip install fonttools==4.60.1 imageio-ffmpeg==0.6.0
+.venv-media/bin/python gen_media.py <project>/Assets/Fixtures/media "$(.venv-media/bin/python -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')"
+cp <project>/Assets/Fixtures/media/tone.wav <project>/Assets/Fixtures/media/tone-pcm.wav
+mv <project>/Assets/Fixtures/media/tone.wav <project>/Assets/Fixtures/media/tone-vorbis.wav
+```
+
+`gen_media.py`:
+
+```python
+import hashlib, math, pathlib, struct, subprocess, sys, wave
+from fontTools.fontBuilder import FontBuilder
+from fontTools.pens.ttGlyphPen import TTGlyphPen
+
+out = pathlib.Path(sys.argv[1]); out.mkdir(parents=True, exist_ok=True)
+
+# tone.wav: 0.25 s of a 440 Hz sine, mono, 16-bit PCM, 22050 Hz.
+rate, n = 22050, 22050 // 4
+frames = b"".join(struct.pack("<h", round(12000 * math.sin(2 * math.pi * 440 * i / rate))) for i in range(n))
+with wave.open(str(out / "tone.wav"), "wb") as w:
+    w.setnchannels(1); w.setsampwidth(2); w.setframerate(rate); w.writeframes(frames)
+
+# glyphs.ttf: .notdef, space and a rectangle "A".
+def square(size):
+    pen = TTGlyphPen(None)
+    pen.moveTo((100, 0)); pen.lineTo((100, size)); pen.lineTo((size, size)); pen.lineTo((size, 0))
+    pen.closePath()
+    return pen.glyph()
+
+fb = FontBuilder(1000, isTTF=True)
+fb.setupGlyphOrder([".notdef", "space", "A"])
+fb.setupCharacterMap({0x20: "space", 0x41: "A"})
+fb.setupGlyf({".notdef": square(500), "space": TTGlyphPen(None).glyph(), "A": square(700)})
+fb.setupHorizontalMetrics({".notdef": (600, 100), "space": (300, 0), "A": (800, 100)})
+fb.setupHorizontalHeader(ascent=800, descent=-200)
+fb.setupNameTable({"familyName": "UarFixture", "styleName": "Regular"})
+fb.setupOS2(sTypoAscender=800, usWinAscent=800, usWinDescent=200)
+fb.setupPost()
+fb.updateHead(created=3_000_000_000, modified=3_000_000_000)  # fixed, not the clock
+fb.font.recalcTimestamp = False
+fb.save(str(out / "glyphs.ttf"))
+
+# clip.webm: 0.5 s of a 16x16 solid colour at 10 fps (VP8) with a 440 Hz tone (Vorbis).
+subprocess.run([sys.argv[2], "-v", "error", "-y",
+    "-f", "lavfi", "-i", "color=c=0x3080c0:s=16x16:r=10:d=0.5",
+    "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=22050:duration=0.5",
+    "-c:v", "libvpx", "-b:v", "50k", "-c:a", "libvorbis", "-ac", "1",
+    "-fflags", "+bitexact", "-flags:v", "+bitexact", "-flags:a", "+bitexact",
+    "-threads", "1", str(out / "clip.webm")], check=True)
+
+for name in ("tone.wav", "glyphs.ttf", "clip.webm"):
+    data = (out / name).read_bytes()
+    print(name, len(data), hashlib.sha256(data).hexdigest())
+```
+
+### Build
+
+Any project will do; the committed bundles came from fresh ones, one per
+editor, holding only `Assets/Fixtures/media/` (the four files above) and
+`Assets/Editor/BuildMedia.cs`:
+
+```csharp
+using System.IO;
+using UnityEditor;
+using UnityEngine;
+
+// One AudioClip pair, one Font and one VideoClip per bundle, from generated
+// source files (#41). Their data goes to a .resource node (audio, video) or
+// stays inline (font).
+public static class BuildMedia
+{
+    const string Dir = "Assets/Fixtures/media";
+
+    public static void Build()
+    {
+        // Two clips from the same WAV: PCM, and Vorbis loaded in the background.
+        Audio(Dir + "/tone-pcm.wav", AudioCompressionFormat.PCM, false);
+        Audio(Dir + "/tone-vorbis.wav", AudioCompressionFormat.Vorbis, true);
+
+        var builds = new[] {
+            new AssetBundleBuild { assetBundleName = "audio", assetNames = new[] { Dir + "/tone-pcm.wav", Dir + "/tone-vorbis.wav" } },
+            new AssetBundleBuild { assetBundleName = "font",  assetNames = new[] { Dir + "/glyphs.ttf" } },
+            new AssetBundleBuild { assetBundleName = "video", assetNames = new[] { Dir + "/clip.webm" } },
+        };
+        var lz4 = BuildAssetBundleOptions.ChunkBasedCompression;
+        Emit("lz4", lz4, builds);
+        Emit("lz4-notypetree", lz4 | BuildAssetBundleOptions.DisableWriteTypeTree, builds);
+        Emit("stripped", lz4 | BuildAssetBundleOptions.AssetBundleStripUnityVersion, builds);
+    }
+
+    static void Audio(string path, AudioCompressionFormat format, bool background)
+    {
+        var imp = (AudioImporter)AssetImporter.GetAtPath(path);
+        var s = imp.defaultSampleSettings;
+        s.compressionFormat = format;
+        s.loadType = AudioClipLoadType.DecompressOnLoad;
+        imp.defaultSampleSettings = s;
+        imp.loadInBackground = background;
+        imp.SaveAndReimport();
+    }
+
+    static void Emit(string name, BuildAssetBundleOptions opts, AssetBundleBuild[] builds)
+    {
+        var dir = Path.Combine("Build", "media-" + name);
+        Directory.CreateDirectory(dir);
+        var m = BuildPipeline.BuildAssetBundles(dir, builds, opts, BuildTarget.StandaloneWindows64);
+        if (m == null) throw new System.Exception("build failed: media " + name);
+        Debug.Log("FIXTURE-OK media " + name + " -> " + dir);
+    }
+}
+```
+
+Build with `-executeMethod BuildMedia.Build` (same command as section 2). The
+log must hold three `FIXTURE-OK media` lines. Copy only the bundles,
+`Build/media-<variant>/{audio,font,video}` to
+`fixtures/bundles/editor/<editor version>/<variant>/`, for `<variant>` in
+`lz4`, `lz4-notypetree` and `stripped`: 27 files, about 130 KB. Then rerun
+`make-goldens.py`; it dumps these classes' type trees and hashes the bytes
+each object carries (`rawData`).
+
+No fixture holds a MovieTexture: from 2019.3 Unity's type tree for it has only
+the `Texture` fields, and none of these editors imports a movie as one. Its
+reader is checked against hand-built layouts from UnityPy's TPK data instead.

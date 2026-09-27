@@ -123,8 +123,8 @@ test("the AssetBundle checks cover formats 21 and 22, typed and not, every edito
   for (const editor of ["2019.4.41f2 21", "2020.3.30f1 22", "6000.3.25f1 22"]) {
     for (const kind of ["typed", "notypetree"]) assert.ok(seen.has(`${editor} ${kind}`));
   }
-  // Every variant's four bundles, per editor.
-  assert.equal(NO_TYPE_TREE.length, 12);
+  // Every variant's four bundles, plus audio, font and video (#41), per editor.
+  assert.equal(NO_TYPE_TREE.length, 21);
 });
 
 // --- m_Container entries, resolved ----------------------------------------------
@@ -180,14 +180,15 @@ test("the version-stripped fixtures record no version, and cover both stripped e
   // oracle's dump and readTypeTree(), the 2017.3+ layout picked by the bytes.
   assert.deepEqual(
     [...new Set(VERSION_STRIPPED.map((n) => n.split("/")[1]))].sort(),
-    ["2020.3.30f1", "6000.3.25f1"],
+    ["2019.4.41f2", "2020.3.30f1", "6000.3.25f1"],
   );
   for (const name of VERSION_STRIPPED) {
     const [reader, ...more] = bundlesOf(loadName(name));
     assert.ok(reader && more.length === 0);
     assert.deepEqual(reader.version, [0, 0, 0, 0]);
     assert.equal(reader.unityVersion, "0.0.0");
-    assert.equal(reader.format, 22);
+    // 2019.4 writes format 21 (its stripped bundles are #41's), the others 22.
+    assert.equal(reader.format, name.includes("/2019.4.41f2/") ? 21 : 22);
     assert.ok("m_SceneHashes" in reader.read<AssetBundle>());
   }
 });

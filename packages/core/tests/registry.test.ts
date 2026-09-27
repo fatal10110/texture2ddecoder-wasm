@@ -21,12 +21,12 @@ import { ClassID } from "../src/serialized/ClassID.js";
 import { ObjectReader } from "../src/serialized/ObjectReader.js";
 import { readSerializedFile } from "../src/serialized/SerializedFile.js";
 
-/** Fixtures holding a Texture2D, per their golden object tables. */
-const TEXTURE_FIXTURES = fixtureNames().filter((name) =>
-  Object.values(golden(name).objects).some((objs) =>
-    objs.some((o) => o.classId === ClassID.Texture2D),
-  ),
-);
+/**
+ * Fixtures holding a Texture2D with image data, per their (or their typed
+ * twin's) texture goldens. A dynamic font's 0x0 "Font Texture" has none, so no
+ * golden (#41); `Font.test.ts` checks that `read()` refuses it.
+ */
+const TEXTURE_FIXTURES = fixtureNames().filter((name) => textureGoldens(name).size > 0);
 
 /** Fixtures whose SerializedFiles all carry type trees, and those built without. */
 const TYPED = fixtureNames().filter((name) => {

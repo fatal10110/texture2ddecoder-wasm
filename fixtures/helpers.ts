@@ -60,6 +60,25 @@ export interface GoldenSerialized {
   typetrees: Record<string, { value: unknown; oracleNote?: string }>;
   /** pathId -> Texture2D golden; only files holding a Texture2D have it (#31). */
   textures?: Record<string, GoldenTexture>;
+  /**
+   * pathId -> the bytes an AudioClip, Font, VideoClip or MovieTexture carries;
+   * only files holding one of those have it (#41).
+   */
+  rawData?: Record<string, GoldenRawData>;
+}
+
+/**
+ * The raw bytes of one AudioClip, Font, VideoClip or MovieTexture as the
+ * oracle reads them (#41): the inline field, or the StreamedResource read by
+ * UnityPy's own resource lookup.
+ */
+export interface GoldenRawData {
+  classId: number;
+  name: string;
+  /** The resource file's name (`CAB-<hash>.resource`), or `"inline"`. */
+  source: string;
+  size: number;
+  sha256: string;
 }
 
 /**
