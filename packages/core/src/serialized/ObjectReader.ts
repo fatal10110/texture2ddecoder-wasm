@@ -26,13 +26,16 @@ import type { SerializedType } from "./TypeTree.js";
  * @example
  * const sf = readSerializedFile(data);
  * const reader = new ObjectReader(data, sf, sf.objects[0]);
- * if (reader.classId === ClassID.TextAsset) reader.readAlignedString(); // m_Name
+ * if (reader.type === ClassID.TextAsset) reader.readAlignedString(); // m_Name
  */
 export class ObjectReader extends BinaryReader {
   /** Object id within its file (D9). */
   readonly pathId: bigint;
-  /** Unity class id as the file holds it; see `ClassID` and `classIdName`. */
-  readonly classId: number;
+  /**
+   * Unity class id (upstream `type`), kept as the number the file holds even
+   * when `ClassID` does not name it; see `classIdName`.
+   */
+  readonly type: number;
   /** Absolute offset of the object's data in the file. */
   readonly byteStart: number;
   /** Size of the object's data in bytes; equal to {@link length}. */
@@ -63,7 +66,7 @@ export class ObjectReader extends BinaryReader {
     }
     super(data.subarray(byteStart, end), file.bigEndian ? "big" : "little");
     this.pathId = pathId;
-    this.classId = info.classId;
+    this.type = info.classId;
     this.byteStart = byteStart;
     this.byteSize = byteSize;
     this.serializedType = info.serializedType;

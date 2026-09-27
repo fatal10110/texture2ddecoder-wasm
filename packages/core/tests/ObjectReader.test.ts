@@ -34,15 +34,15 @@ for (const name of SERIALIZED_FIXTURES) {
     test(`${name}: object readers of ${path} match the golden table`, () => {
       const objects = readers(node(name, path));
       const table = objects
-        .map((r) => ({ pathId: String(r.pathId), classId: r.classId, byteSize: r.length }))
+        .map((r) => ({ pathId: String(r.pathId), classId: r.type, byteSize: r.length }))
         .sort(byPathId);
       assert.deepEqual(table, golden(name).objects[path]);
       for (const r of objects) {
         assert.equal(r.format, expected.formatVersion);
         assert.equal(r.endian, expected.bigEndian ? "big" : "little");
         assert.equal(r.platform, expected.targetPlatform);
-        assert.equal(r.serializedType?.classId, r.classId);
-        assert.ok(classIdName(r.classId), `class id ${r.classId} has no name`);
+        assert.equal(r.serializedType?.classId, r.type);
+        assert.ok(classIdName(r.type), `class id ${r.type} has no name`);
       }
     });
 
@@ -83,7 +83,7 @@ test("a TextAsset reader starts at m_Name and ends after m_Script", () => {
   for (const name of SERIALIZED_FIXTURES) {
     for (const [path, expected] of Object.entries(golden(name).serialized!)) {
       for (const r of readers(node(name, path))) {
-        if (r.classId !== ClassID.TextAsset) continue;
+        if (r.type !== ClassID.TextAsset) continue;
         const want = expected.typetrees[String(r.pathId)]?.value as
           | { m_Name: string; m_Script: string }
           | undefined;
@@ -164,6 +164,6 @@ test("an object with a class id outside ClassID keeps its number", () => {
   const data = node(MAIN, MAIN_CAB);
   const sf = readSerializedFile(data);
   const r = new ObjectReader(data, sf, { ...sf.objects[0]!, classId: 123456 });
-  assert.equal(r.classId, 123456);
-  assert.equal(classIdName(r.classId), undefined);
+  assert.equal(r.type, 123456);
+  assert.equal(classIdName(r.type), undefined);
 });

@@ -4,8 +4,8 @@
  * Unity class ids by name (upstream `ClassIDType`); Unity's own list is at
  * https://docs.unity3d.com/Manual/ClassIDReference.html.
  *
- * Compare an object's raw `classId` against these, e.g.
- * `obj.classId === ClassID.Texture2D`. A class id stays the number the file
+ * Compare an object's raw class id against these, e.g.
+ * `obj.type === ClassID.Texture2D`. A class id stays the number the file
  * holds: one missing here (a newer Unity class, a game's own class) is still
  * a valid id, and {@link classIdName} returns `undefined` for it.
  */
