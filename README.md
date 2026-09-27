@@ -15,4 +15,4 @@ npm ci
 npm run build:rollup && npm test
 ```
 
-License: MIT, except the tight-mesh fill of `unity-asset-reader-texture` (`packages/texture`), which is derived from ImageSharp.Drawing and under Apache-2.0: that package is `MIT AND Apache-2.0` (see its `NOTICE` and `LICENSE-APACHE`).
+License: MIT, except the tight-mesh fill of `unity-asset-reader-texture` (`packages/texture`), which is derived from ImageSharp.Drawing and under Apache-2.0: that package is `MIT AND Apache-2.0` (see its `NOTICE` and `LICENSE-APACHE`). The upstreams the repo derives from (AssetStudio, UnityPy and others) are listed in [`NOTICE`](NOTICE); each published package ships its own `NOTICE`, which is the authoritative one for its tarball.
