@@ -418,7 +418,7 @@ await initialize({
 });
 ```
 
-**Web Workers:** the same `initialize({ wasmPath })` call works inside a dedicated or module Worker, which has no `window`. Decode large textures there to keep the page responsive.
+**Web Workers:** the same `initialize({ wasmPath })` call works inside a Web Worker (classic or module), which has no `window`. Decode large textures there to keep the page responsive.
 
 **Framework Integration:**
 This approach works seamlessly with:
