@@ -250,13 +250,15 @@ export class ObjectReader extends BinaryReader {
    * @throws {ResourceNotFoundError} when the data is in a resource file that
    *   was not passed to `load()`; always, for data in a resource file, when
    *   this reader was not built by `load()`
-   * @throws {CorruptError} when the data does not hold together: the object
-   *   ends early, a count or length the reader checks is negative or runs past
-   *   the object's end,
-   *   a reader that reads the whole object finds bytes left after its last
-   *   field, or the type tree read does not end exactly at `byteSize`; when the
-   *   resource range runs past the end of its file; or when a `Texture2D` has
-   *   no image data, neither inline nor in a resource file
+   * @throws {CorruptError} when the data does not hold together, for example:
+   *   the object ends early, a count or length the reader checks is negative
+   *   or runs past the object's end, a reader that reads the whole object
+   *   finds bytes left after its last field, or the type tree read does not
+   *   end exactly at `byteSize`; when a `Texture2D`'s `m_StreamData.offset` is
+   *   2^53 or above, or the resource range runs past the end of its file; when
+   *   a `Texture2D` has no image data, neither inline nor in a resource file;
+   *   and whatever else {@link readTypeTree} throws, such as for a malformed
+   *   type tree or an undeclared `[SerializeReference]` type
    */
   read<T extends ObjectData = ObjectData>(): T {
     // The caller's claim, per the JSDoc: `T` narrows the union unchecked.
