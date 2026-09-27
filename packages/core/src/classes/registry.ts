@@ -7,6 +7,7 @@ import { ClassID } from "../serialized/ClassID.js";
 import type { ObjectReader } from "../serialized/ObjectReader.js";
 import { baseName } from "../serialized/SerializedFile.js";
 import { readTypeTree, type TypeTreeObject } from "../serialized/TypeTreeReader.js";
+import { readAssetBundle, type AssetBundle } from "./AssetBundle.js";
 import { readTexture2D, type Texture2D } from "./Texture2D.js";
 
 /**
@@ -29,7 +30,10 @@ export interface Texture2DData extends Texture2D {
  * that has one ({@link Texture2DData} for a `Texture2D`), and the
  * `readTypeTree()` result for any other class.
  */
-export type ObjectData = Texture2DData | TypeTreeObject;
+export type ObjectData =
+  | Texture2DData
+  | AssetBundle
+  | TypeTreeObject;
 
 /**
  * Reads the bytes a {@link ResourceRef} names, for the object it was read
@@ -46,8 +50,9 @@ type ClassReader = (reader: ObjectReader, resources: ResourceReader | undefined)
  * class gets an entry once its reader is ported; everything else goes through
  * its type tree.
  */
-const CLASS_READERS: ReadonlyMap<number, ClassReader> = new Map([
+const CLASS_READERS: ReadonlyMap<number, ClassReader> = new Map<number, ClassReader>([
   [ClassID.Texture2D, readTexture2DData],
+  [ClassID.AssetBundle, readAssetBundle],
 ]);
 
 /**

@@ -44,3 +44,5 @@ export { readTexture2D } from "./classes/Texture2D.js";
 export type { GLTextureSettings, StreamingInfo, Texture2D } from "./classes/Texture2D.js";
 export { TextureFormat } from "./classes/TextureFormat.js";
 export type { ObjectData, Texture2DData } from "./classes/registry.js";
+export { findAssets, readAssetBundle } from "./classes/AssetBundle.js";
+export type { AssetBundle, AssetBundleScriptInfo, AssetInfo } from "./classes/AssetBundle.js";

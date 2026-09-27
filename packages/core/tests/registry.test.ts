@@ -33,6 +33,14 @@ const TYPED = fixtureNames().filter((name) => {
   return files.length > 0 && files.every((sf) => sf.enableTypeTree);
 });
 const NO_TYPE_TREE = fixtureNames().filter((name) => name.includes("/lz4-notypetree/"));
+/** Classes with a hardcoded reader; `read()` of any other class goes through its type tree. */
+const HARDCODED: ReadonlySet<number> = new Set([
+  ClassID.Texture2D,
+  ClassID.AssetBundle,
+]);
+/** Whether a fixture holds an object of a class without a hardcoded reader. */
+const hasOthers = (name: string): boolean =>
+  Object.values(golden(name).objects).some((objs) => objs.some((o) => !HARDCODED.has(o.classId)));
 
 const loadName = (name: string): Env => load([{ name, data: loadFixture(name) }]);
 
@@ -130,9 +138,9 @@ test("a typed Texture2D is still read by the hardcoded reader, not its type tree
 
 // --- the readTypeTree() fallback ----------------------------------------------------
 
-for (const name of TYPED) {
+for (const name of TYPED.filter(hasOthers)) {
   test(`${name}: read() of a class without a reader is the readTypeTree() result`, () => {
-    const others = loadName(name).objects.filter((o) => o.type !== ClassID.Texture2D);
+    const others = loadName(name).objects.filter((o) => !HARDCODED.has(o.type));
     assert.ok(others.length > 0);
     for (const obj of others) assert.deepEqual(obj.read(), obj.readTypeTree(), `${obj.pathId}`);
   });
@@ -155,9 +163,9 @@ test("read() of a TextAsset equals the oracle's dump", () => {
 
 // --- refusals ---------------------------------------------------------------------
 
-for (const name of NO_TYPE_TREE) {
+for (const name of NO_TYPE_TREE.filter(hasOthers)) {
   test(`${name}: read() of a class without a reader or type tree throws UnsupportedError`, () => {
-    const others = loadName(name).objects.filter((o) => o.type !== ClassID.Texture2D);
+    const others = loadName(name).objects.filter((o) => !HARDCODED.has(o.type));
     assert.ok(others.length > 0);
     for (const obj of others) {
       assert.throws(
