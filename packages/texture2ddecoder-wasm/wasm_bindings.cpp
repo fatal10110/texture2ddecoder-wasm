@@ -13,6 +13,7 @@
 #include "astc.h"
 #include "crunch.h"
 #include "unitycrunch.h"
+#include "color.h"
 
 using namespace emscripten;
 
@@ -67,8 +68,53 @@ val decode_bc1_wrapper(val typedArray, uint32_t width, uint32_t height) {
     return decode_generic(typedArray, width, height, decode_bc1);
 }
 
+// BC3 (DXT5) colour half, always in 4-colour mode (#137). The submodule's decode_bc3
+// decodes it with its BC1 block decoder, which switches to 3-colour mode (index 2 =
+// midpoint, index 3 = black) when c0 <= c1. That mode belongs to BC1 only: the S3TC spec
+// (EXT_texture_compression_s3tc, D3D BC2/BC3) decodes the DXT3/DXT5 colour block as
+// though c0 > c1 always. The 565 expansion and integer rounding are the submodule's own
+// 4-colour branch, so a c0 > c1 block decodes exactly as before. The fix lives here, not
+// in the submodule, which stays pinned to upstream; BC1 keeps the submodule's decoder.
+static inline void decode_bc3_color_block(const uint8_t* data, uint32_t* outbuf) {
+    uint16_t q0, q1;
+    uint32_t indices;
+    std::memcpy(&q0, data, 2);
+    std::memcpy(&q1, data + 2, 2);
+    std::memcpy(&indices, data + 4, 4);
+    uint8_t r0, g0, b0, r1, g1, b1;
+    rgb565_le(q0, &r0, &g0, &b0);
+    rgb565_le(q1, &r1, &g1, &b1);
+    const uint_fast32_t c[4] = {
+        color(r0, g0, b0, 255),
+        color(r1, g1, b1, 255),
+        color((r0 * 2 + r1) / 3, (g0 * 2 + g1) / 3, (b0 * 2 + b1) / 3, 255),
+        color((r0 + r1 * 2) / 3, (g0 + g1 * 2) / 3, (b0 + b1 * 2) / 3, 255),
+    };
+    uint_fast32_t d = lton32(indices);
+    for (int i = 0; i < 16; i++, d >>= 2)
+        outbuf[i] = c[d & 3];
+}
+
+// The submodule's decode_bc3 with the colour half above; the alpha half is the
+// submodule's decode_bc3_alpha, as before.
+static int decode_bc3_four_colour(const uint8_t* data, const long w, const long h,
+                                  uint32_t* image) {
+    const long num_blocks_x = (w + 3) / 4;
+    const long num_blocks_y = (h + 3) / 4;
+    uint32_t buffer[16];
+    const uint8_t* d = data;
+    for (long by = 0; by < num_blocks_y; by++) {
+        for (long bx = 0; bx < num_blocks_x; bx++, d += 16) {
+            decode_bc3_color_block(d + 8, buffer);
+            decode_bc3_alpha(d, buffer, 3);
+            copy_block_buffer(bx, by, w, h, 4, 4, buffer, image);
+        }
+    }
+    return 1;
+}
+
 val decode_bc3_wrapper(val typedArray, uint32_t width, uint32_t height) {
-    return decode_generic(typedArray, width, height, decode_bc3);
+    return decode_generic(typedArray, width, height, decode_bc3_four_colour);
 }
 
 val decode_bc4_wrapper(val typedArray, uint32_t width, uint32_t height) {

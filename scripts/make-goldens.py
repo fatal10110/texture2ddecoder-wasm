@@ -156,13 +156,14 @@ SYNTHETIC = [
 # multiples of the Switch padding, so the crop back to the texture's size runs.
 #
 # BC1 colour blocks (DXT1, and the colour half of DXT5) whose c0 <= c1 are where
-# UnityPy's Pillow parts ways with Texture2DDecoder (this library's, and
-# AssetStudio's and K0lb3's, which agree with it). Verdicts (#131):
+# UnityPy's Pillow parts ways with Texture2DDecoder (texture2ddecoder-wasm
+# 1.2.2's, and AssetStudio's and K0lb3's, which agree with it). Verdicts (#131):
 #   DXT1 index 3: AssetStudio, opaque black. Pillow gives transparent black,
 #     but Unity's DXT1 has no alpha.
 #   DXT5 colour: Pillow is right. The spec decodes it as though c0 > c1
-#     always, and Texture2DDecoder's 3-colour mode is a known defect, to be
-#     fixed in texture2ddecoder-wasm (#137), not pinned here.
+#     always, and Texture2DDecoder's 3-colour mode is a defect, fixed in
+#     texture2ddecoder-wasm by #137 but not released yet; #147 drops
+#     four_color for DXT5 once the texture package depends on the release.
 # The fixtures' DXT data has no such block (#32), random bytes do. So the DXT
 # inputs get every colour block's c0 > c1, by setting the top bit of c0's high
 # byte and clearing c1's (`four_color`, mirrored by `fourColor` in the texture
