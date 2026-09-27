@@ -95,6 +95,13 @@ export interface SerializedFile {
    * names no editor, and for the stripped placeholder `"0.0.0"`.
    */
   version: UnityVersion;
+  /**
+   * Release type of the editor (upstream `buildType`): the letters after the
+   * leading `major.minor.patch` of `unityVersion`, suffix ignored, such as `"f"`
+   * (final), `"p"` (patch), `"b"` (beta) or `"a"` (alpha). `""` when there are
+   * none, and like `version` before format 7 and for the placeholder `"0.0.0"`.
+   */
+  buildType: string;
   /** Format 8+; `UnknownPlatform` before, or when the value is not one upstream knows. */
   targetPlatform: BuildTarget;
   /** Byte order of the metadata and object data. */
@@ -182,9 +189,10 @@ export function readSerializedFile(data: Uint8Array): SerializedFile {
 
   let unityVersion = DEFAULT_UNITY_VERSION;
   let version: UnityVersion = [0, 0, 0, 0];
+  let buildType = "";
   if (format >= V.Unknown_7) {
     unityVersion = reader.readStringToNull();
-    version = parseUnityVersion(unityVersion);
+    ({ version, buildType } = parseUnityVersion(unityVersion));
   }
   const targetPlatform =
     format >= V.Unknown_8 ? toBuildTarget(reader.readInt32()) : BuildTarget.UnknownPlatform;
@@ -249,6 +257,7 @@ export function readSerializedFile(data: Uint8Array): SerializedFile {
     header,
     unityVersion,
     version,
+    buildType,
     targetPlatform,
     bigEndian: header.endianess !== 0,
     enableTypeTree,
@@ -326,7 +335,8 @@ function readObjectInfo(
 
 /**
  * Give a parsed file the editor version it does not record itself (upstream
- * `SerializedFile.SetVersion`): set `unityVersion` and re-parse `version`.
+ * `SerializedFile.SetVersion`): set `unityVersion` and re-parse `version` and
+ * `buildType`.
  * Internal (not exported from the package): env uses it for a file below
  * format 7 found in a bundle, which takes the bundle's `unityRevision`.
  *
@@ -339,21 +349,26 @@ function readObjectInfo(
 export function setUnityVersion(file: SerializedFile, text: string): void {
   if (text === STRIPPED_VERSION) return;
   file.unityVersion = text;
-  file.version = parseUnityVersion(text);
+  ({ version: file.version, buildType: file.buildType } = parseUnityVersion(text));
 }
 
 /**
- * Parse the leading `major.minor.patch<type>build` of a Unity version string.
+ * Parse the leading `major.minor.patch<type>build` of a Unity version string
+ * into the version numbers and the build type letters.
  *
  * Only the leading run is read: typetree-stripped files append a suffix such
  * as `"\n2"`, which upstream's split-on-every-non-digit would turn into a
- * fifth component. Missing components read as 0, which also covers the
- * stripped placeholder `"0.0.0"`.
+ * fifth component, and its strip-every-digit would glue onto the build type.
+ * Missing components read as 0 and a missing type as `""`, which also covers
+ * the stripped placeholder `"0.0.0"`.
  */
-function parseUnityVersion(text: string): UnityVersion {
-  const match = /^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:[A-Za-z]+(\d+))?/.exec(text);
+function parseUnityVersion(text: string): { version: UnityVersion; buildType: string } {
+  const match = /^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:([A-Za-z]+)(\d+)?)?/.exec(text);
   const part = (i: number): number => Number(match?.[i] ?? 0);
-  return [part(1), part(2), part(3), part(4)];
+  return {
+    version: [part(1), part(2), part(3), part(5)],
+    buildType: match?.[4] ?? "",
+  };
 }
 
 /**
