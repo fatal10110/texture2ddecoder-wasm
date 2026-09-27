@@ -145,7 +145,12 @@ export interface Env {
    * loaded together, a pointer stays in its own build wherever both files sit
    * in one container: one bundle or `UnityWebData` file, or the caller's loose
    * inputs. A pointer into another bundle leaves its container either way, and
-   * there the first one loaded wins, as with upstream's `FindIndex`.
+   * there the first one loaded wins, as with upstream's `FindIndex`. A bundle
+   * inside a `UnityWebData` file (`data.unity3d` in a `.data`) is a container
+   * of its own too, apart from the `.data`'s loose files. An ordinary (not
+   * scene) AssetBundle holds one SerializedFile, so every external pointer of
+   * its objects leaves its container. To keep two builds apart when their
+   * pointers cross containers, load each build with its own `load()`.
    *
    * @param pptr the pointer, as a typetree holds it
    * @param from the object whose data the pointer was read from
