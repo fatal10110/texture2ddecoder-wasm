@@ -203,11 +203,19 @@ export class ObjectReader extends BinaryReader {
    * Read the whole object: with the hardcoded reader of its class when there
    * is one, as upstream does, and with {@link readTypeTree} otherwise.
    *
-   * Hardcoded readers so far: `Texture2D`, which returns a `Texture2DData`,
-   * the `readTexture2D` fields plus `imageData`, the image bytes resolved: the
-   * inline `image data` when it is not empty, as upstream, and otherwise a
-   * view into the `.resS` / `.resource` file `m_StreamData` names, read
-   * through the env that built this reader. A texture with neither is refused.
+   * The classes with a hardcoded reader are the keys of `CLASS_READERS` in
+   * `classes/registry.ts`, the one list of them, and {@link ObjectData} is the
+   * union of what they return; each result type there documents its shape. A
+   * reader that needs a resource file (a `Texture2D`'s `.resS` / `.resource`,
+   * named by `m_StreamData`) reads it through the env that built this reader.
+   *
+   * `MonoBehaviour` is the exception: its hardcoded reader reads only the
+   * header, so when the file has a type tree `read()` is the whole
+   * {@link readTypeTree} result, the script's fields included, and only
+   * without one is it the header `readMonoBehaviour` reads.
+   *
+   * When a hardcoded reader refuses an object, `read()` throws; it does not
+   * fall back to the type tree. Call {@link readTypeTree} for that.
    *
    * **`T` is not checked.** It is the caller's claim about the result, an
    * unchecked cast of the `ObjectData` union, and nothing at run time makes it
@@ -218,16 +226,36 @@ export class ObjectReader extends BinaryReader {
    * class either, so a consumer such as `decodeTexture2D` must validate its
    * input at run time rather than trust the type.
    *
-   * @throws {UnsupportedError} from the class reader - a `Texture2D` of a file
-   *   whose Unity version is unknown (stripped) or an editor file - or, for a
-   *   class without a hardcoded reader, when the file has no type tree, naming
-   *   the class id and path id
+   * @throws {UnsupportedError} of kind `"Unity version"`, with the file's own
+   *   `unityVersion` as `found`, when a version-gated class reader has no
+   *   layout for the file's version: one it has no layout data for (such as
+   *   below Unity 3.4), or an unknown one (`[0, 0, 0, 0]`: version-stripped, or
+   *   a loose file below format 7) unless the object's own bytes tell the
+   *   candidate layouts apart (the rule on epic #36). So `Texture2D` and
+   *   `MonoScript` refuse every version-stripped file, while `TextAsset` (from
+   *   format 7) and `AssetBundle` (from format 16) read one where the bytes
+   *   decide. An editor file's header of an unknown or pre-3.4 version is
+   *   refused the same way. Each reader's JSDoc gives its exact conditions.
+   * @throws {UnsupportedError} of kind `"build target"`, found `"NoTarget"`,
+   *   when a class reader that does not read editor-only fields gets a file
+   *   built for the editor (`BuildTarget.NoTarget`), such as a `Texture2D` or
+   *   a `MonoScript`. `MonoBehaviour`'s header reader refuses one too, but
+   *   `read()` reaches it only when the file has no type tree, and Unity
+   *   always writes one into an editor file.
+   * @throws {UnsupportedError} of kind `"object without a type tree"`, naming
+   *   the class id and path id, for a class without a hardcoded reader in a
+   *   file built without type trees; and whatever else {@link readTypeTree}
+   *   refuses
    * @throws {ResourceNotFoundError} when the data is in a resource file that
    *   was not passed to `load()`; always, for data in a resource file, when
    *   this reader was not built by `load()`
-   * @throws {CorruptError} when the data does not hold together, the
-   *   resource range runs past the end of its file, or a `Texture2D` has no
-   *   image data, neither inline nor in a `.resS`
+   * @throws {CorruptError} when the data does not hold together: the object
+   *   ends early, a count or length the reader checks is negative or runs past
+   *   the object's end,
+   *   a reader that reads the whole object finds bytes left after its last
+   *   field, or the type tree read does not end exactly at `byteSize`; when the
+   *   resource range runs past the end of its file; or when a `Texture2D` has
+   *   no image data, neither inline nor in a resource file
    */
   read<T extends ObjectData = ObjectData>(): T {
     // The caller's claim, per the JSDoc: `T` narrows the union unchecked.
