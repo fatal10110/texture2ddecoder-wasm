@@ -221,8 +221,27 @@ wasmTest("Switch with no block-linear blob decodes as linear", async () => {
     assert.equal(await decodeStored(input), t.golden.rgbaSha256, `${m_PlatformBlob?.length}`);
   }
   // Nor does a blob count on any other platform.
-  const ps4 = { ...t.input, platform: BuildTarget.PS4, m_PlatformBlob: blob(4) };
-  assert.equal(await decodeStored(ps4), t.golden.rgbaSha256);
+  const xboxOne = { ...t.input, platform: BuildTarget.XboxOne, m_PlatformBlob: blob(4) };
+  assert.equal(await decodeStored(xboxOne), t.golden.rgbaSha256);
+});
+
+// --- PlayStation ------------------------------------------------------------------
+
+wasmTest("PS4 and PS5 textures are refused until they can be detiled (#130, R9)", async () => {
+  // Real image data, so only the platform can be what is refused.
+  const t = windowsTexture(F.DXT1);
+  for (const [platform, name] of [[BuildTarget.PS4, "PS4"], [BuildTarget.PS5, "PS5"]] as const) {
+    await assert.rejects(decodeTexture2D({ ...t.input, platform }), {
+      name: "UnsupportedError",
+      message:
+        `unsupported texture platform: ${platform} (${name} textures may be tiled, and ` +
+        "detiling them is not supported yet (#130))",
+    });
+  }
+  // Every other platform decodes, PS3 and PS Vita included: no upstream tiles them either.
+  for (const platform of [BuildTarget.PS3, BuildTarget.PSP2, BuildTarget.UnknownPlatform]) {
+    assert.equal(await decodeStored({ ...t.input, platform }), t.golden.rgbaSha256, `${platform}`);
+  }
 });
 
 test("switchLayout: RGB24 and BGR24 are stored as RGBA32 and BGRA32", () => {

@@ -28,7 +28,7 @@ import {
 import { BuildTarget, CorruptError, TextureFormat, UnsupportedError } from "unity-asset-reader";
 import type { Texture2DData } from "unity-asset-reader";
 import { convertPlain, type RgbaImage } from "./convert.js";
-import { deswizzle, switchLayout, xbox360Swap } from "./platform.js";
+import { deswizzle, refuseTiledPlatform, switchLayout, xbox360Swap } from "./platform.js";
 
 /** Where `initTexture` finds the WASM files; passed to `texture2ddecoder-wasm` as it is. */
 export interface InitTextureOptions {
@@ -183,6 +183,9 @@ export async function initTexture(options?: InitTextureOptions): Promise<void> {
  *   padded to whole blocks of GOBs, decoded at that size and cropped back
  *   (UnityPy's `TextureSwizzler`; AssetStudio has no Switch path). RGB24 and
  *   BGR24 are stored as RGBA32 and BGRA32 there, and decoded as those.
+ * - **PS4 and PS5:** refused with `UnsupportedError`. Their textures can be
+ *   tiled, and no upstream detiles them yet (#130); decoding tiled data as
+ *   linear would give a wrong image without an error.
  *
  * Without `platform` (an input not from `obj.read()`), the data is taken as
  * linear, as every other platform stores it.
@@ -210,7 +213,8 @@ export async function initTexture(options?: InitTextureOptions): Promise<void> {
  * @throws {UnsupportedError} for a format with no decoder here (DXT3, and
  *   formats neither this nor `convertPlain` knows); for a Switch-swizzled
  *   texture, also a format with no known Switch layout (Crunch, ETC, PVRTC,
- *   ASTC HDR, ...) or more than 32 GOBs per block
+ *   ASTC HDR, ...) or more than 32 GOBs per block; and for any PS4 or PS5
+ *   texture (kind `"texture platform"`)
  * @throws {CorruptError} when the image data is shorter than the first level
  *   needs (for Switch, the padded level), the Crunch data does not unpack,
  *   the block decoder refuses the data (such as PVRTC whose block counts are
@@ -227,6 +231,7 @@ export async function decodeTexture2D(texture: Texture2DData): Promise<RgbaImage
     throw new CorruptError(`texture size ${width} x ${height} is not a non-negative integer size`);
   }
   const platform = texture.platform ?? BuildTarget.UnknownPlatform;
+  refuseTiledPlatform(platform);
   // Upstream's order: the Xbox swap, then (UnityPy) the Switch deswizzle, then decode.
   const data = xbox360Swap(texture.imageData, platform, format);
   const layout = switchLayout(platform, texture.m_PlatformBlob, format, width, height);

@@ -36,6 +36,33 @@ export function xbox360Swap(data: Uint8Array, platform: number, format: number):
   return out;
 }
 
+/** The PlayStation platforms whose texture tiling nothing here can undo (#130). */
+const PLAYSTATION: ReadonlyMap<number, string> = new Map([
+  [BuildTarget.PS4, "PS4"],
+  [BuildTarget.PS5, "PS5"],
+]);
+
+/**
+ * Refuse a PS4 or PS5 texture (R9). Their builds can store textures tiled,
+ * and neither upstream (AssetStudio, UnityPy) detiles them, so there is no
+ * behavior to port and no oracle; decoding one as linear would give a wrong
+ * image with no error. Linear PlayStation textures are refused too, as
+ * nothing in the file tells the two apart. Lifted by #130.
+ *
+ * @param platform the texture's `BuildTarget`
+ * @throws {UnsupportedError} for `BuildTarget.PS4` and `BuildTarget.PS5`
+ */
+export function refuseTiledPlatform(platform: number): void {
+  const name = PLAYSTATION.get(platform);
+  if (name !== undefined) {
+    throw new UnsupportedError(
+      "texture platform",
+      platform,
+      `${name} textures may be tiled, and detiling them is not supported yet (#130)`,
+    );
+  }
+}
+
 /**
  * Texel shape of a Switch-swizzled format: how many pixels across and down
  * fill the 16 bytes the Tegra block-linear layout moves as one unit
