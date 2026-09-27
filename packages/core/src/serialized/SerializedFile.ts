@@ -16,7 +16,7 @@ const GUID_SIZE = 16;
 /** What upstream assumes a file too old to name its editor was written by. */
 const DEFAULT_UNITY_VERSION = "2.5.0f5";
 
-/** What a typetree-stripped build writes in place of its editor version. */
+/** What a build with the Unity version stripped writes in its place. */
 const STRIPPED_VERSION = "0.0.0";
 
 /** The fixed header every SerializedFile starts with, always big-endian. */
