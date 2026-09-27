@@ -108,6 +108,28 @@ test("obj.read() of a MovieTexture is readMovieTexture: the movie, a view into t
   assert.equal(movie.m_MovieData!.buffer, bytes.buffer);
 });
 
+test('read(): a MovieTexture with a bad m_Name length throws CorruptError, not ""', () => {
+  // registry.test.ts's NAMED table does this for every class with a fixture;
+  // MovieTexture has none, so a hand-built object stands in.
+  const { bytes } = build(L2017_3);
+  const size = bytes.length;
+  const cases: [number, string][] = [
+    [-1, "m_Name byte count -1 at offset 0 is negative"],
+    [size, `m_Name byte count ${size} at offset 0 exceeds the ${size - 4} bytes left`],
+  ];
+  for (const [length, message] of cases) {
+    const copy = bytes.slice();
+    new DataView(copy.buffer).setInt32(0, length, true);
+    const r = reader(copy, { unity: [2018, 4, 36, 1], format: 17 });
+    assert.throws(
+      () => r.read(),
+      (err: unknown) =>
+        err instanceof CorruptError && err.message === `MovieTexture ${r.pathId} ${message}`,
+      `length ${length}`,
+    );
+  }
+});
+
 // --- refusals ---------------------------------------------------------------------
 
 const REFUSED: { unity: UnityVersion; text: string; format: number; why: string }[] = [

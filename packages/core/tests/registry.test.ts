@@ -390,6 +390,10 @@ const NAMED: { classId: number; name: string }[] = [
   { classId: ClassID.MonoScript, name: "editor/6000.3.25f1/uncompressed/main" },
   { classId: ClassID.AssetBundle, name: "editor/6000.3.25f1/uncompressed/shared" },
   { classId: ClassID.Material, name: "editor/6000.3.25f1/material/lz4/material" },
+  // #41. MovieTexture has no fixture; MovieTexture.test.ts checks it the same way.
+  { classId: ClassID.AudioClip, name: "editor/6000.3.25f1/lz4/audio" },
+  { classId: ClassID.Font, name: "editor/6000.3.25f1/lz4/font" },
+  { classId: ClassID.VideoClip, name: "editor/6000.3.25f1/lz4/video" },
 ];
 
 for (const { classId, name } of NAMED) {
