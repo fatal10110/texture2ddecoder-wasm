@@ -3,6 +3,7 @@
 
 import type { ResourceRef } from "../env.js";
 import { CorruptError, ResourceNotFoundError } from "../errors.js";
+import type { BuildTarget } from "../serialized/BuildTarget.js";
 import { ClassID } from "../serialized/ClassID.js";
 import type { ObjectReader } from "../serialized/ObjectReader.js";
 import { baseName } from "../serialized/SerializedFile.js";
@@ -11,9 +12,15 @@ import { readTexture2D, type Texture2D } from "./Texture2D.js";
 
 /**
  * A `Texture2D` as `obj.read()` returns it: every field `readTexture2D` reads,
- * plus the image bytes wherever they live.
+ * plus the image bytes wherever they live and the platform they were built for.
  */
 export interface Texture2DData extends Texture2D {
+  /**
+   * The platform the object's file was built for (`ObjectReader.platform`,
+   * upstream's `Texture2D.platform`). Not a Texture2D field: decoding needs it,
+   * since Switch and Xbox 360 builds store the image data in their own layout.
+   */
+  platform: BuildTarget;
   /**
    * The image data, every mip level, still encoded in `m_TextureFormat`:
    * `image data` when it is not empty, and otherwise `size` bytes of the
@@ -95,7 +102,7 @@ function readTexture2DData(
 ): Texture2DData {
   const texture = readTexture2D(reader);
   const inline = texture["image data"];
-  if (inline.length > 0) return { ...texture, imageData: inline };
+  if (inline.length > 0) return { ...texture, imageData: inline, platform: reader.platform };
   const stream = texture.m_StreamData;
   if (!stream?.path) {
     throw new CorruptError(
@@ -105,5 +112,5 @@ function readTexture2DData(
   }
   // A reader built outside `load()` has no files to look in.
   if (!resources) throw new ResourceNotFoundError(stream.path, baseName(stream.path));
-  return { ...texture, imageData: resources(stream, reader) };
+  return { ...texture, imageData: resources(stream, reader), platform: reader.platform };
 }
