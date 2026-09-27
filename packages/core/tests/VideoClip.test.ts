@@ -13,7 +13,7 @@ import {
   type VideoClipData,
 } from "../src/classes/VideoClip.js";
 import { load, type LoadedFile } from "../src/env.js";
-import { CorruptError, ResourceNotFoundError } from "../src/errors.js";
+import { CorruptError, ResourceNotFoundError, UnsupportedError } from "../src/errors.js";
 import { BuildTarget } from "../src/serialized/BuildTarget.js";
 import { ClassID } from "../src/serialized/ClassID.js";
 import { ObjectReader } from "../src/serialized/ObjectReader.js";
@@ -269,6 +269,31 @@ test('Unity "0.0.0": format 22 has 2020.1\'s layout, format 21 2019.2\'s', () =>
     const { bytes, expected } = build(layout);
     const clip = readVideoClip(readerOf(FROM, bytes, { unity: STRIPPED, text: "0.0.0", format }));
     assert.deepEqual(clip, expected, `format ${format}`);
+  }
+});
+
+test('Unity "0.0.0": an object that does not fit its format\'s layout is refused, not corrupt', () => {
+  // #36 as amended on #136: the layout is inferred from the format.
+  const v2019 = build(L2019_2).bytes;
+  const v2020 = build(L2020_1).bytes;
+  const misfits: [number, string, Uint8Array][] = [
+    [22, "2019.2's bytes", v2019],
+    [22, "1 byte left over", withTail(v2020, 0)],
+    [22, "cut inside m_ExternalResources", v2020.subarray(0, v2020.length - 10)],
+    [21, "2020.1's bytes", v2020],
+    [21, "1 byte left over", withTail(v2019, 1)],
+    [21, "1 byte short", v2019.subarray(0, v2019.length - 1)],
+  ];
+  for (const [format, why, data] of misfits) {
+    const reader = readerOf(FROM, data, { unity: STRIPPED, text: "0.0.0", format });
+    const layout = format === 21 ? "2019.2" : "2020.1";
+    assert.throws(
+      () => readVideoClip(reader),
+      (err: unknown) =>
+        versionRefusal("0.0.0")(err) &&
+        (err as UnsupportedError).message.includes(`does not fit ${layout}'s VideoClip layout`),
+      `format ${format}: ${why}`,
+    );
   }
 });
 

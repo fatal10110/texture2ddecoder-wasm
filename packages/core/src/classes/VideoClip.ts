@@ -78,34 +78,65 @@ export interface VideoClip extends NamedObject {
  *
  * A file whose Unity version is unknown (`[0, 0, 0, 0]`) is read where its
  * SerializedFile format leaves one layout (rule for version-stripped files,
- * #36): format 21 is written by 2019.3 and 2019.4 only, so it has 2019.2's
- * layout; format 22 (2020.1 on) has 2020.1's. Below 21 the formats span
- * layouts that differ inside the object, so the file is refused.
+ * #36, as amended on #136): format 21 is written by 2019.3 and 2019.4 only, so
+ * it has 2019.2's layout; format 22 (2020.1 on) has 2020.1's. That layout is
+ * inferred, not known, so an object that does not fit it past `m_Name` (bytes
+ * left over, or too few) is refused as not that layout rather than called
+ * corrupt. Below 21 the formats span layouts that differ inside the object, so
+ * the file is refused.
  *
  * The object must end exactly after its last field (upstream does not check).
  *
  * ponytail: the gates compare release numbers only (see `atLeast`). A 2019.2
- * alpha before a6 lacks `m_sRGB`, 2017.2.0b1 the aspect ratio, a 2020.1 alpha
- * before a7 `m_VideoShaders`, and a format 22 file from such an alpha is read
- * as 2020.1. The first runs out of bytes (CorruptError); the others shift every
- * field after the gap, which the counts, string lengths and end-of-object
- * check are all but certain to catch. Compare the build type if a pre-release
- * ever matters.
+ * alpha before a6 lacks `m_sRGB`, 2017.2.0b1 the aspect ratio, and a 2020.1
+ * alpha before a7 `m_VideoShaders`. With its version kept, the first runs out
+ * of bytes (CorruptError); the others shift every field after the gap, which
+ * the counts, string lengths and end-of-object check are all but certain to
+ * catch. A format 22 file of such an alpha with its version stripped is
+ * refused as not 2020.1's layout, as any other misfit is. Compare the build
+ * type if a pre-release ever matters.
  *
  * @param reader the object's reader, rewound first and left at its end
  * @throws {UnsupportedError} of kind `"Unity version"`, with the file's own
- *   `unityVersion` as `found`, for a version before 5.6, or an unknown one in a
- *   file below format 21; as `readNamedObject` does, for an editor file of
- *   unknown version
+ *   `unityVersion` as `found`, for a version before 5.6, an unknown one in a
+ *   file below format 21, or an unknown one whose fields after `m_Name` do not
+ *   fit the layout its format gives; as `readNamedObject` does, for an editor
+ *   file of unknown version
+ * @throws {CorruptError} when the object ends early, a count or string length
+ *   is negative or runs past its end, `m_Offset` or `m_Size` is 2^53 or above,
+ *   or bytes are left over after the last field, with the version known; with
+ *   it unknown, only inside `m_Name`, which every layout starts with
+ */
+export function readVideoClip(reader: ObjectReader): VideoClip {
+  const layout = videoClipLayout(reader);
+  const base = readNamedObject(reader);
+  if (!reader.version.every((part) => part === 0)) return readFields(reader, layout, base);
+  // #36 rule, as amended on #136: the layout is inferred from the format, so a
+  // misfit past m_Name means "not that layout", which the file cannot tell
+  // apart from corruption.
+  try {
+    return readFields(reader, layout, base);
+  } catch (error) {
+    if (!(error instanceof CorruptError)) throw error;
+    const which = layout.videoShaders ? "2020.1" : "2019.2";
+    throw refuse(
+      reader,
+      `the object does not fit ${which}'s VideoClip layout, the only one format ` +
+        `${reader.format} allows (${error.message})`,
+    );
+  }
+}
+
+/**
+ * The fields after `m_Name`, to the end of the object.
+ *
  * @throws {CorruptError} when the object ends early, a count or string length
  *   is negative or runs past its end, `m_Offset` or `m_Size` is 2^53 or above,
  *   or bytes are left over after the last field
  */
-export function readVideoClip(reader: ObjectReader): VideoClip {
-  const layout = videoClipLayout(reader);
-
+function readFields(reader: ObjectReader, layout: VideoClipLayout, base: NamedObject): VideoClip {
   // Filled in field order, so the keys come out in the order Unity wrote them.
-  const out: Partial<VideoClip> & NamedObject = readNamedObject(reader);
+  const out: Partial<VideoClip> & NamedObject = { ...base };
   out.m_OriginalPath = readStringField(reader, "VideoClip", "m_OriginalPath");
   out.m_ProxyWidth = reader.readUInt32();
   out.m_ProxyHeight = reader.readUInt32();
