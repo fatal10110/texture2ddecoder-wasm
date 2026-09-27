@@ -170,7 +170,7 @@ test("an object with a class id outside ClassID keeps its number", () => {
 
 // --- build type -----------------------------------------------------------------
 
-test("the build type is f for every editor-built fixture, stripped-suffix ones included", () => {
+test("the build type is f wherever a fixture names its editor, and empty if stripped", () => {
   let suffixed = 0;
   for (const name of SERIALIZED_FIXTURES) {
     for (const path of Object.keys(golden(name).serialized!)) {
