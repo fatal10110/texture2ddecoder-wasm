@@ -1,10 +1,9 @@
 // Ported from AssetStudio/Classes/AudioClip.cs (MIT, © Perfare / RazTools / Razviar)
 
-import { CorruptError, ResourceNotFoundError, UnsupportedError } from "../errors.js";
+import { CorruptError, UnsupportedError } from "../errors.js";
 import { BuildTarget } from "../serialized/BuildTarget.js";
 import { SerializedFileFormatVersion as V } from "../serialized/FormatVersion.js";
 import type { ObjectReader } from "../serialized/ObjectReader.js";
-import { baseName } from "../serialized/SerializedFile.js";
 import { readNamedObject, type NamedObject } from "./NamedObject.js";
 import type { ResourceReader } from "./registry.js";
 import { atLeast } from "./version.js";
@@ -285,13 +284,11 @@ export function readAudioClipData(
     return { ...clip, audioData: clip.m_AudioData };
   }
   if (clip.m_Offset !== undefined) {
-    // Streamed before 5.0: Unity names the resource file after this file.
-    const path = `${reader.fileName}.resS`;
-    // A reader built outside `load()` has no files to look in.
-    if (!resources) throw new ResourceNotFoundError(path, baseName(path));
-    // Set with m_Offset: readLegacyFields reads both.
-    const ref = { path, offset: clip.m_Offset, size: clip.m_Size! };
-    return { ...clip, audioData: resources(ref, reader) };
+    // Streamed before 5.0: Unity names the resource file after this file, so
+    // the source is never empty. m_Size is set with m_Offset (readLegacyFields).
+    const source = `${reader.fileName}.resS`;
+    const resource = { m_Source: source, m_Offset: clip.m_Offset, m_Size: clip.m_Size! };
+    return { ...clip, audioData: readStreamedData(reader, resources, resource, "AudioClip") };
   }
   // Set whenever neither m_AudioData nor m_Offset is: readFields reads it.
   const resource = clip.m_Resource!;
