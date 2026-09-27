@@ -492,6 +492,22 @@ test('unpacks a "0.0.0" bundle with flags 0x243 from its padded blocks', () => {
   assert.deepEqual(files[0]!.data, data);
 });
 
+test('unpacks a "0.0.0" bundle with 0x200 and its blocks info at the end', () => {
+  // The other side of the size check: with 0x80 the data blocks end where the
+  // blocks info starts, not at the header's size.
+  const data = payload(64, 49);
+  for (const version of [7, 8]) {
+    const bundle = buildBundle({
+      version,
+      revision: "0.0.0",
+      flags: BLOCKS_AND_DIRECTORY_COMBINED | BLOCKS_INFO_AT_THE_END | PADDING_AT_START,
+      blocks: [{ data }],
+      nodes: PAD_NODES,
+    });
+    assert.deepEqual(readBundle(bundle).files[0]!.data, data, `format ${version}`);
+  }
+});
+
 test('still refuses the 0x400 and 0x1000 encryption bits on a "0.0.0" bundle', () => {
   for (const bit of [0x400, 0x1000]) {
     assert.throws(
