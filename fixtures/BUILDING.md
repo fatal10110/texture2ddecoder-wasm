@@ -459,3 +459,224 @@ The log must hold two `FIXTURE-OK stripped` lines. Copy only
 `make-goldens.py`. UnityPy has to be told the editor for these bundles. The
 script takes it from the folder name and records an `oracleNote`
 ([`README.md`](README.md#oracle-notes)).
+
+## 8. The `block` bundles (#32)
+
+Two bundles built with **6000.3.25f1**, `block/windows` and `block/android`:
+one 32x16 Texture2D with a full mip chain per block and Crunch format that the
+editor compresses, made by script from the same RGBA32 pixels and compressed
+with `EditorUtility.CompressTexture`. A readable texture keeps its image data
+inline, as in section 6. Pixel decoding does not depend on the editor, so one
+editor is enough; PVRTC is the exception (section 9).
+
+The editor only compresses a texture with mips when its sides are powers of
+two, hence 32x16; that is still not a whole number of 6x6, 10x10 or 12x12 ASTC
+blocks, so partial blocks are covered. A StandaloneWindows64 build refuses ETC
+Crunch, so the mobile formats go into an Android bundle (the editor needs the
+Android module). The editor does not compress signed EAC and has no ATC; see
+[`README.md`](README.md#oracle-notes) for how those are covered.
+
+Any project will do; the committed bundles came from one holding only
+`Assets/Editor/BuildBlockTextures.cs`:
+
+```csharp
+using System;
+using System.Collections.Generic;
+using System.IO;
+using UnityEditor;
+using UnityEngine;
+
+// One small Texture2D per block / Crunch format, compressed by the editor (#32).
+public static class BuildBlockTextures
+{
+    const string Dir = "Assets/Fixtures/block";
+    // Power of two (the editor only compresses those when there are mips), not
+    // square, and not a whole number of 6x6, 10x10 or 12x12 ASTC blocks.
+    const int W = 32, H = 16;
+
+    // By value: several of these names are obsolete in Unity 6, some as errors.
+    // Desktop formats go into a StandaloneWindows64 bundle; the mobile ones into
+    // an Android bundle, since a Standalone build refuses ETC Crunch.
+    static readonly int[] Windows = {
+        10, 12, 26, 27, 24, 25,         // DXT1 DXT5 BC4 BC5 BC6H BC7
+        28, 29,                         // DXT1Crunched DXT5Crunched
+    };
+    static readonly int[] Android = {
+        34, 45, 46, 47,                 // ETC_RGB4 ETC2_RGB ETC2_RGBA1 ETC2_RGBA8
+        41, 43,                         // EAC_R EAC_RG
+        64, 65,                         // ETC_RGB4Crunched ETC2_RGBA8Crunched
+        48, 49, 50, 51, 52, 53,         // ASTC 4x4 5x5 6x6 8x8 10x10 12x12
+        66, 71,                         // ASTC_HDR_4x4 ASTC_HDR_12x12
+    };
+
+    public static void Build()
+    {
+        if (!AssetDatabase.IsValidFolder("Assets/Fixtures")) AssetDatabase.CreateFolder("Assets", "Fixtures");
+        if (!AssetDatabase.IsValidFolder(Dir)) AssetDatabase.CreateFolder("Assets/Fixtures", "block");
+        Emit("windows", Windows, BuildTarget.StandaloneWindows64);
+        Emit("android", Android, BuildTarget.Android);
+    }
+
+    static void Emit(string bundle, int[] formats, BuildTarget target)
+    {
+        var paths = new List<string>();
+        foreach (var value in formats)
+        {
+            var format = (TextureFormat)value;
+            var name = value + "_" + format;
+            try
+            {
+                int w = W, h = H;
+                var tex = new Texture2D(w, h, TextureFormat.RGBA32, true) { name = name };
+                tex.SetPixels32(Pixels(w, h));
+                tex.Apply(true, false);
+                EditorUtility.CompressTexture(tex, format, 100);
+                if (tex.format != format) throw new Exception("came out as " + tex.format);
+                tex.Apply(false, false); // stays readable, so the image data stays inline
+                var path = Dir + "/" + name + ".asset";
+                AssetDatabase.DeleteAsset(path);
+                AssetDatabase.CreateAsset(tex, path);
+                paths.Add(path);
+                Debug.Log("FIXTURE-TEX " + name + " " + w + "x" + h + " mips " + tex.mipmapCount + " " + tex.GetRawTextureData().Length + " bytes");
+            }
+            catch (Exception e)
+            {
+                Debug.Log("FIXTURE-SKIP " + name + ": " + e.Message);
+            }
+        }
+        AssetDatabase.SaveAssets();
+
+        var dir = Path.Combine("Build", "block-" + bundle);
+        Directory.CreateDirectory(dir);
+        var builds = new[] { new AssetBundleBuild { assetBundleName = bundle, assetNames = paths.ToArray() } };
+        var m = BuildPipeline.BuildAssetBundles(dir, builds, BuildAssetBundleOptions.UncompressedAssetBundle, target);
+        if (m == null) throw new Exception("build failed: block " + bundle);
+        Debug.Log("FIXTURE-OK block " + bundle + " -> " + dir);
+    }
+
+    // Smooth ramps (what block encoders are made for) plus a hard diagonal edge,
+    // and alpha that varies, so the alpha formats keep an alpha channel.
+    static Color32[] Pixels(int w, int h)
+    {
+        var px = new Color32[w * h];
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                byte r = (byte)(x * 255 / (w - 1));
+                byte g = (byte)(y * 255 / (h - 1));
+                byte b = (byte)(x + y < (w + h) / 2 ? 40 : 220);
+                byte a = (byte)(255 - (x * 7 + y * 11) % 256);
+                px[y * w + x] = new Color32(r, g, b, a);
+            }
+        return px;
+    }
+}
+```
+
+Build with `-executeMethod BuildBlockTextures.Build` (same command as section
+2). The log must hold 24 `FIXTURE-TEX` lines, no `FIXTURE-SKIP`, and two
+`FIXTURE-OK block` lines. Copy only `Build/block-windows/windows` and
+`Build/block-android/android` to `fixtures/bundles/editor/6000.3.25f1/block/`
+and rerun `make-goldens.py`.
+
+## 9. The PVRTC bundle (#32)
+
+Unity 6 no longer compresses PVRTC ("PVRTC compression is obsolete and no
+longer supported"), so `block/ios` is built with **2019.4.41f2**, which needs
+the iOS module: one 32x32 Texture2D (PVRTC wants a square power of two) with a
+full mip chain in each of PVRTC_RGB2, PVRTC_RGBA2, PVRTC_RGB4 and PVRTC_RGBA4,
+same pixels as section 8, for BuildTarget iOS. The script tries ATC too;
+2019.4's editor leaves it RGBA32 and skips it, and no fixture editor has it.
+
+The committed bundle came from a project holding only
+`Assets/Editor/BuildMobileTextures.cs`:
+
+```csharp
+using System;
+using System.Collections.Generic;
+using System.IO;
+using UnityEditor;
+using UnityEngine;
+
+// PVRTC and ATC, which Unity 6 no longer compresses (#32).
+public static class BuildMobileTextures
+{
+    const string Dir = "Assets/Fixtures/mobile";
+    // PVRTC wants a square power of two.
+    const int W = 32, H = 32;
+
+    static readonly int[] Ios = { 30, 31, 32, 33 };   // PVRTC_RGB2 PVRTC_RGBA2 PVRTC_RGB4 PVRTC_RGBA4
+    static readonly int[] Android = { 35, 36 };       // ATC_RGB4 ATC_RGBA8
+
+    public static void Build()
+    {
+        if (!AssetDatabase.IsValidFolder("Assets/Fixtures")) AssetDatabase.CreateFolder("Assets", "Fixtures");
+        if (!AssetDatabase.IsValidFolder(Dir)) AssetDatabase.CreateFolder("Assets/Fixtures", "mobile");
+        Emit("ios", Ios, BuildTarget.iOS);
+        Emit("android", Android, BuildTarget.Android);
+    }
+
+    static void Emit(string bundle, int[] formats, BuildTarget target)
+    {
+        var paths = new List<string>();
+        foreach (var value in formats)
+        {
+            var format = (TextureFormat)value;
+            var name = value + "_" + format;
+            try
+            {
+                var tex = new Texture2D(W, H, TextureFormat.RGBA32, true) { name = name };
+                tex.SetPixels32(Pixels(W, H));
+                tex.Apply(true, false);
+                EditorUtility.CompressTexture(tex, format, 100);
+                if (tex.format != format) throw new Exception("came out as " + tex.format);
+                tex.Apply(false, false);
+                var path = Dir + "/" + name + ".asset";
+                AssetDatabase.DeleteAsset(path);
+                AssetDatabase.CreateAsset(tex, path);
+                paths.Add(path);
+                Debug.Log("FIXTURE-TEX " + name + " " + W + "x" + H + " mips " + tex.mipmapCount + " " + tex.GetRawTextureData().Length + " bytes");
+            }
+            catch (Exception e)
+            {
+                Debug.Log("FIXTURE-SKIP " + name + ": " + e.Message);
+            }
+        }
+        AssetDatabase.SaveAssets();
+        if (paths.Count == 0) { Debug.Log("FIXTURE-SKIP bundle " + bundle); return; }
+
+        var dir = Path.Combine("Build", "mobile-" + bundle);
+        Directory.CreateDirectory(dir);
+        var builds = new[] { new AssetBundleBuild { assetBundleName = bundle, assetNames = paths.ToArray() } };
+        var m = BuildPipeline.BuildAssetBundles(dir, builds, BuildAssetBundleOptions.UncompressedAssetBundle, target);
+        if (m == null) throw new Exception("build failed: mobile " + bundle);
+        Debug.Log("FIXTURE-OK mobile " + bundle + " -> " + dir);
+    }
+
+    static Color32[] Pixels(int w, int h)
+    {
+        var px = new Color32[w * h];
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                byte r = (byte)(x * 255 / (w - 1));
+                byte g = (byte)(y * 255 / (h - 1));
+                byte b = (byte)(x + y < (w + h) / 2 ? 40 : 220);
+                byte a = (byte)(255 - (x * 7 + y * 11) % 256);
+                px[y * w + x] = new Color32(r, g, b, a);
+            }
+        return px;
+    }
+}
+```
+
+Build with `-executeMethod BuildMobileTextures.Build` (same command as
+section 2). The log holds four `FIXTURE-TEX` lines for PVRTC, one
+`FIXTURE-OK mobile ios`, and `FIXTURE-SKIP` for the two ATC formats and the
+Android bundle. Copy only `Build/mobile-ios/ios` to
+`fixtures/bundles/editor/2019.4.41f2/block/ios` and rerun `make-goldens.py`.
+
+A rebuild of either section gives new pathIDs (section 4) and may give other
+compressed bytes. Then regenerate the goldens and the AssetStudio cross-check
+hashes of `decode.test.ts` together
+([`README.md`](README.md#assetstudio-block-cross-check)).

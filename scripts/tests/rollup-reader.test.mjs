@@ -70,6 +70,17 @@ function importedPackages(dir) {
 /** Node builtins, external only for `packages/node` via its own rollup config (R4). */
 const BUILTIN = new Set([...builtinModules, ...builtinModules.map((m) => `node:${m}`)]);
 
+/**
+ * Packages whose `src/` must import at least one declared dependency. Without
+ * this, the dist/ row below passes on an empty list: nothing to look for, so
+ * nothing can be found inlined. core imports fflate and lzma1, texture imports
+ * core (#31) and texture2ddecoder-wasm (#32). node's `src/` is still
+ * `export {}` until #43, so its row asserts
+ * the list is empty instead: the day node imports a declared dep, that row
+ * fails until node is added here, so it cannot quietly stay vacuous.
+ */
+const IMPORTS_DECLARED = new Set(["core", "texture"]);
+
 // Runs after `npm run build` (root `verify` order, and each package's `pretest`).
 for (const pkg of ["core", "texture", "node"]) {
   const root = join(repo, "packages", pkg);
@@ -93,9 +104,12 @@ for (const pkg of ["core", "texture", "node"]) {
   test(`${pkg}: declared dependencies survive as imports in dist/ (#71)`, () => {
     const external = declaredDependencies(join(root, "package.json"));
     const used = importedPackages(join(root, "src")).filter((s) => external.some((re) => re.test(s)));
-    // texture and node import nothing yet, so their rows only start biting with
-    // M3/M5. core must never go quietly empty the day it stops importing fflate.
-    if (pkg === "core") assert.ok(used.length > 0, "core declares and imports at least one dep; this row is vacuous otherwise");
+    if (IMPORTS_DECLARED.has(pkg)) {
+      assert.ok(used.length > 0, `${pkg} imports no declared dep; this row is vacuous otherwise`);
+    } else {
+      const hint = `${pkg} now imports ${used.join(", ")}: add "${pkg}" to IMPORTS_DECLARED`;
+      assert.deepEqual(used, [], hint);
+    }
 
     const esm = readFileSync(join(root, "dist/index.mjs"), "utf8");
     const cjs = readFileSync(join(root, "dist/index.cjs"), "utf8");
