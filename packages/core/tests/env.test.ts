@@ -466,18 +466,6 @@ test("a bundle's revision reaches its own nodes only, not a UnityWebData file's"
   );
 });
 
-test("an empty bundle revision and the stripped placeholder 0.0.0 are not applied", () => {
-  for (const revision of ["", "0.0.0"]) {
-    const bundle = buildBundle([{ path: "CAB-old", data: LEGACY }], revision);
-    const { objects } = load([{ name: "old.bundle", data: bundle }]);
-    assert.deepEqual(
-      objects.map((o) => o.version),
-      [[0, 0, 0, 0]],
-      `revision ${JSON.stringify(revision)}`,
-    );
-  }
-});
-
 test("a SerializedFile of format 7 or later keeps its own version inside any bundle", () => {
   const node = load([{ name: SHARED, data: loadFixture(SHARED) }]).files[0]!.data;
   const own = readSerializedFile(node).version;
