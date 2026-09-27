@@ -53,3 +53,27 @@ export type { Hash128, MonoScript } from "./classes/MonoScript.js";
 export { readMonoBehaviour } from "./classes/MonoBehaviour.js";
 export type { MonoBehaviour } from "./classes/MonoBehaviour.js";
 export type { MonoBehaviourData } from "./classes/registry.js";
+export { readSprite, SpritePackingRotation } from "./classes/Sprite.js";
+export type {
+  AABB,
+  BlendShapeData,
+  BlendShapeVertex,
+  BoneWeights4,
+  ChannelInfo,
+  GUID,
+  Matrix4x4,
+  MeshBlendShape,
+  MeshBlendShapeChannel,
+  Rectf,
+  SecondarySpriteTexture,
+  Sprite,
+  SpriteBone,
+  SpriteRenderData,
+  SpriteVertex,
+  SubMesh,
+  Vector2,
+  Vector4,
+  VertexData,
+} from "./classes/Sprite.js";
+export { readSpriteAtlas } from "./classes/SpriteAtlas.js";
+export type { SpriteAtlas, SpriteAtlasData } from "./classes/SpriteAtlas.js";
