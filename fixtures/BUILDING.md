@@ -685,8 +685,14 @@ hashes of `decode.test.ts` together
 
 Three bundles per editor, all three editors: `material/lz4`,
 `material/lz4-notypetree` and `material/lz4-stripped`, each holding one bundle
-file `material`. It holds one Material whose every serialized field has a value
-that is not its default. The shader and the texture it uses go into a second
+file `material`. It holds one Material whose serialized fields are set to
+values other than their defaults, except three:
+`m_BuildTextureStacks` stays empty (it needs virtual texturing), the
+`_BumpMap` slot has no texture (it is the shader's second slot, left null), and
+`_NegZero` is saved as `+0` although the script sets `-0f` (see the end of this
+section). The elements of `m_BuildTextureStacks` are covered only by the
+hand-built layouts in `packages/core/tests/Material.test.ts`. The shader and
+the texture it uses go into a second
 bundle, `matdeps`, which is not committed: the material bundle then holds only
 the Material and its AssetBundle, and `m_Shader` and the `_MainTex` slot point
 at an external file. (With the built-in Standard shader, Unity copies the whole
@@ -760,8 +766,8 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-// One Material with every field Unity serializes set to a value that is not
-// its default (#40): a shader and a texture in another bundle, scale and offset, floats,
+// One Material with the fields Unity serializes set to values other than
+// their defaults (#40): a shader and a texture in another bundle, scale and offset, floats,
 // colors, keywords, tags, a disabled pass, a render queue, instancing, GI flags.
 public static class BuildMaterial
 {

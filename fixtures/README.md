@@ -73,8 +73,10 @@ The 6000.3.25f1 pair sets archive flag 0x200 (block padding, flags `0x243`); the
 ([`BUILDING.md`](BUILDING.md) section 7).
 
 Each editor also has `material/lz4/material`, `material/lz4-notypetree/material`
-and `material/lz4-stripped/material` (#40): one Material with every field it
-serializes set, built with type trees, without (`DisableWriteTypeTree`) and
+and `material/lz4-stripped/material` (#40): one Material with its serialized
+fields set to values other than their defaults, except an empty
+`m_BuildTextureStacks`, a null `_BumpMap` texture and `_NegZero`, which Unity
+saves as `+0`. Each is built with type trees, without (`DisableWriteTypeTree`) and
 version-stripped (`AssetBundleStripUnityVersion`, `"0.0.0"`). Its shader and
 texture are in a dependency bundle that is not committed, so `m_Shader` and the
 `_MainTex` slot point at an external file. The three editors give three of
