@@ -479,14 +479,15 @@ function readEntry(
   // the version, so its objects stay readable; a version-gated class reader
   // must refuse `[0, 0, 0, 0]` with `UnsupportedError` itself (decided on PR
   // #107). A caller-supplied version (#105) is the upgrade path.
+  const name = baseName(path);
   const objects = new Map<bigint, ObjectReader>();
   for (const info of file.objects) {
     if (objects.has(info.pathId)) {
       throw new CorruptError(`object table lists path id ${info.pathId} twice`);
     }
-    objects.set(info.pathId, new ObjectReader(data, file, info));
+    objects.set(info.pathId, new ObjectReader(data, file, info, name));
   }
-  return { name: baseName(path), file, objects, container };
+  return { name, file, objects, container };
 }
 
 /**

@@ -16,9 +16,18 @@ import { readStreamedData, readStreamedResource, type StreamedResource } from ".
  * here.
  *
  * Unity 5.0 rewrote the class. Before it the sound is inline in
- * `m_AudioData`; from it, `m_Resource.m_Size` bytes of a resource file, an
- * FMOD sound bank (FSB5) holding PCM, Vorbis, ADPCM or a platform codec as
- * `m_CompressionFormat` says. Nothing here decodes it.
+ * `m_AudioData`, or, for a streamed clip, `m_Size` bytes at `m_Offset` of the
+ * SerializedFile's own `.resS`; from it, `m_Resource.m_Size` bytes of a
+ * resource file, an FMOD sound bank (FSB5) holding PCM, Vorbis, ADPCM or a
+ * platform codec as `m_CompressionFormat` says. Nothing here decodes it.
+ *
+ * A streamed clip before 5.0 is the one place the keys do not follow a type
+ * tree: Unity's has only `m_AudioData` there, whose byte count is followed by
+ * an offset instead of the bytes, so `readTypeTree()` cannot read such an
+ * object. Its two numbers get upstream's field names, `m_Size` and `m_Offset`,
+ * top level where upstream keeps them, and no `m_AudioData`. The resource
+ * file's name is not in the object, so there is no `m_Source`: it is
+ * `<ObjectReader.fileName>.resS`, which `readAudioClipData` reads.
  */
 export interface AudioClip extends NamedObject {
   /** Before Unity 5.0. */
@@ -31,8 +40,21 @@ export interface AudioClip extends NamedObject {
   m_UseHardware?: boolean;
   /** Before Unity 5.0. */
   m_Stream?: number;
-  /** Before Unity 5.0: the sound, a view into the object's bytes (R7). */
+  /**
+   * Before Unity 5.0, unless streamed: the sound, a view into the object's
+   * bytes (R7).
+   */
   m_AudioData?: Uint8Array;
+  /**
+   * Before Unity 5.0, streamed only: the sound's byte count, which Unity's type
+   * tree calls `m_AudioData`'s size (upstream's `m_Size`).
+   */
+  m_Size?: number;
+  /**
+   * Before Unity 5.0, streamed only: where the sound starts in the
+   * SerializedFile's own `.resS`, a `UInt32` (upstream's `m_Offset`).
+   */
+  m_Offset?: number;
   /** Unity 5.0 and later. */
   m_LoadType?: number;
   /** Unity 5.0 and later. */
@@ -67,9 +89,11 @@ export interface AudioClip extends NamedObject {
  */
 export interface AudioClipData extends AudioClip {
   /**
-   * The sound, still encoded: `m_AudioData` before Unity 5.0, and otherwise
-   * `m_Resource.m_Size` bytes of the resource file it names (upstream's
-   * `m_AudioData` resource reader). A view either way, never a copy (R7).
+   * The sound, still encoded: `m_AudioData` before Unity 5.0, `m_Size` bytes
+   * at `m_Offset` of `<ObjectReader.fileName>.resS` for a clip streamed before
+   * it, and otherwise `m_Resource.m_Size` bytes of the resource file it names
+   * (upstream's `m_AudioData` resource reader). A view either way, never a
+   * copy (R7).
    * Named like `Texture2DData.imageData`, outside Unity's `m_` names, so it
    * never collides with the pre-5.0 `m_AudioData` field.
    */
@@ -84,10 +108,12 @@ export interface AudioClipData extends AudioClip {
  *
  * Unity 3.4 to 4.x (upstream's legacy branch) keep the sound inline in
  * `m_AudioData`. Upstream also reads a clip of 3.2 to 4.x whose byte count is
- * not followed by that many bytes as a streamed one: the count, then a
- * `UInt32` offset into the SerializedFile's own `.resS`. That case is refused,
- * since an `ObjectReader` does not know its file's name to look the `.resS`
- * up by. Below 3.4 there is no type tree data, so such a file is refused too.
+ * not followed by that many bytes and their padding as a streamed one: the
+ * count, as `m_Size`, then a `UInt32` `m_Offset` into the SerializedFile's own
+ * `.resS` (see {@link AudioClip} for the names). Here that takes exactly 4
+ * bytes left after the count, so the object still ends after its last field;
+ * any other misfit is corrupt. Below 3.4 there is no type tree data, so such a
+ * file is refused.
  *
  * A file whose Unity version is unknown (`[0, 0, 0, 0]`) is read when its
  * format is 18 or later (rule for version-stripped files, #36, as amended on
@@ -114,8 +140,7 @@ export interface AudioClipData extends AudioClip {
  * @throws {UnsupportedError} of kind `"Unity version"`, with the file's own
  *   `unityVersion` as `found`, below 3.4, for an unknown version below format
  *   18, and for an unknown version whose fields after `m_Name` do not fit
- *   2017.1's layout; of kind `"build target"` for an editor file; of kind
- *   `"AudioClip storage"` for a streamed clip before 5.0
+ *   2017.1's layout; of kind `"build target"` for an editor file
  * @throws {CorruptError} when the object ends early, a count or string length
  *   is negative or runs past its end, `m_Offset` or `m_Size` is 2^53 or above,
  *   or bytes are left over after the last field, with the version known; with
@@ -208,14 +233,12 @@ function readLegacyFields(reader: ObjectReader, base: NamedObject): AudioClip {
   const count = reader.readInt32();
   const padded = count + ((4 - (count % 4)) % 4);
   // Upstream's test for a streamed clip: the bytes left are not the data and
-  // its padding. It then reads a UInt32 offset into "<this file>.resS".
+  // its padding. The count is then the size, and a UInt32 offset into
+  // "<this file>.resS" follows, the object's last field.
   if (count >= 0 && reader.remaining !== padded && reader.remaining === 4) {
-    throw new UnsupportedError(
-      "AudioClip storage",
-      "streamed before Unity 5.0",
-      `object ${reader.pathId}: its ${count} bytes are in the SerializedFile's own .resS, ` +
-        "which an ObjectReader cannot name",
-    );
+    out.m_Size = count;
+    out.m_Offset = reader.readUInt32();
+    return out;
   }
   if (count < 0 || count > reader.remaining) {
     throw new CorruptError(
@@ -230,15 +253,20 @@ function readLegacyFields(reader: ObjectReader, base: NamedObject): AudioClip {
 
 /**
  * `readAudioClip` with the sound's bytes resolved, as upstream's `AudioClip`
- * sets `m_AudioData`: before 5.0 the inline data, from 5.0 the bytes of the
- * resource file `m_Resource` names, read through the env's resource resolver
- * (the `Texture2DData` pattern). The registry's reader for `obj.read()`.
+ * sets `m_AudioData`: before 5.0 the inline data, or for a streamed clip the
+ * `m_Size` bytes at `m_Offset` of the SerializedFile's own resource file,
+ * `<reader.fileName>.resS` (upstream's `assetsFile.fullName + ".resS"`); from
+ * 5.0 the bytes of the resource file `m_Resource` names. Resource files are
+ * read through the env's resource resolver (the `Texture2DData` pattern), so
+ * the env's container rule picks among files of one name. The registry's
+ * reader for `obj.read()`.
  *
  * @param reader the object's reader
  * @param resources how to read resource files for it; `undefined` for a reader
  *   not built by `load()`
  * @throws {ResourceNotFoundError} when the resource file is not loaded, or
- *   there are no `resources` to look in
+ *   there are no `resources` to look in; for a streamed clip before 5.0 it
+ *   names `<reader.fileName>.resS`
  * @throws {CorruptError} when there is no sound: an empty `m_AudioData` before
  *   5.0, or an empty `m_Resource.m_Source` from it (upstream would read past
  *   the object's end); and as `readAudioClip` does
@@ -255,7 +283,14 @@ export function readAudioClipData(
     }
     return { ...clip, audioData: clip.m_AudioData };
   }
-  // Set whenever m_AudioData is not: readFields reads it.
+  if (clip.m_Offset !== undefined) {
+    // Streamed before 5.0: Unity names the resource file after this file, so
+    // the source is never empty. m_Size is set with m_Offset (readLegacyFields).
+    const source = `${reader.fileName}.resS`;
+    const resource = { m_Source: source, m_Offset: clip.m_Offset, m_Size: clip.m_Size! };
+    return { ...clip, audioData: readStreamedData(reader, resources, resource, "AudioClip") };
+  }
+  // Set whenever neither m_AudioData nor m_Offset is: readFields reads it.
   const resource = clip.m_Resource!;
   return { ...clip, audioData: readStreamedData(reader, resources, resource, "AudioClip") };
 }

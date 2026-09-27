@@ -12,7 +12,7 @@ import {
   type AudioClip,
   type AudioClipData,
 } from "../src/classes/AudioClip.js";
-import { load, type LoadedFile } from "../src/env.js";
+import { load, type Env, type LoadedFile } from "../src/env.js";
 import { CorruptError, ResourceNotFoundError, UnsupportedError } from "../src/errors.js";
 import { BuildTarget } from "../src/serialized/BuildTarget.js";
 import { ClassID } from "../src/serialized/ClassID.js";
@@ -275,6 +275,292 @@ test("before 5.0, 1 byte of data and its padding read inline, not as a streamed 
   assert.deepEqual(clip, expected);
 });
 
+// --- streamed before 5.0: the SerializedFile's own .resS (#138) ---------------------
+
+/** The sound a hand-built streamed clip points at: `SIZE` bytes at `OFFSET` of its .resS. */
+const OFFSET = 12;
+const SIZE = 21;
+
+/**
+ * A streamed clip of 3.2 to 4.x as upstream reads it: `m_AudioData`'s byte
+ * count, then a `UInt32` offset where the bytes would be. No editor fixture
+ * writes this (they are 2019.4 and later), so the layout is upstream's.
+ */
+const STREAMED = (w: Writer): AudioClip => ({
+  m_Name: w.str("beep"),
+  m_Format: w.i32(2),
+  m_Type: w.i32(14),
+  m_3D: w.bool(true),
+  m_UseHardware: w.pad(w.bool(false)),
+  m_Stream: w.i32(2),
+  m_Size: w.i32(SIZE),
+  m_Offset: w.u32(OFFSET),
+});
+
+/** A `.resS` whose every byte differs from its neighbours, so a wrong range shows. */
+const RES_S = Uint8Array.from({ length: 48 }, (_, i) => (i * 7 + 1) & 0xff);
+
+/** Header bytes: the file and bundle headers mix byte orders. */
+class Bytes {
+  private readonly out: number[] = [];
+
+  u8(v: number): this {
+    this.out.push(v & 0xff);
+    return this;
+  }
+
+  u16le(v: number): this {
+    return this.u8(v).u8(v >>> 8);
+  }
+
+  u32le(v: number): this {
+    return this.u16le(v).u16le(v >>> 16);
+  }
+
+  u32be(v: number): this {
+    return this.u8(v >>> 24).u8(v >>> 16).u8(v >>> 8).u8(v);
+  }
+
+  cstr(text: string): this {
+    for (const c of text) this.u8(c.charCodeAt(0));
+    return this.u8(0);
+  }
+
+  raw(data: Uint8Array): this {
+    this.out.push(...data);
+    return this;
+  }
+
+  get length(): number {
+    return this.out.length;
+  }
+
+  done(): Uint8Array {
+    return Uint8Array.from(this.out);
+  }
+}
+
+/**
+ * A little-endian format-9 SerializedFile (Unity 3.5 to 4.x) written by
+ * Unity 4.7.2f1, with no type tree and one object: `object`, an AudioClip of
+ * path id 1.
+ */
+function format9File(object: Uint8Array): Uint8Array {
+  const metadata = new Bytes()
+    .cstr("4.7.2f1")
+    .u32le(BuildTarget.StandaloneWindows64)
+    .u32le(0) // types
+    .u32le(0) // bigIDEnabled
+    .u32le(1) // objects
+    .u32le(1) // m_PathID
+    .u32le(0) // byteStart, relative to m_DataOffset
+    .u32le(object.length) // byteSize
+    .u32le(ClassID.AudioClip) // typeID
+    .u16le(ClassID.AudioClip) // classID
+    .u16le(0) // isDestroyed
+    .u32le(0) // externals
+    .cstr("") // userInformation
+    .done();
+  // The object data starts on a 16-byte boundary, as Unity writes it.
+  const dataOffset = Math.ceil((20 + metadata.length) / 16) * 16;
+  return new Bytes()
+    .u32be(metadata.length)
+    .u32be(dataOffset + object.length) // file size
+    .u32be(9) // m_Version
+    .u32be(dataOffset)
+    .u32be(0) // endianess (little), reserved
+    .raw(metadata)
+    .raw(new Uint8Array(dataOffset - 20 - metadata.length))
+    .raw(object)
+    .done();
+}
+
+/** An uncompressed format-3 `UnityRaw` bundle, as Unity 4.x builds one, of `nodes`. */
+function unityRaw(nodes: { path: string; data: Uint8Array }[]): Uint8Array {
+  // Node offsets count from the start of the level, which opens with the directory.
+  let directorySize = 4;
+  for (const { path } of nodes) directorySize += path.length + 1 + 8;
+  const level = new Bytes().u32be(nodes.length);
+  let offset = directorySize;
+  for (const { path, data } of nodes) {
+    level.cstr(path).u32be(offset).u32be(data.length);
+    offset += data.length;
+  }
+  for (const { data } of nodes) level.raw(data);
+
+  const header = new Bytes().cstr("UnityRaw").u32be(3).cstr("3.x.x").cstr("4.7.2f1");
+  // Eight words follow: minimumStreamedBytes, headerSize, levels to download,
+  // level count, the one level's two sizes, completeFileSize, fileInfoHeaderSize.
+  const headerSize = header.length + 4 * 8;
+  const total = headerSize + level.length;
+  return header
+    .u32be(total)
+    .u32be(headerSize)
+    .u32be(1)
+    .u32be(1)
+    .u32be(level.length)
+    .u32be(level.length)
+    .u32be(total)
+    .u32be(directorySize)
+    .raw(level.done())
+    .done();
+}
+
+/** The one AudioClip of an env. */
+function clipOf(env: Env): ObjectReader {
+  const [obj, ...more] = env.objects;
+  assert.ok(obj && more.length === 0 && obj.type === ClassID.AudioClip);
+  return obj;
+}
+
+/** `audioData` is the referenced range of `resS`, `SIZE` bytes at `OFFSET`, as a view (R7). */
+function assertReferencedRange(data: AudioClipData, resS: Uint8Array): void {
+  assert.deepEqual(data.audioData, resS.subarray(OFFSET, OFFSET + SIZE));
+  assert.equal(data.audioData.buffer, resS.buffer);
+  assert.equal(data.audioData.byteOffset, resS.byteOffset + OFFSET);
+}
+
+test("before 5.0, a streamed clip reads its count as m_Size, then a UInt32 m_Offset", () => {
+  const { bytes, expected } = build(STREAMED);
+  for (const [unity, format] of [
+    [[3, 4, 0, 1], 8],
+    [[4, 7, 2, 1], 9],
+  ] as [UnityVersion, number][]) {
+    const reader = readerOf(FROM, bytes, { unity, format });
+    const clip = readAudioClip(reader);
+    assert.deepEqual(Object.keys(clip), Object.keys(expected));
+    assert.deepEqual(clip, expected);
+    assert.equal(reader.remaining, 0);
+  }
+});
+
+test("before 5.0, bytes after a streamed clip's m_Offset throw CorruptError", () => {
+  // Upstream reads any misfit after the count as streamed and ignores what
+  // follows the offset; here the object must end at m_Offset.
+  for (const extra of [[0], [0, 0, 0, 0]]) {
+    const bytes = withTail(build(STREAMED).bytes, ...extra);
+    const reader = readerOf(FROM, bytes, { unity: [4, 7, 2, 1], format: 9 });
+    assert.throws(() => readAudioClip(reader), CorruptError, `${extra.length} extra bytes`);
+  }
+});
+
+test("before 5.0, a streamed clip in a bundle reads <file>.resS: the referenced range", () => {
+  const cab = format9File(build(STREAMED).bytes);
+  const bundle = unityRaw([
+    { path: "CAB-4f1e", data: cab },
+    { path: "CAB-4f1e.resS", data: RES_S },
+  ]);
+  const env = load([{ name: "clip.unity3d", data: bundle }]);
+  const resS = env.files.find((f) => f.path === "CAB-4f1e.resS");
+  assert.ok(resS);
+  const obj = clipOf(env);
+  assert.equal(obj.fileName, "CAB-4f1e");
+  const data = obj.read<AudioClipData>();
+  const { audioData, ...fields } = data;
+  assert.deepEqual(Object.keys(data), [...Object.keys(fields), "audioData"]);
+  assert.deepEqual(fields, build(STREAMED).expected);
+  assert.deepEqual(audioData, RES_S.subarray(OFFSET, OFFSET + SIZE));
+  assertReferencedRange(data, resS.data);
+});
+
+test("before 5.0, a streamed clip of a loose file reads the <file>.resS passed next to it", () => {
+  const file = format9File(build(STREAMED).bytes);
+  const resS = RES_S.slice();
+  const env = load([
+    { name: "sharedassets0.assets", data: file },
+    { name: "sharedassets0.assets.resS", data: resS },
+  ]);
+  assert.equal(clipOf(env).fileName, "sharedassets0.assets");
+  assertReferencedRange(clipOf(env).read<AudioClipData>(), resS);
+
+  // Passed under a path, the file is still named by its last component.
+  const nested = load([
+    { name: "Game_Data/sharedassets0.assets", data: file },
+    { name: "Game_Data/sharedassets0.assets.resS", data: resS },
+  ]);
+  assert.equal(clipOf(nested).fileName, "sharedassets0.assets");
+  assertReferencedRange(clipOf(nested).read<AudioClipData>(), resS);
+});
+
+test("before 5.0, two bundles of one file name each read their own .resS", () => {
+  // The env's container rule, which `readResource` applies for every class.
+  const cab = format9File(build(STREAMED).bytes);
+  const other = RES_S.map((b) => b ^ 0xff);
+  const env = load([
+    {
+      name: "a.unity3d",
+      data: unityRaw([
+        { path: "CAB-same", data: cab },
+        { path: "CAB-same.resS", data: other },
+      ]),
+    },
+    {
+      name: "b.unity3d",
+      data: unityRaw([
+        { path: "CAB-same", data: cab },
+        { path: "CAB-same.resS", data: RES_S },
+      ]),
+    },
+  ]);
+  const [a, b] = env.objects;
+  const [resA, resB] = env.files.filter((f) => f.path === "CAB-same.resS");
+  assert.ok(a && b && resA && resB);
+  assertReferencedRange(a.read<AudioClipData>(), resA.data);
+  assertReferencedRange(b.read<AudioClipData>(), resB.data);
+  assert.notDeepEqual(a.read<AudioClipData>().audioData, b.read<AudioClipData>().audioData);
+});
+
+test("before 5.0, a streamed clip without its .resS: read() throws ResourceNotFoundError", () => {
+  const cab = format9File(build(STREAMED).bytes);
+  const bundle = unityRaw([{ path: "CAB-4f1e", data: cab }]);
+  const cases: [Env, string][] = [
+    [load([{ name: "clip.unity3d", data: bundle }]), "CAB-4f1e.resS"],
+    [load([{ name: "sharedassets0.assets", data: cab }]), "sharedassets0.assets.resS"],
+  ];
+  for (const [env, name] of cases) {
+    const obj = clipOf(env);
+    // The fields read without it; only the sound needs the file.
+    assert.deepEqual(readAudioClip(obj), build(STREAMED).expected);
+    assert.throws(
+      () => obj.read(),
+      (err: unknown) =>
+        err instanceof ResourceNotFoundError &&
+        err.path === name &&
+        err.fileName === name &&
+        err.message.includes(name),
+    );
+  }
+});
+
+test("before 5.0, a streamed clip read by a reader not built by load() has no .resS", () => {
+  const data = format9File(build(STREAMED).bytes);
+  const sf = readSerializedFile(data);
+  const named = new ObjectReader(data, sf, sf.objects[0]!, "sharedassets0.assets");
+  assert.equal(named.fileName, "sharedassets0.assets");
+  for (const read of [() => named.read(), () => readAudioClipData(named, undefined)]) {
+    assert.throws(
+      read,
+      (err: unknown) =>
+        err instanceof ResourceNotFoundError && err.fileName === "sharedassets0.assets.resS",
+    );
+  }
+  // Built without a file name: nothing to find either way.
+  const unnamed = new ObjectReader(data, sf, sf.objects[0]!);
+  assert.equal(unnamed.fileName, "");
+  assert.throws(() => unnamed.read(), ResourceNotFoundError);
+});
+
+test("before 5.0, a streamed range past the end of the .resS throws CorruptError", () => {
+  const env = load([
+    { name: "sharedassets0.assets", data: format9File(build(STREAMED).bytes) },
+    { name: "sharedassets0.assets.resS", data: RES_S.subarray(0, OFFSET + SIZE - 1) },
+  ]);
+  assert.throws(
+    () => clipOf(env).read(),
+    /sharedassets0\.assets\.resS: resource range 12\+21 runs past the end of 32 bytes/,
+  );
+});
+
 // --- refusals ---------------------------------------------------------------------
 
 const STRIPPED: UnityVersion = [0, 0, 0, 0];
@@ -347,28 +633,6 @@ test("an editor file (NoTarget) is refused: its AudioClip has editor-only fields
   );
 });
 
-test("before 5.0, a streamed clip (a count, then a .resS offset) is refused", () => {
-  // Upstream reads the UInt32 after the count as an offset into "<file>.resS".
-  const { bytes } = build((w) => ({
-    m_Name: w.str("beep"),
-    m_Format: w.i32(2),
-    m_Type: w.i32(20),
-    m_3D: w.bool(true),
-    m_UseHardware: w.pad(w.bool(false)),
-    m_Stream: w.i32(2),
-    count: w.i32(100_000),
-    offset: w.u32(4096),
-  }));
-  const reader = readerOf(FROM, bytes, { unity: [4, 7, 2, 1], format: 9 });
-  assert.throws(
-    () => readAudioClip(reader),
-    (err: unknown) =>
-      err instanceof UnsupportedError &&
-      err.kind === "AudioClip storage" &&
-      err.found === "streamed before Unity 5.0",
-  );
-});
-
 // --- corrupt objects ----------------------------------------------------------------
 
 test("every cut through an AudioClip throws CorruptError", () => {
@@ -382,11 +646,16 @@ test("every cut through an AudioClip throws CorruptError", () => {
   const legacy = build(LEGACY).bytes;
   // The last 3 bytes of the legacy layout are m_AudioData's padding. A cut that
   // leaves exactly 4 bytes after the count (at 32) has the shape of a streamed
-  // clip, which upstream reads as one, so it is refused as that instead.
+  // clip, which upstream reads as one, so it reads as that instead (#138).
   for (let cut = 0; cut < legacy.length - 3; cut++) {
     const reader = readerOf(FROM, legacy.subarray(0, cut), { unity: [4, 7, 2, 1], format: 9 });
-    const want = cut === 32 ? UnsupportedError : CorruptError;
-    assert.throws(() => readAudioClip(reader), want, `legacy cut at ${cut}`);
+    if (cut === 32) {
+      const clip = readAudioClip(reader);
+      assert.equal(clip.m_Size, 5, "legacy cut at 32");
+      assert.equal(clip.m_AudioData, undefined, "legacy cut at 32");
+      continue;
+    }
+    assert.throws(() => readAudioClip(reader), CorruptError, `legacy cut at ${cut}`);
   }
 });
 
