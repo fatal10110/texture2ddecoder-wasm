@@ -322,6 +322,8 @@ If you have questions that aren't covered in this guide:
 
 By contributing to this project, you agree that your contributions will be licensed under the MIT License.
 
+The reader packages are hand-ported from AssetStudio and UnityPy (MIT); the root [`NOTICE`](NOTICE) lists every upstream the repo derives from, and `packages/*/NOTICE` are the per-tarball notices. Code you port from a new upstream needs a stanza in the `NOTICE` of the package it lands in and in the root `NOTICE`, plus the one-line attribution at the top of each ported file (rule R3 in [docs/unity-asset-reader-rules.md](docs/unity-asset-reader-rules.md)).
+
 ---
 
 Thank you for contributing to texture2ddecoder-wasm! 🎉
