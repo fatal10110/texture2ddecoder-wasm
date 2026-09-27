@@ -44,8 +44,8 @@ repository the job runs in. Publish before the repo rename, or do the rename ste
 1. **Pre-flight.**
    - The docs for the release are on `main` (package READMEs, QUICK_START, bundler guide: #44).
      A tarball without a README shows an empty page on npmjs.com.
-   - `CHANGELOG.md`: in the headings of what ships, `### <version> - Unreleased` becomes
-     `### <version> - <YYYY-MM-DD>`.
+   - `CHANGELOG.md`: the heading `## <version> - Unreleased` becomes
+     `## <version> - <YYYY-MM-DD>`.
    - Versions: the four `package.json` files carry the same version (the root test
      `scripts/tests/release.test.mjs` fails otherwise), the feature packages' peer range on
      `unity-asset-reader` is `^<major>`, and the texture package's dependency on
