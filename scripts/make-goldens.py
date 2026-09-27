@@ -192,8 +192,8 @@ SYNTHETIC = [
 #     but Unity's DXT1 has no alpha.
 #   DXT5 colour: Pillow is right. The spec decodes it as though c0 > c1
 #     always, and Texture2DDecoder's 3-colour mode is a defect, fixed in
-#     texture2ddecoder-wasm by #137 but not released yet; #147 drops
-#     four_color for DXT5 once the texture package depends on the release.
+#     the decoder by #137, first published in unity-asset-reader-decoder
+#     1.0.0; #147 drops four_color for DXT5 once that is on npm.
 # The fixtures' DXT data has no such block (#32), random bytes do. So the DXT
 # inputs get every colour block's c0 > c1, by setting the top bit of c0's high
 # byte and clearing c1's (`four_color`, mirrored by `fourColor` in the texture

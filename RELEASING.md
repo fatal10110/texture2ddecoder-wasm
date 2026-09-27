@@ -1,14 +1,14 @@
 # Releasing
 
-Maintainer procedure for publishing to npm. The versioning policy (reader packages in lockstep,
-`texture2ddecoder-wasm` on its own line) is at the top of [CHANGELOG.md](CHANGELOG.md).
+Maintainer procedure for publishing to npm. The versioning policy (all four packages in
+lockstep) is at the top of [CHANGELOG.md](CHANGELOG.md).
 
 | Package | Directory | Released |
 |---|---|---|
-| `unity-asset-reader` | `packages/core` | with the other two reader packages, same version |
-| `unity-asset-reader-texture` | `packages/texture` | with the other two reader packages, same version |
-| `unity-asset-reader-node` | `packages/node` | with the other two reader packages, same version |
-| `texture2ddecoder-wasm` | `packages/texture2ddecoder-wasm` | only when it changed since its last npm version |
+| `unity-asset-reader` | `packages/core` | with the other three, same version |
+| `unity-asset-reader-texture` | `packages/texture` | with the other three, same version |
+| `unity-asset-reader-node` | `packages/node` | with the other three, same version |
+| `unity-asset-reader-decoder` | `packages/decoder` | with the other three, same version |
 
 ## Release gate
 
@@ -24,7 +24,7 @@ REQUIRE_WASM=1 npm run verify    # build, test, check:browser, no-C# guard; noth
 Each reader package also has `"prepublishOnly": "npm run verify --prefix ../.."`, so
 `npm publish` reruns the root `verify` and refuses to publish when it fails. Keep
 `REQUIRE_WASM=1` set in the shell that publishes, so the rerun does not skip the decode tests
-either. `texture2ddecoder-wasm`'s own `prepublishOnly` rebuilds its WASM and bundle, as before.
+either. The decoder's own `prepublishOnly` rebuilds its WASM and bundle, as before.
 
 ## Provenance
 
@@ -46,53 +46,51 @@ repository the job runs in. Publish before the repo rename, or do the rename ste
      A tarball without a README shows an empty page on npmjs.com.
    - `CHANGELOG.md`: in the headings of what ships, `### <version> - Unreleased` becomes
      `### <version> - <YYYY-MM-DD>`.
-   - Versions: the three reader `package.json` files carry the same version (the root test
-     `scripts/tests/release.test.mjs` fails otherwise), and the feature packages' peer range on
-     `unity-asset-reader` is `^<major>`. For a new version, set all three at once and commit the
-     lockfile with them:
+   - Versions: the four `package.json` files carry the same version (the root test
+     `scripts/tests/release.test.mjs` fails otherwise), the feature packages' peer range on
+     `unity-asset-reader` is `^<major>`, and the texture package's dependency on
+     `unity-asset-reader-decoder` is `^<major>.<minor>.<patch>` of the same major. For a new
+     version, set all four at once and commit the lockfile with them:
      ```bash
-     npm version <version> --no-git-tag-version \
-       -w unity-asset-reader -w unity-asset-reader-texture -w unity-asset-reader-node
+     npm version <version> --no-git-tag-version -w unity-asset-reader \
+       -w unity-asset-reader-texture -w unity-asset-reader-node -w unity-asset-reader-decoder
      npm install --package-lock-only
      ```
+     Raise the texture package's decoder range to the new version when it relies on a decoder
+     change of that release.
    - Names: `npm view <name>` answers 404 for a name nobody has published yet (checked for the
-     three reader names on 2026-09-27). The scoped fallback is
-     `@unity-asset-reader/{core,texture,node}` (plan D7); names are final at first publish.
+     three reader names on 2026-09-27; check `unity-asset-reader-decoder` too). The scoped
+     fallback is `@unity-asset-reader/{core,texture,node,decoder}` (plan D7); names are final at
+     first publish.
    - Tarballs: `npm pack --dry-run -w <name>` lists `dist/`, `LICENSE`, `NOTICE` (and
-     `LICENSE-APACHE` for the texture package), plus `README.md` and `package.json`.
-2. **Decoder first, if it changed.** Compare `packages/texture2ddecoder-wasm/package.json`'s
-   version with `npm view texture2ddecoder-wasm version`. If the local one is newer:
+     `LICENSE-APACHE` for the texture package), plus `README.md` and `package.json`. The
+     decoder's lists `dist/`, `wasm/`, `scripts/copy-wasm.js`, `LICENSE`, `README.md` and
+     `package.json`.
+2. **Decoder first, then core, then the feature packages.** One command each, so what a package
+   depends or peers on is on npm before it:
    ```bash
-   npm publish -w texture2ddecoder-wasm --provenance
-   ```
-   Publishing it before the reader packages means a fresh install of
-   `unity-asset-reader-texture` already resolves the fixed decoder.
-3. **Reader packages, core first.** One command each, so core is on npm before the packages
-   that peer on it:
-   ```bash
+   npm publish -w unity-asset-reader-decoder --provenance
    npm publish -w unity-asset-reader --provenance
    npm publish -w unity-asset-reader-texture --provenance
    npm publish -w unity-asset-reader-node --provenance
    ```
-   All three go out even if only one changed. If one fails, fix the cause and publish the rest
-   at the same version; never publish a reader package at a version the others do not have.
-4. **Tag and release notes.** Tag the published commit and create a GitHub release whose notes
+   All four go out even if only one changed. If one fails, fix the cause and publish the rest
+   at the same version; never publish a package at a version the others do not have.
+3. **Tag and release notes.** Tag the published commit and create a GitHub release whose notes
    are the version's `CHANGELOG.md` section. The existing `v1.0.1` ... `v1.2.2` tags are
-   `texture2ddecoder-wasm` releases, and npm already has an untagged `texture2ddecoder-wasm`
-   1.0.0, so a bare `v1.0.0` would be ambiguous. New tags name the package:
-   `unity-asset-reader@<version>` for the lockstep reader release (one tag for all three) and
-   `texture2ddecoder-wasm@<version>` for a decoder release.
-5. **After the publish.**
-   - `examples/cdn-worker.js`: `READER_VERSION` matches the published reader version; check the
-     live jsDelivr path (#150).
-   - A decoder release with a fix the texture package relies on: raise the texture package's
-     `texture2ddecoder-wasm` floor to it (for 1.2.3: #147).
-   - The next change that ships opens a new `### <next version> - Unreleased` heading in
+   releases of the decoder under its old name, and npm already has an untagged 1.0.0 of that
+   name, so a bare `v1.0.0` would be ambiguous. New tags name the family:
+   `unity-asset-reader@<version>`, one tag for all four packages.
+4. **After the publish.**
+   - `examples/cdn-worker.js`: `VERSION` matches the published version; check the live jsDelivr
+     path (#150).
+   - First publish only: deprecate the old decoder name with a pointer to the new one
+     (maintainer, by hand; see CHANGELOG.md 1.0.0).
+   - The next change that ships opens a new `## <next version> - Unreleased` heading in
      `CHANGELOG.md`, and bumps the version with it so the release test keeps passing.
 
 ## After the repo rename
 
 The repo is to be renamed to `unity-asset-reader` (plan D8). GitHub redirects the old URL, but
 provenance does not follow redirects, so update `repository.url` in every `package.json` to the
-new one before the next publish. Keep each reader package's `repository.directory` and add
-`"directory": "packages/texture2ddecoder-wasm"` to the decoder's, which has none yet.
+new one before the next publish. Keep each package's `repository.directory`.

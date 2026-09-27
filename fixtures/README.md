@@ -250,12 +250,12 @@ sprites (#34).
     - **DXT1, index 3: AssetStudio**, opaque black. Pillow gives transparent
       black (D3D BC1 semantics), but Unity's DXT1 has no alpha.
     - **DXT5, colour half: Pillow.** The other decoders' 3-colour mode is a
-      defect, fixed in `texture2ddecoder-wasm`'s bindings by #137. The spec
+      defect, fixed in the decoder's bindings by #137. The spec
       (`EXT_texture_compression_s3tc`, D3D BC3) decodes DXT3/DXT5 colour as
       though c0 > c1 always, as Pillow does. Upstream Texture2DDecoder
-      switches to 3-colour mode instead. No `texture2ddecoder-wasm` release
-      has the fix yet, so the generated DXT5 inputs still avoid such blocks.
-      #147 drops that once the texture package depends on a fixed release.
+      switches to 3-colour mode instead. The fix is not on npm yet (it first
+      ships in `unity-asset-reader-decoder` 1.0.0), so the generated DXT5
+      inputs still avoid such blocks. #147 drops that once it is published.
     The #32 fixtures have no c0 <= c1 block (0 of 32 blocks each in DXT1,
     DXT5 and their Crunch forms, one editor), while random bytes hit it often.
     With 4-colour blocks every decoder agrees on every pixel.

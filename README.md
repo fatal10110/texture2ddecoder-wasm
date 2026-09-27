@@ -12,21 +12,22 @@ This repository holds four npm packages. It will be renamed from `texture2ddecod
 | [`unity-asset-reader`](packages/core/) | Unpack bundles and read objects: text, your scripts' data, raw audio, video and font bytes. Browser, Worker and Node.js. | [README](packages/core/README.md) |
 | [`unity-asset-reader-texture`](packages/texture/) | Also get `Texture2D` and `Sprite` pixels as RGBA. Adds the WASM decoder. | [README](packages/texture/README.md) |
 | [`unity-asset-reader-node`](packages/node/) | Load files and whole folders from disk in Node.js, with `.resS` sidecars and split files. | [README](packages/node/README.md) |
-| [`texture2ddecoder-wasm`](packages/texture2ddecoder-wasm/) | Decode raw BC / ETC / PVRTC / ASTC / ATC / Crunch blocks to BGRA, without Unity files around them. Published and stable. | [README](packages/texture2ddecoder-wasm/README.md) |
+| [`unity-asset-reader-decoder`](packages/decoder/) | Decode raw BC / ETC / PVRTC / ASTC / ATC / Crunch blocks to BGRA, without Unity files around them. Stable; formerly `texture2ddecoder-wasm`. | [README](packages/decoder/README.md) |
 
-The three `unity-asset-reader*` packages are released together, on one version number.
+All four packages are released together, on one version number.
 `unity-asset-reader-texture` and `-node` use `unity-asset-reader` as a peer dependency, so an app
-always has one copy of the parser. `texture2ddecoder-wasm` is versioned on its own and depends on
-nothing here.
+always has one copy of the parser. `unity-asset-reader-decoder` depends on nothing here.
 
-**Status:** the `unity-asset-reader*` packages are not on npm yet; their first release will be
-1.0. `texture2ddecoder-wasm` is on npm (1.2.2).
+**Status:** the packages are not on npm yet; their first release will be 1.0.0. The decoder was
+published as `texture2ddecoder-wasm` up to 1.2.2; its
+[README](packages/decoder/README.md#migrating-from-texture2ddecoder-wasm) says how to move to the
+new name.
 
 ```js
 import { load, ClassID } from "unity-asset-reader";
 import { initTexture, decodeTexture2D } from "unity-asset-reader-texture";
 
-await initTexture({ wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1/wasm" });
+await initTexture({ wasmPath: "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1/wasm" });
 
 const env = load([{ name: "a.bundle", data: bytes }]); // bytes: Uint8Array
 env.files; // every unpacked file: [{ path: "CAB-…", data }, { path: "CAB-….resS", data }]
