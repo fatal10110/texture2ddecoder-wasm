@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>unity-asset-reader - CDN example</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 0 20px;
+        line-height: 1.5;
+      }
+      .info,
+      .status {
+        padding: 12px 15px;
+        margin: 20px 0;
+        border-radius: 8px;
+      }
+      .info {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+      }
+      .status[data-state="busy"] {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+      }
+      .status[data-state="ready"] {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .status[data-state="error"] {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      pre {
+        background: #f5f5f5;
+        padding: 15px;
+        border-radius: 5px;
+        overflow-x: auto;
+      }
+      code {
+        font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+        font-size: 14px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 14px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 4px 8px;
+        border-bottom: 1px solid #eee;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 4px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      #canvas {
+        border: 1px solid #ddd;
+        margin-top: 20px;
+        max-width: 100%;
+        image-rendering: pixelated;
+        background: repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 0 0 / 16px 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>unity-asset-reader - CDN example</h1>
+
+    <div class="info">
+      Pick a Unity AssetBundle: its objects are listed, and a Texture2D is drawn
+      to the canvas. No bundler and no install: the packages come from jsDelivr,
+      and the reader runs in a Worker, so the page stays responsive while a big
+      bundle loads. No special headers (COOP/COEP) are needed; serve this folder
+      over HTTP (not <code>file://</code>).
+      <br />
+      <code>?local</code> loads this repo's builds instead, from
+      <code>node examples/serve.mjs</code> (see <code>examples/README.md</code>).
+    </div>
+
+    <p>
+      <label>
+        Bundle (and any <code>.resS</code> / <code>.resource</code> files next
+        to it):
+        <input id="file" type="file" multiple />
+      </label>
+    </p>
+
+    <div id="status" class="status" data-state="ready">Pick a file.</div>
+
+    <table id="objects" hidden>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Class</th>
+          <th>Name</th>
+          <th>Path ID</th>
+          <th>Bytes</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <canvas id="canvas" width="0" height="0"></canvas>
+    <p id="caption"></p>
+
+    <div class="info">
+      <strong>How this works</strong> (the Worker, <code>cdn-worker.js</code>):
+      <pre><code>const CDN = "https://cdn.jsdelivr.net/npm";
+const { load, ClassID } = await import(`${CDN}/unity-asset-reader@1.0.0/+esm`);
+const { initTexture, decodeTexture2D } =
+  await import(`${CDN}/unity-asset-reader-texture@1.0.0/+esm`);
+await initTexture({ wasmPath: `${CDN}/texture2ddecoder-wasm@1/wasm` });
+
+const env = load([{ name: file.name, data: new Uint8Array(await file.arrayBuffer()) }]);
+for (const obj of env.objects) {
+  if (obj.type === ClassID.Texture2D) {
+    const { data, width, height } = await decodeTexture2D(obj.read()); // RGBA, top row first
+    // postMessage it to the page, which draws it: new ImageData(data, width, height)
+  }
+}</code></pre>
+      Import maps do not apply inside a Worker, so the Worker imports jsDelivr's
+      <code>/+esm</code> builds, which point the packages' own imports at the
+      CDN too.
+    </div>
+
+    <script type="module">
+      // `?local`: packages from `node examples/serve.mjs` instead of jsDelivr.
+      const LOCAL = new URLSearchParams(location.search).has("local");
+
+      const fileInput = document.getElementById("file");
+      const status = document.getElementById("status");
+      const table = document.getElementById("objects");
+      const canvas = document.getElementById("canvas");
+      const caption = document.getElementById("caption");
+
+      let worker;
+      let nextId = 0;
+      const pending = new Map();
+
+      function startWorker() {
+        const url = new URL(LOCAL ? "cdn-worker.js?local" : "cdn-worker.js", import.meta.url);
+        const started = new Worker(url, { type: "module" });
+        started.onmessage = ({ data: { id, ok, result, error } }) => {
+          const call = pending.get(id);
+          pending.delete(id);
+          if (ok) call.resolve(result);
+          else call.reject(new Error(error));
+        };
+        started.onerror = (event) => {
+          const error = new Error(event.message || "the Worker failed to load");
+          for (const call of pending.values()) call.reject(error);
+          pending.clear();
+        };
+        return started;
+      }
+
+      /** Ask the Worker to run one of its handlers; `transfer` moves buffers instead of copying. */
+      function call(type, args, transfer = []) {
+        worker ??= startWorker();
+        const id = nextId++;
+        return new Promise((resolve, reject) => {
+          pending.set(id, { resolve, reject });
+          worker.postMessage({ id, type, ...args }, transfer);
+        });
+      }
+
+      function setStatus(state, text) {
+        status.dataset.state = state;
+        status.textContent = text;
+      }
+
+      function cell(row, content) {
+        const td = row.insertCell();
+        if (content instanceof Node) td.append(content);
+        else td.textContent = content;
+      }
+
+      function listObjects(objects) {
+        const body = table.tBodies[0];
+        body.replaceChildren();
+        for (const obj of objects) {
+          const row = body.insertRow();
+          cell(row, String(obj.index));
+          cell(row, obj.className);
+          cell(row, obj.texture?.name ?? "");
+          cell(row, obj.pathId);
+          cell(row, obj.size.toLocaleString());
+          if (obj.texture === undefined) cell(row, "");
+          else if (obj.texture.error !== undefined) cell(row, obj.texture.error);
+          else {
+            const button = document.createElement("button");
+            button.textContent = "Show";
+            button.addEventListener("click", () => show(obj.index));
+            cell(row, button);
+          }
+        }
+        table.hidden = false;
+      }
+
+      async function show(index) {
+        setStatus("busy", "Decoding...");
+        try {
+          const started = performance.now();
+          const { name, width, height, rgba } = await call("decode", { index });
+          const ms = (performance.now() - started).toFixed(1);
+          canvas.width = width;
+          canvas.height = height;
+          if (width > 0 && height > 0) {
+            const image = new ImageData(new Uint8ClampedArray(rgba), width, height);
+            canvas.getContext("2d").putImageData(image, 0, 0);
+          }
+          // Small textures are scaled up, pixelated, to be visible.
+          const scale = Math.max(1, Math.floor(256 / Math.max(width, height, 1)));
+          canvas.style.width = `${width * scale}px`;
+          caption.textContent = `${name}: ${width} x ${height}`;
+          setStatus("ready", `Decoded ${name} in ${ms} ms.`);
+        } catch (error) {
+          setStatus("error", error.message);
+        }
+      }
+
+      fileInput.addEventListener("change", async () => {
+        const picked = [...fileInput.files];
+        if (picked.length === 0) return;
+        setStatus("busy", `Loading ${picked.map((f) => f.name).join(", ")}...`);
+        try {
+          const started = performance.now();
+          const files = await Promise.all(
+            picked.map(async (f) => ({ name: f.name, data: await f.arrayBuffer() })),
+          );
+          const { objects } = await call(
+            "load",
+            { files },
+            files.map((f) => f.data),
+          );
+          const ms = (performance.now() - started).toFixed(1);
+          listObjects(objects);
+          setStatus("ready", `${objects.length} objects in ${ms} ms.`);
+          const first = objects.find((obj) => obj.texture?.name !== undefined);
+          if (first !== undefined) await show(first.index);
+        } catch (error) {
+          setStatus("error", error.message);
+        }
+      });
+    </script>
+  </body>
+</html>
