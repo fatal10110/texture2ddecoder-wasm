@@ -24,6 +24,57 @@ export const PACKAGES = {
 // Preceded by `.` or a word char means a property or a longer name (`ArrayBuffer`).
 const NODE_GLOBALS = [/(?<![.\w])Buffer\b/, /(?<![.\w])process\b/, /globalThis\.process\b/, /__dirname/];
 
+// Anchored at the start of a line, so import-shaped text inside a comment, a JSDoc
+// `@example` or a string literal is not mistaken for an import (core has several
+// error messages ending in `from "corrupt"`). A `/* ... */` opened at the start of a
+// line is skipped up to its `*/`, whatever its body lines start with. Known limits
+// of a line scanner, none reachable in this project's style (#76): an import-shaped
+// line inside a template literal, an `import("y")` quoted mid-line in a string, a
+// trailing `//` comment on a code line (`x; // import a from "y"`) and a block
+// comment opened mid-line are false positives; code after a closing `*/` on the
+// same line, a multi-line `import(` and a `}` / `from` split across lines are false
+// negatives. Trailing `//` is not stripped: it also occurs inside specifiers (URLs).
+const STATEMENT = [
+  /^\s*(?:import|export)\b[^"'`]*?\bfrom\s*["']([^"']+)["']/, // import x from "y", export * from "y"
+  /^\s*\}\s*from\s*["']([^"']+)["']/, //                         closing line of a multi-line import
+  /^\s*import\s*["']([^"']+)["']/, //                            side-effect import
+];
+/** Dynamic `import("y")` / `require("y")`, which can sit anywhere on a code line. */
+const DYNAMIC = /(?<![.\w$])(?:import|require)\s*\(\s*["']([^"']+)["']\s*\)/g;
+/** A line that is a comment: `//`, `/*`, or a JSDoc continuation `*`. */
+const COMMENT_LINE = /^\s*(?:\/\/|\/\*|\*)/;
+/** A line that opens a block comment and does not close it on the same line. */
+const BLOCK_OPEN = /^\s*\/\*(?![^]*\*\/)/;
+
+/**
+ * Module specifiers a source file imports: static `import` / `export ... from`
+ * statements, side-effect imports, and dynamic `import()` / `require()`.
+ * Shared with `scripts/tests/rollup-reader.test.mjs`.
+ *
+ * @param {string} text source code
+ * @returns {string[]} specifiers in order of appearance, duplicates kept
+ */
+export function importSpecifiers(text) {
+  const specs = [];
+  let inBlock = false;
+  for (const line of text.split("\n")) {
+    if (inBlock) {
+      inBlock = !line.includes("*/");
+      continue;
+    }
+    if (COMMENT_LINE.test(line)) {
+      inBlock = BLOCK_OPEN.test(line);
+      continue;
+    }
+    for (const re of STATEMENT) {
+      const spec = line.match(re)?.[1];
+      if (spec) specs.push(spec);
+    }
+    for (const [, spec] of line.matchAll(DYNAMIC)) specs.push(spec);
+  }
+  return specs;
+}
+
 function sourceFiles(dir) {
   return readdirSync(dir, { withFileTypes: true, recursive: true })
     .filter((e) => e.isFile() && /\.(ts|mjs|js)$/.test(e.name))
@@ -42,8 +93,7 @@ export async function checkPackage(root, { browser, noReader }) {
 
   const files = sourceFiles(join(root, "src"));
   for (const file of files) {
-    const text = readFileSync(file, "utf8");
-    for (const [, spec] of text.matchAll(/(?:from|import\s*\(?|require\s*\()\s*["']([^"']+)["']/g)) {
+    for (const spec of importSpecifiers(readFileSync(file, "utf8"))) {
       if (READER_DEEP.test(spec)) problems.push(`${file}: deep import "${spec}" (R14: public entry points only)`);
       else if (noReader && READER.test(spec)) problems.push(`${file}: imports "${spec}" (R14: core/decoder import no reader package)`);
     }
