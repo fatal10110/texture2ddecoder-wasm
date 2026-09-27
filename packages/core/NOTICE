@@ -14,7 +14,9 @@ UnityPy -- https://github.com/K0lb3/UnityPy (MIT)
   Copyright (c) K0lb3
   Oracle used to generate the test goldens, and behaviour source where it and
   AssetStudio disagree: the UnityFS header version gates in
-  src/bundle/BundleFile.ts are ported from its files/BundleFile.py.
+  src/bundle/BundleFile.ts are ported from its files/BundleFile.py, and the
+  common strings past AssetStudio's Hash128 in src/serialized/CommonString.ts
+  come from the TPK table behind its helpers/Tpk.py.
 
 Runtime dependencies are external (see package.json): dist/ keeps the import and
 npm installs them, so their own LICENSE files ship with them and no copy of
