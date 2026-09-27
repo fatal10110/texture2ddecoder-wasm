@@ -9,7 +9,7 @@ Per fixture (keyed by its path under fixtures/bundles/):
   files       - node path -> sha256 of the unpacked bytes  (what M1's env.files must match)
   objects     - per unpacked SerializedFile, the object table
   serialized  - per unpacked SerializedFile: header, externals, type trees, and
-                read_typetree() dumps of TextAsset / MonoBehaviour objects  (M2)
+                read_typetree() dumps of the DUMPED_CLASSES objects  (M2)
 
 Normalization (plan section 5), applied by walking the type tree next to the
 value so the node type decides, not the Python type:
@@ -41,8 +41,14 @@ GOLDENS = ROOT / "fixtures" / "goldens.json"
 
 INT64_TYPES = {"SInt64", "UInt64", "long long", "unsigned long long", "FileSize"}
 BYTE_TYPES = {"UInt8", "SInt8", "char"}
-# Classes whose read_typetree() output is part of the goldens (#25).
-DUMPED_CLASSES = {49: "TextAsset", 114: "MonoBehaviour"}
+# Classes whose read_typetree() output is part of the goldens (#25). AssetBundle
+# and AssetBundleManifest are the only map / pair / set in the fixtures (#84).
+DUMPED_CLASSES = {
+    49: "TextAsset",
+    114: "MonoBehaviour",
+    142: "AssetBundle",
+    290: "AssetBundleManifest",
+}
 # Sentinel entry that ends a ManagedReferencesRegistry version 1 list (#25).
 REGISTRY_V1_TERMINUS = (
     b"\x08\x00\x00\x00Terminus" b"\x10\x00\x00\x00UnityEngine.DMAT" b"\x08\x00\x00\x00FAKE_ASM"
