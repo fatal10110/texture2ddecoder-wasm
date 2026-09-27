@@ -425,14 +425,28 @@ test("a packed sprite whose key is not in its atlas throws CorruptError", () => 
   assert.throws(() => findSpriteSource(sprite, env), /has no render data for its m_RenderDataKey/);
 });
 
-test("an atlas pointer to nothing falls back to m_RD, whose null texture is refused", () => {
+test("a dangling atlas pointer, with no texture in m_RD to fall back to, is what is blamed", () => {
   const { env, sprite, file } = fresh("p_tri");
   const atlas = sprite.read<Sprite>().m_SpriteAtlas!;
   const at = find(sprite, file, pointer(0, atlas.m_PathID));
+  // objectNotFound: the pointer's own path id, and the atlas, are named.
   file.set(pointer(0, 12345n), at);
-  assert.throws(() => findSpriteSource(sprite, env), /texture is a null pointer/);
+  assert.throws(
+    () => findSpriteSource(sprite, env),
+    (err: unknown) =>
+      err instanceof CorruptError &&
+      /'s atlas, which holds its texture, \(path id 12345\) is not in/.test(err.message),
+  );
+  // fileIdOutOfRange.
   file.set(pointer(1, atlas.m_PathID), at);
-  assert.throws(() => findSpriteSource(sprite, env), /texture is a null pointer/);
+  assert.throws(
+    () => findSpriteSource(sprite, env),
+    (err: unknown) =>
+      err instanceof CorruptError && /'s atlas, .* has file id 1, past/.test(err.message),
+  );
+  // A null atlas pointer means "not packed": then m_RD's null texture is the fault.
+  file.set(pointer(0, 0n), at);
+  assert.throws(() => findSpriteSource(sprite, env), /'s texture is a null pointer/);
 });
 
 test("a sprite with an alpha texture (ETC1 split alpha) is refused", () => {

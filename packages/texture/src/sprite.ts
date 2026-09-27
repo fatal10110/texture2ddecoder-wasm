@@ -161,10 +161,11 @@ export function findSpriteSource(obj: ObjectReader, env: Env): SpriteSource {
   }
 
   // Upstream falls back to m_RD for any atlas it cannot get. When that has
-  // no texture either, the atlas' missing file is the reason to report.
+  // no texture either, the atlas pointer that led nowhere is what to report:
+  // its file not loaded, or the pointer dangling.
   const rd = sprite.m_RD;
-  if (rd.texture.m_PathID === 0n && atlas?.status === "fileNotLoaded") {
-    throw notLoaded(atlas.fileName, `${what} is packed into an atlas in`);
+  if (rd.texture.m_PathID === 0n && atlasPointer && atlas && atlas.status !== "null") {
+    found(atlas, atlasPointer, `${what}'s atlas, which holds its texture,`);
   }
   refuseAlphaTexture(rd.alphaTexture, what);
   const texture = readTexture(env, rd.texture, obj, `${what}'s texture`);
