@@ -19,14 +19,18 @@ import type { SerializedType } from "./TypeTree.js";
  * every object start to 8 or 16. If a file ever breaks that, give
  * `BinaryReader` an alignment base.
  *
- * Upstream's `Game` (per-game quirks) and the `ReadVector3`/`ReadXForm`
- * helpers are not ported: nothing stock-Unity reads here yet uses them; the
- * vector helpers land with the first class reader that does (M4).
+ * Upstream's `Game` (per-game quirks) is not ported. Its vector helpers
+ * (`ReadVector3` with the 5.4 gate, `ReadXForm*`, `ReadVector3Array`) and
+ * `buildType` are tracked in #93, for their first consumer, Sprite (#34).
  *
  * @example
+ * // `data` is one SerializedFile node (a `load().files` entry), not a bundle.
+ * const { data } = load([{ name: "a.bundle", data: bundleBytes }]).files[0]!;
  * const sf = readSerializedFile(data);
- * const reader = new ObjectReader(data, sf, sf.objects[0]);
- * if (reader.type === ClassID.TextAsset) reader.readAlignedString(); // m_Name
+ * for (const info of sf.objects) {
+ *   const reader = new ObjectReader(data, sf, info);
+ *   if (reader.type === ClassID.TextAsset) reader.readAlignedString(); // m_Name
+ * }
  */
 export class ObjectReader extends BinaryReader {
   /** Object id within its file (D9). */
