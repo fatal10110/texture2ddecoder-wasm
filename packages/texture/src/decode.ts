@@ -1,4 +1,5 @@
 // Ported from AssetStudio.Utility/Texture2DConverter.cs (MIT, © Perfare / RazTools / Razviar)
+// Ported from AssetStudio.Utility/Texture2DExtensions.cs (MIT, © Perfare / RazTools / Razviar)
 
 import {
   decode_astc,
@@ -162,13 +163,14 @@ export async function initTexture(options?: InitTextureOptions): Promise<void> {
 }
 
 /**
- * Decode the first mip level of a Texture2D to RGBA8, whatever its format:
- * the plain formats in TS (`convertPlain`), the block and Crunch formats -
- * BC1-BC7, ETC1/ETC2/EAC, PVRTC, ASTC, ATC and Crunch - through
+ * Decode the first mip level of a Texture2D to RGBA8, top row first, whatever
+ * its format: the plain formats in TS (`convertPlain`), the block and Crunch
+ * formats - BC1-BC7, ETC1/ETC2/EAC, PVRTC, ASTC, ATC and Crunch - through
  * `texture2ddecoder-wasm`. Its BGRA output is swapped to RGBA once (D5).
  *
- * Rows stay in the order Unity stores them, bottom row first, and no
- * platform byte swap is applied: both are #33.
+ * Unity stores the rows bottom row first; they are flipped, so row 0 of the
+ * result is the top of the image, as `ImageData` and image files expect
+ * (upstream's `ConvertToImage(flip: true)`).
  *
  * DXT1 and DXT5 Crunch come in two variants: upstream unpacks Unity's own
  * from Unity 2017.3 on, and the original crunch before. The Unity version is
@@ -181,8 +183,9 @@ export async function initTexture(options?: InitTextureOptions): Promise<void> {
  *   (and `m_DownscaleFallback` / `m_IsAlphaChannelOptional` for DXT Crunch,
  *   see above); they are checked, since `obj.read()`'s type is the caller's
  *   claim
- * @returns a new RGBA image, `width * height * 4` bytes; `imageData` is not
- *   modified. A texture 0 pixels wide or high gives an empty image.
+ * @returns a new RGBA image, `width * height * 4` bytes, top row first;
+ *   `imageData` is not modified. A texture 0 pixels wide or high gives an
+ *   empty image.
  * @throws {TypeError} when `texture` is not a Texture2D with image data
  *   (`obj.read()`'s type is not checked): `m_Width`, `m_Height` or
  *   `m_TextureFormat` is not a number, or `imageData` is not a `Uint8Array`;
@@ -201,6 +204,13 @@ export async function initTexture(options?: InitTextureOptions): Promise<void> {
 export async function decodeTexture2D(texture: Texture2DData): Promise<RgbaImage> {
   checkInput(texture);
   if (!initialized) throw new Error(NOT_INITIALIZED);
+  const image = await decodeStored(texture);
+  flipRows(image);
+  return image;
+}
+
+/** The first level to RGBA8, with the rows as Unity stores them. */
+async function decodeStored(texture: Texture2DData): Promise<RgbaImage> {
   const { m_Width: width, m_Height: height, m_TextureFormat: format, imageData } = texture;
 
   const unpackedFormat = CRUNCHED.get(format);
@@ -237,6 +247,19 @@ export async function decodeTexture2D(texture: Texture2DData): Promise<RgbaImage
     out[i + 2] = b;
   }
   return { data: out, width, height };
+}
+
+/** Reverse the order of the rows, in place: Unity's bottom-up rows to top-down. */
+function flipRows({ data, width, height }: RgbaImage): void {
+  const stride = width * 4;
+  const row = new Uint8Array(stride);
+  for (let top = 0, bottom = height - 1; top < bottom; top++, bottom--) {
+    const a = top * stride;
+    const b = bottom * stride;
+    row.set(data.subarray(a, a + stride));
+    data.copyWithin(a, b, b + stride);
+    data.set(row, b);
+  }
 }
 
 /**

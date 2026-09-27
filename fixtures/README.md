@@ -135,9 +135,10 @@ sprites yet; M3 adds the rest.
 
 - Texture goldens (`serialized.<file>.textures`, #31) hash UnityPy's
   `get_image_from_texture2d(flip=False)`: RGBA8 with the rows in the order Unity
-  stores them, bottom row first. Turning them top-down is #33, and the texture
-  package's converters do not flip either. `imageSha256` is the image data
-  itself, inline or from the `.resS` node.
+  stores them, bottom row first. `decodeTexture2D` returns the top row first
+  (#33), so its tests reverse the rows again (`reverseRows` in `helpers.ts`)
+  before comparing; `convertPlain` keeps the stored order. `imageSha256` is the
+  image data itself, inline or from the `.resS` node.
 - UnityPy 1.25.3 (with Pillow 12.3) cannot decode 9 of the 17 plain formats:
   R16, RHalf, RGHalf, RGBAHalf, RFloat, RGFloat, RGBAFloat and RGB9e5Float fail
   inside its converter, and YUY2 is not implemented. Those goldens carry

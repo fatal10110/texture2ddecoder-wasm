@@ -146,6 +146,22 @@ export function syntheticGoldens(): Record<string, GoldenSynthetic> {
 }
 
 /**
+ * An RGBA8 image with its rows in reverse order, as a new array. The texture
+ * goldens hash Unity's stored order, bottom row first; `decodeTexture2D`
+ * returns the top row first (#33), so its tests turn it back before hashing.
+ * The `platform` goldens record both orders, which proves this is UnityPy's
+ * own flip.
+ */
+export function reverseRows(rgba: Uint8Array, width: number): Uint8Array {
+  const stride = width * 4;
+  const out = new Uint8Array(rgba.length);
+  for (let from = 0; from < rgba.length; from += stride) {
+    out.set(rgba.subarray(from, from + stride), rgba.length - from - stride);
+  }
+  return out;
+}
+
+/**
  * The input of a synthetic golden: `sha256("<name>/0") + sha256("<name>/1") + ...`,
  * cut to `size` bytes, as `synthetic_bytes` in `scripts/make-goldens.py` makes it.
  */

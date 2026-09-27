@@ -15,6 +15,7 @@ import {
 import {
   golden,
   loadFixture,
+  reverseRows,
   sha256,
   syntheticBytes,
   syntheticGoldens,
@@ -124,12 +125,17 @@ function expected(t: FixtureTexture): string {
   return want;
 }
 
-async function decode(input: Texture2DData): Promise<Uint8Array> {
+/**
+ * `decodeTexture2D`'s pixels with the rows turned back to Unity's stored
+ * order, bottom row first, which the texture goldens and the AssetStudio
+ * hashes are of (see `reverseRows`). The flip itself is tested below.
+ */
+async function decodeStored(input: Texture2DData): Promise<Uint8Array> {
   const out = await decodeTexture2D(input);
   assert.equal(out.width, input.m_Width);
   assert.equal(out.height, input.m_Height);
   assert.equal(out.data.length, input.m_Width * input.m_Height * 4);
-  return out.data;
+  return reverseRows(out.data, out.width);
 }
 
 const F = TextureFormat;
@@ -188,7 +194,7 @@ wasmTest("RGBA sha256 = UnityPy golden, hashed after the BGRA -> RGBA swap", asy
   assert.equal(agreed.length, 18);
   for (const t of agreed) {
     assert.ok(t.golden.rgbaSha256, t.golden.name);
-    assert.equal(sha256(await decode(t.input)), t.golden.rgbaSha256, t.golden.name);
+    assert.equal(sha256(await decodeStored(t.input)), t.golden.rgbaSha256, t.golden.name);
   }
 });
 
@@ -200,7 +206,8 @@ wasmTest("BC4, BC6H and ASTC: RGBA sha256 = AssetStudio's, per the golden's verd
   );
   for (const t of disagreed) {
     assert.match(t.golden.oracleNote!, /Verdict: AssetStudio - see #32/, t.golden.name);
-    assert.equal(sha256(await decode(t.input)), ASSETSTUDIO_RGBA[t.golden.name], t.golden.name);
+    const rgba = await decodeStored(t.input);
+    assert.equal(sha256(rgba), ASSETSTUDIO_RGBA[t.golden.name], t.golden.name);
   }
 });
 
@@ -208,7 +215,7 @@ wasmTest("BC4 is AssetStudio's red-only form of the UnityPy grayscale golden", a
   // AssetStudio writes the value to R, UnityPy to R, G and B; that map is one to
   // one, so the golden still pins every pixel.
   const t = block(TextureFormat.BC4);
-  const rgba = await decode(t.input);
+  const rgba = await decodeStored(t.input);
   const gray = new Uint8Array(rgba.length);
   for (let i = 0; i < rgba.length; i += 4) {
     assert.deepEqual([rgba[i + 1], rgba[i + 2], rgba[i + 3]], [0, 0, 255], `pixel ${i / 4}`);
@@ -226,7 +233,7 @@ wasmTest("ATC and signed EAC (no editor writes them) = UnityPy on generated data
     assert.equal(g.format, TextureFormat[name as keyof typeof TextureFormat], name);
     const imageData = syntheticBytes(name, g.inputSize);
     assert.equal(sha256(imageData), g.inputSha256, name);
-    const rgba = await decode(texture(g.format, g.width, g.height, imageData));
+    const rgba = await decodeStored(texture(g.format, g.width, g.height, imageData));
     assert.equal(sha256(rgba), g.rgbaSha256, name);
   }
 });
@@ -251,7 +258,7 @@ wasmTest("the formats upstream decodes like a fixture's decode like it", async (
   ];
   for (const [alias, format] of aliases) {
     const t = block(format);
-    const rgba = await decode({ ...t.input, m_TextureFormat: alias });
+    const rgba = await decodeStored({ ...t.input, m_TextureFormat: alias });
     assert.equal(sha256(rgba), expected(t), `${alias} as ${format}`);
   }
 });
@@ -265,10 +272,11 @@ wasmTest("DXT Crunch without the 2017.3+ fields unpacks as the original crunch",
     assert.equal(typeof t.input.m_IsAlphaChannelOptional, "boolean");
     assert.equal(t.input.m_DownscaleFallback, undefined);
     const { m_IsAlphaChannelOptional: _, ...pre2017_3 } = t.input;
-    assert.equal(sha256(await decode(pre2017_3)), ASSETSTUDIO_RGBA[`legacy ${t.golden.name}`]);
+    const legacy = await decodeStored(pre2017_3);
+    assert.equal(sha256(legacy), ASSETSTUDIO_RGBA[`legacy ${t.golden.name}`]);
     // 2017.3 to 2023.1 write m_DownscaleFallback instead, and get Unity's crunch.
     const mid = { ...pre2017_3, m_DownscaleFallback: false };
-    assert.equal(sha256(await decode(mid)), t.golden.rgbaSha256);
+    assert.equal(sha256(await decodeStored(mid)), t.golden.rgbaSha256);
   }
 });
 
@@ -276,7 +284,7 @@ wasmTest("ETC Crunch is always Unity's crunch", async () => {
   for (const format of [TextureFormat.ETC_RGB4Crunched, TextureFormat.ETC2_RGBA8Crunched]) {
     const t = block(format);
     const { m_IsAlphaChannelOptional: _, ...fieldsGone } = t.input;
-    assert.equal(sha256(await decode(fieldsGone)), t.golden.rgbaSha256, t.golden.name);
+    assert.equal(sha256(await decodeStored(fieldsGone)), t.golden.rgbaSha256, t.golden.name);
   }
 });
 
@@ -289,12 +297,58 @@ wasmTest("Crunch data that does not unpack is a CorruptError", async () => {
   );
 });
 
+// --- row order (#33) -----------------------------------------------------------------
+
+wasmTest("plain formats come out top row first: the last row Unity stores is row 0", async () => {
+  // 2 x 3 RGBA32, rows as Unity stores them: bottom (1..8), middle (11..18), top (21..28).
+  const imageData = new Uint8Array([
+    1, 2, 3, 4, 5, 6, 7, 8,
+    11, 12, 13, 14, 15, 16, 17, 18,
+    21, 22, 23, 24, 25, 26, 27, 28,
+  ]);
+  const out = await decodeTexture2D(texture(TextureFormat.RGBA32, 2, 3, imageData));
+  assert.equal(out.width, 2);
+  assert.equal(out.height, 3);
+  assert.deepEqual([...out.data], [
+    21, 22, 23, 24, 25, 26, 27, 28,
+    11, 12, 13, 14, 15, 16, 17, 18,
+    1, 2, 3, 4, 5, 6, 7, 8,
+  ]);
+  assert.deepEqual([...imageData.subarray(0, 4)], [1, 2, 3, 4], "imageData is not modified");
+});
+
+wasmTest("block formats come out top row first: the last block row stored is on top", async () => {
+  // 8 x 8 DXT1, 2 x 2 blocks with every index 0, so each is its color0. Stored
+  // first (the bottom of the image): two red blocks (0xF800); then two blue (0x001F).
+  const red = [0x00, 0xf8, 0, 0, 0, 0, 0, 0];
+  const blue = [0x1f, 0x00, 0, 0, 0, 0, 0, 0];
+  const imageData = new Uint8Array([...red, ...red, ...blue, ...blue]);
+  const out = await decodeTexture2D(texture(TextureFormat.DXT1, 8, 8, imageData));
+  for (let y = 0; y < 8; y++) {
+    const want = y < 4 ? [0, 0, 255, 255] : [255, 0, 0, 255];
+    for (let x = 0; x < 8; x++) {
+      const i = (y * 8 + x) * 4;
+      assert.deepEqual([...out.data.subarray(i, i + 4)], want, `pixel ${x}, ${y}`);
+    }
+  }
+});
+
+wasmTest("a fixture's RGBA32 texture comes out as its stored rows reversed", async () => {
+  const t = fixtureTextures(PLAIN).find((x) => x.input.m_TextureFormat === TextureFormat.RGBA32);
+  assert.ok(t);
+  const { m_Width: width, m_Height: height, imageData } = t.input;
+  const stored = imageData.subarray(0, width * height * 4);
+  const out = await decodeTexture2D(t.input);
+  assert.notDeepEqual(out.data, stored, "the fixture's rows are all alike, so a flip cannot show");
+  assert.deepEqual(out.data, reverseRows(stored, width));
+});
+
 // --- the bridge itself -------------------------------------------------------------
 
 wasmTest("the decoder's BGRA comes out as RGBA", async () => {
   // One BC1 block: color0 = 0xF800 (pure red in RGB565), every index 0.
   const imageData = new Uint8Array([0x00, 0xf8, 0, 0, 0, 0, 0, 0]);
-  const rgba = await decode(texture(TextureFormat.DXT1, 4, 4, imageData));
+  const rgba = await decodeStored(texture(TextureFormat.DXT1, 4, 4, imageData));
   for (let i = 0; i < 16; i++) {
     assert.deepEqual([...rgba.subarray(i * 4, i * 4 + 4)], [255, 0, 0, 255]);
   }
@@ -307,7 +361,8 @@ wasmTest("only the first mip level is decoded", async () => {
     const first = firstLevelSize(t);
     assert.ok(t.input.imageData.length > first, t.golden.name);
     // The first level alone decodes to the same image, so nothing after it is read.
-    const rgba = await decode({ ...t.input, imageData: t.input.imageData.subarray(0, first) });
+    const imageData = t.input.imageData.subarray(0, first);
+    const rgba = await decodeStored({ ...t.input, imageData });
     assert.equal(sha256(rgba), expected(t), t.golden.name);
   }
 });
@@ -351,7 +406,7 @@ wasmTest("plain formats go through convertPlain", async () => {
   const agreed = fixtureTextures(PLAIN).filter((t) => t.golden.rgbaSha256 && !t.golden.oracleNote);
   assert.equal(agreed.length, 6);
   for (const t of agreed) {
-    assert.equal(sha256(await decode(t.input)), t.golden.rgbaSha256, t.golden.name);
+    assert.equal(sha256(await decodeStored(t.input)), t.golden.rgbaSha256, t.golden.name);
   }
   // And convertPlain's own errors come through as they are.
   await assert.rejects(
@@ -380,7 +435,7 @@ wasmTest("a size that is not a non-negative integer is a CorruptError", async ()
 wasmTest("initTexture() again is a no-op", async () => {
   await initTexture();
   await initTexture({ wasmPath: "/ignored/in/node" });
-  assert.equal((await decode(block(TextureFormat.DXT1).input)).length, 32 * 16 * 4);
+  assert.equal((await decodeStored(block(TextureFormat.DXT1).input)).length, 32 * 16 * 4);
 });
 
 // --- input checks (no decoder needed) ----------------------------------------------
