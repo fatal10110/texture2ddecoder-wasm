@@ -569,28 +569,26 @@ test("a version-stripped file takes its own bundle's revision, not the first one
   );
 });
 
-/** What `objects` throws for a stripped file with nothing to fall back to. */
-function refusesStripped(source: string): (error: unknown) => boolean {
-  return (error) =>
-    error instanceof UnsupportedError &&
-    error.kind === "Unity version" &&
-    error.found === "0.0.0" &&
-    error.message.startsWith(`${source}: unsupported Unity version: 0.0.0 (`);
-}
+/** Objects as `[pathId, format, version]`, which is what the fallback changes. */
+const versions = (objects: ObjectReader[]): unknown[] =>
+  objects.map((o) => [o.pathId, o.format, o.version]);
 
-test("a version-stripped SerializedFile passed as an input unpacks; objects refuses it", () => {
+test("a version-stripped input keeps [0, 0, 0, 0] and stays readable", () => {
+  // The ponytail in env.ts: nothing names the editor, so the version stays
+  // unknown instead of the whole load throwing; a version-gated class reader
+  // refuses [0, 0, 0, 0] itself (decided on PR #107).
   const env = load([{ name: "CAB-stripped", data: STRIPPED }]);
   assert.deepEqual(env.files, [{ path: "CAB-stripped", data: STRIPPED }]);
 
-  assert.throws(() => env.objects, refusesStripped("CAB-stripped"));
-  const other = load([{ name: SHARED, data: loadFixture(SHARED) }]).objects[0]!;
-  assert.throws(
-    () => env.resolve({ m_FileID: 0, m_PathID: 1n }, other),
-    refusesStripped("CAB-stripped"),
-  );
+  assert.deepEqual(versions(env.objects), [[1n, 8, [0, 0, 0, 0]]]);
+  const object = env.objects[0]!;
+  assert.deepEqual(env.resolve({ m_FileID: 0, m_PathID: 1n }, object), {
+    status: "found",
+    object,
+  });
 });
 
-test("a version-stripped SerializedFile in a UnityWebData file is refused", () => {
+test("a version-stripped SerializedFile in a UnityWebData file keeps [0, 0, 0, 0]", () => {
   // UnityWebData records no revision, and a bundle's does not reach through
   // one (as for format < 7), so there is nothing to fall back to.
   const web = buildWebData([{ path: "CAB-stripped", data: STRIPPED }]);
@@ -598,16 +596,16 @@ test("a version-stripped SerializedFile in a UnityWebData file is refused", () =
   const env = load([{ name: "outer.bundle", data: outer }]);
   assert.deepEqual(env.files, [{ path: "CAB-stripped", data: STRIPPED }]);
 
-  assert.throws(() => env.objects, refusesStripped("outer.bundle: web.data: CAB-stripped"));
+  assert.deepEqual(versions(env.objects), [[1n, 8, [0, 0, 0, 0]]]);
 });
 
 for (const revision of ["0.0.0", ""]) {
   const shown = JSON.stringify(revision);
-  test(`a version-stripped file in a bundle whose revision is ${shown} is refused`, () => {
+  test(`a version-stripped file in a bundle whose revision is ${shown} keeps [0, 0, 0, 0]`, () => {
     // 2019.4.41f2, 2020.3.30f1 and 6000.3.25f1 all write "0.0.0" in the bundle
     // header of a stripped build too, so this is what a real one looks like.
-    // Another bundle in the same load names a different build; it does not
-    // count.
+    // Another bundle in the same load names a different build: it lends the
+    // stripped file nothing, and keeps its own version and its objects.
     const bundle = buildBundle([{ path: "CAB-stripped", data: STRIPPED }], revision);
     const env = load([
       { name: "real.bundle", data: buildBundle([{ path: "CAB-real", data: LEGACY }], "2.6.1f3") },
@@ -615,7 +613,10 @@ for (const revision of ["0.0.0", ""]) {
     ]);
     assert.equal(env.files.length, 2);
 
-    assert.throws(() => env.objects, refusesStripped("stripped.bundle: CAB-stripped"));
+    assert.deepEqual(versions(env.objects), [
+      [1n, 6, [2, 6, 1, 3]],
+      [1n, 8, [0, 0, 0, 0]],
+    ]);
   });
 }
 
