@@ -50,6 +50,11 @@ interface Walk {
   reader: ObjectReader;
   /** Ref type trees built so far, for `[SerializeReference]` data. */
   refTrees: Map<SerializedType, Tree>;
+  /**
+   * Set by the class that holds a `ManagedReferencesRegistry` field, for the
+   * rest of that class and everything read under it (UnityPy `has_registry`).
+   */
+  classHasRegistry: boolean;
 }
 
 /**
@@ -71,9 +76,12 @@ interface Walk {
  * layouts. Version 2 (Unity 2021+) is an ordinary `RefIds` vector. In version 1
  * (Unity 2019.3 to 2020) the type tree describes one entry, `00000000`, but
  * the data holds every entry and then a `Terminus` sentinel; the entries come
- * back as `00000000`, `00000001`, ... and the sentinel is consumed, not
- * returned. Each entry's `data` is read with the file's ref type of the same
- * class, namespace and assembly, and left out for a null entry (empty class).
+ * back keyed by their id as 8 uppercase hex digits (`00000000`, ...,
+ * `00000009`, `0000000A`), as Unity's YAML names them, and the sentinel is
+ * consumed, not returned. Each entry's `data` is read with the file's ref type
+ * of the same class, namespace and assembly, and left out for a null entry
+ * (empty class). A ref type's own `ManagedReferencesRegistry` field has no
+ * data, so it is left out, as UnityPy does.
  *
  * @param reader the object to read
  * @returns the object's fields by name
@@ -94,7 +102,7 @@ export function readTypeTree(reader: ObjectReader): TypeTreeObject {
     );
   }
 
-  const walk: Walk = { reader, refTrees: new Map() };
+  const walk: Walk = { reader, refTrees: new Map(), classHasRegistry: false };
   reader.position = 0;
   // The root's own align flag is not applied, as upstream reads its children only.
   const value = readClass(walk, tree(nodes), 0);
@@ -203,12 +211,28 @@ function readValue(walk: Walk, t: Tree, i: number): TypeTreeValue {
   return value;
 }
 
-/** Every child of node `i`, by name. A node without children reads as `{}`. */
+/**
+ * Every child of node `i`, by name. A node without children reads as `{}`.
+ *
+ * A class with a `ManagedReferencesRegistry` field sets `classHasRegistry` for
+ * the rest of itself and everything read under it, and clears it when it
+ * ends, as UnityPy's `has_registry` does. Any registry field met while it is
+ * set is left out: the type tree of a ref type whose class has
+ * `[SerializeReference]` fields carries a registry node of its own, but the
+ * host object's one registry holds every entry, so the data has no bytes for it.
+ */
 function readClass(walk: Walk, t: Tree, i: number): TypeTreeObject {
+  const outer = walk.classHasRegistry;
   const out: TypeTreeObject = {};
   for (let c = i + 1; c < t.end[i]!; c = t.end[c]!) {
-    setField(out, t.nodes[c]!.name, readValue(walk, t, c));
+    const child = t.nodes[c]!;
+    if (child.type === "ManagedReferencesRegistry") {
+      if (walk.classHasRegistry) continue;
+      walk.classHasRegistry = true;
+    }
+    setField(out, child.name, readValue(walk, t, c));
   }
+  walk.classHasRegistry = outer;
   return out;
 }
 
@@ -320,7 +344,8 @@ function readRefData(walk: Walk, cls: unknown, ns: unknown, asm: unknown): TypeT
  * nothing special. Version 1 has a single `ReferencedObject` child standing
  * for every entry: read entries until the `Terminus` sentinel, which is
  * consumed and not returned. The golden oracle (UnityPy 1.25.3) and upstream
- * both read only the first entry and stop the sentinel's 44 bytes short.
+ * both read only the first entry, so they stop before the entries after it
+ * and the sentinel: 44 bytes short when there is one entry.
  */
 function readRegistry(walk: Walk, t: Tree, i: number): TypeTreeObject {
   const out: TypeTreeObject = {};
@@ -331,14 +356,14 @@ function readRegistry(walk: Walk, t: Tree, i: number): TypeTreeObject {
       continue;
     }
     const align = (child.metaFlag & ALIGN_BYTES) !== 0;
-    // ponytail: entry keys are the index as 8 decimal digits, which matches the
-    // one name Unity writes ("00000000") and the fixtures, all single-entry. If
-    // Unity turns out to count in hex past 9, format with radix 16 instead.
     for (let k = 0; ; k++) {
       const entry = readReferencedObject(walk, t, c);
       if (align) walk.reader.align(4);
       if (entry.terminus) break;
-      setField(out, String(k).padStart(8, "0"), entry.value);
+      // Entries are stored in id order, without the id. Unity's YAML names each
+      // by its id in 8 uppercase hex digits: 00000009, then 0000000A (2019.4
+      // and 2020.3, #96).
+      setField(out, k.toString(16).toUpperCase().padStart(8, "0"), entry.value);
     }
   }
   return out;

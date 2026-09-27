@@ -33,7 +33,13 @@ import struct
 import sys
 
 import UnityPy
-from UnityPy.helpers.TypeTreeHelper import get_ref_type_node
+from UnityPy.helpers.TypeTreeHelper import (
+    TypeTreeConfig,
+    get_ref_type_node,
+    metaflag_is_aligned,
+    read_value,
+)
+from UnityPy.streams import EndianBinaryReader
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FIXTURES = ROOT / "fixtures" / "bundles"
@@ -56,6 +62,7 @@ DUMPED_CLASSES = {
 REGISTRY_V1_TERMINUS = (
     b"\x08\x00\x00\x00Terminus" b"\x10\x00\x00\x00UnityEngine.DMAT" b"\x08\x00\x00\x00FAKE_ASM"
 )
+REGISTRY_V1_TERMINUS_TYPE = ("Terminus", "UnityEngine.DMAT", "FAKE_ASM")
 
 
 def sha256(data: bytes) -> str:
@@ -149,6 +156,40 @@ def normalize(node, value, sf):
     raise SystemExit(f"cannot normalize {typ} {node.m_Name}: {type(value).__name__}")
 
 
+def count_v1_entries(raw: bytes, unread: int, node, obj, sf) -> int | None:
+    """Entries in the last `unread` bytes of `raw`, read with UnityPy's own read_value.
+
+    Returns how many v1 registry entries come before the Terminus sentinel,
+    or None unless those bytes are exactly the entries plus the sentinel.
+    """
+    registries = [c for c in node.m_Children if c.m_Type == "ManagedReferencesRegistry"]
+    entries = [c for r in registries for c in r.m_Children if c.m_Type == "ReferencedObject"]
+    entry = entries[0] if len(entries) == 1 else None
+    if entry is None:
+        return None
+    # Over the whole object, so alignment is relative to the object as in UnityPy.
+    reader = EndianBinaryReader(raw, endian=obj.reader.endian)
+    reader.Position = len(raw) - unread
+    # Inside the host's registry, as UnityPy is when it reads the first entry.
+    config = TypeTreeConfig(True, sf, True)
+    count = 0
+    while True:
+        item = {}
+        for child in entry.m_Children:
+            if child.m_Type != "ReferencedObjectData":
+                item[child.m_Name] = read_value(child, reader, config)
+                continue
+            typ = item.get("type", {})
+            if (typ.get("class"), typ.get("ns"), typ.get("asm")) == REGISTRY_V1_TERMINUS_TYPE:
+                return count if reader.Position == len(raw) else None
+            ref_node = get_ref_type_node(item, sf)
+            if ref_node is not None:
+                read_value(ref_node, reader, config)
+        if metaflag_is_aligned(entry.m_MetaFlag):
+            reader.align_stream()
+        count += 1
+
+
 def dump_typetree(name: str, obj, sf) -> dict:
     """read_typetree() of one object, normalized, plus a note if UnityPy needed help."""
     node = obj._get_typetree_node()
@@ -158,27 +199,37 @@ def dump_typetree(name: str, obj, sf) -> dict:
         # UnityPy walks a ManagedReferencesRegistry version 1 (Unity <= 2020) as
         # if it held one entry and stops before the Terminus sentinel that ends
         # the list, then fails its own read-length check (#25). Accept that one
-        # case - and only when the unread tail is exactly the sentinel - and
-        # record it; anything else is a real oracle failure.
+        # case - and only when the unread tail is exactly the sentinel, or the
+        # entries after the first and then the sentinel - and record it;
+        # anything else is a real oracle failure.
         # Every v1 registry ends with the sentinel, so that alone proves nothing:
-        # UnityPy must also have stopped exactly the sentinel's length short. A
-        # larger gap means it skipped real entries too (e.g. a second one).
+        # a tail longer than the sentinel must read, with UnityPy's own
+        # read_value, as whole entries ending exactly at the sentinel (#96).
         short = re.search(r"Expected to read (\d+) bytes, but only read (\d+)", str(error))
-        unread = int(short[1]) - int(short[2]) if short else None
+        unread = int(short[1]) - int(short[2]) if short else 0
         raw = obj.get_raw_data()
-        if unread != len(REGISTRY_V1_TERMINUS) or not raw.endswith(REGISTRY_V1_TERMINUS):
+        more = None
+        if unread >= len(REGISTRY_V1_TERMINUS) and raw.endswith(REGISTRY_V1_TERMINUS):
+            more = count_v1_entries(bytes(raw), unread, node, obj, sf)
+        if more is None:
             raise SystemExit(f"{name} pathId {obj.path_id}: read_typetree failed: {error}")
         value = obj.read_typetree(check_read=False)
         if value.get("references", {}).get("version") != 1:
             raise SystemExit(f"{name} pathId {obj.path_id}: unexpected read failure: {error}")
-        return {
-            "value": normalize(node, value, sf),
-            "oracleNote": (
+        if more == 0:
+            note = (
                 "UnityPy stops before the ManagedReferencesRegistry v1 Terminus sentinel "
                 f"({len(REGISTRY_V1_TERMINUS)} bytes, verified present); dump read with "
                 "check_read=False - see #25"
-            ),
-        }
+            )
+        else:
+            note = (
+                "UnityPy reads only the first ManagedReferencesRegistry v1 entry and stops "
+                f"before the other {more} and the Terminus sentinel ({unread} bytes, read back "
+                "as entries with UnityPy's read_value up to the sentinel); dump read with "
+                "check_read=False - see #25, #96"
+            )
+        return {"value": normalize(node, value, sf), "oracleNote": note}
 
 
 def serialized_golden(name: str, sf) -> dict:

@@ -40,6 +40,12 @@ bundles:
   `TypelessData`; the 64 pixel bytes live in a `.resS` node of the bundle
 - `<variant>` - the AssetBundleManifest bundle Unity writes with every build
 
+Each editor also has `registry/refs` (uncompressed, #96): a ScriptableObject
+with 13 `[SerializeReference]` entries, so version 1 entry keys go past
+`00000009`, and a ref type with a `[SerializeReference]` field of its own,
+whose type tree carries a nested `ManagedReferencesRegistry` node
+([`BUILDING.md`](BUILDING.md) section 5).
+
 NaN does not have one bit pattern everywhere, and that comes from Unity: every
 editor wrote `0xFFC00000` into the first variant it built (`lz4`) and
 `0x7FC00000` into the rest (see `BUILDING.md` section 4). The goldens record the
@@ -95,8 +101,10 @@ editor fixtures have one RGBA32 texture and no sprites; M3 adds the rest.
   (2019.4, 2020.3): its type tree describes one entry, but the data holds the
   entries plus a `Terminus` / `UnityEngine.DMAT` / `FAKE_ASM` sentinel entry that
   UnityPy never reads, so its read-length check fails. `make-goldens.py` checks
-  that the unread tail is exactly that sentinel, dumps with `check_read=False`,
-  and records `oracleNote` on the object (#25).
+  that the unread tail is exactly that sentinel, or the entries after the first
+  (read back with UnityPy's own `read_value`) and then the sentinel, dumps with
+  `check_read=False`, and records `oracleNote` on the object, with the number of
+  entries left unread (#25, #96).
 
 - UnityPy only unwraps gzip when it wraps a `UnityWebData` file, **not** when it
   wraps a bundle. `make-goldens.py` gunzips with stdlib before handing the
