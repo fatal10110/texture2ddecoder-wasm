@@ -43,7 +43,7 @@ Same codecs as [Perfare's Texture2DDecoder](https://github.com/Perfare/AssetStud
 ### BCn (Block Compression)
 
 - BC1 (DXT1) - RGB compression
-- BC3 (DXT5) - RGBA compression
+- BC3 (DXT5) - RGBA compression. Colour always decodes in 4-colour mode, per S3TC ([#137](https://github.com/fatal10110/texture2ddecoder-wasm/issues/137)), so on c0 <= c1 blocks it differs from AssetStudio and K0lb3/texture2ddecoder
 - BC4 - Single channel compression
 - BC5 - Dual channel compression
 - BC6 - HDR compression
@@ -387,11 +387,11 @@ Unpacks Unity Crunch compressed data.
 
 #### `initialize(options?: { wasmPath?: string; locateFile?: (path: string, prefix: string) => string }): Promise<void>`
 
-Manually initialize the WebAssembly module. This is called automatically on first use of any decode function in Node.js, but must be called explicitly in browser environments.
+Manually initialize the WebAssembly module. This is called automatically on first use of any decode function in Node.js, but must be called explicitly in browser environments, including Web Workers.
 
 **Parameters:**
 
-- `options.wasmPath` - (Browser required) Path or URL to the directory containing WASM files
+- `options.wasmPath` - (Browser and Web Worker required) Path or URL to the directory containing WASM files
 - `options.locateFile` - (Optional) Custom function to locate WASM binary files for advanced use cases
 
 **Node.js Example:**
@@ -417,6 +417,8 @@ await initialize({
   locateFile: (path) => `https://cdn.example.com/custom/${path}`,
 });
 ```
+
+**Web Workers:** the same `initialize({ wasmPath })` call works inside a Web Worker (classic or module), which has no `window`. Decode large textures there to keep the page responsive.
 
 **Framework Integration:**
 This approach works seamlessly with:
