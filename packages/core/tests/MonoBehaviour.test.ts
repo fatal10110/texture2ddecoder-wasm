@@ -105,20 +105,24 @@ test("obj.read() of a typed MonoBehaviour carries the header and the script's fi
 
 const FROM = objectBytes("editor/6000.3.25f1/uncompressed/main", ClassID.MonoBehaviour);
 const LAYOUT = ["pptr m_GameObject", "u8 m_Enabled", "align", "pptr m_Script", "str m_Name"];
+/** Before format 14 (Unity 5.0) a PPtr's path id is 32-bit. */
+const LAYOUT_32 = ["pptr32 m_GameObject", "u8 m_Enabled", "align", "pptr32 m_Script", "str m_Name"];
 
 // No field depends on the Unity version: Unity's player type trees (UnityPy's TPK
-// data) have the same header from 3.4 on, and a version-stripped file reads.
-const VERSIONS: { unity: UnityVersion; text?: string }[] = [
-  { unity: [3, 4, 0, 1] },
-  { unity: [2019, 4, 41, 2] },
-  { unity: [0, 0, 0, 0], text: "0.0.0" },
+// data) have the same header from 3.4 on, apart from the path id width, which
+// the format decides. A version-stripped file reads.
+const VERSIONS: { unity: UnityVersion; text?: string; format?: number; layout: string[] }[] = [
+  { unity: [3, 4, 0, 1], format: 9, layout: LAYOUT_32 },
+  { unity: [2019, 4, 41, 2], layout: LAYOUT },
+  { unity: [0, 0, 0, 0], text: "0.0.0", layout: LAYOUT },
 ];
 
-for (const { unity, text } of VERSIONS) {
-  const label = text ?? unity.slice(0, 3).join(".");
+for (const { unity, text, format, layout } of VERSIONS) {
+  const label = `${text ?? unity.slice(0, 3).join(".")} format ${format ?? 22}`;
   test(`Unity ${label}: the header, and the reader left after it`, () => {
-    const { bytes, expected } = build(LAYOUT);
-    const reader = synthetic(FROM, withTail(bytes, 7, 0, 0, 0), unity, text);
+    const { bytes, expected } = build(layout);
+    const reader = synthetic(FROM, withTail(bytes, 7, 0, 0, 0), unity, text, undefined, format);
+    assert.equal(reader.format, format ?? 22);
     const header = readMonoBehaviour(reader);
     assert.deepEqual(Object.keys(header), HEADER);
     assert.deepEqual(header, expected);
