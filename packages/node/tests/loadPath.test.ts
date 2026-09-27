@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import {
   chmodSync,
   mkdirSync,
@@ -220,6 +221,19 @@ test("a path that does not exist throws ENOENT", () => {
     () => loadPath(join(tmp, "nowhere")),
     (error: NodeJS.ErrnoException) => error.code === "ENOENT",
   );
+});
+
+test("a path that is neither a file nor a folder is refused", (t) => {
+  const fifo = join(folder("fifo", {}), "pipe");
+  try {
+    execFileSync("mkfifo", [fifo], { stdio: "ignore" });
+  } catch {
+    t.skip("mkfifo is not available here (Windows)");
+    return;
+  }
+  assert.throws(() => loadPath(fifo), {
+    message: `${fifo} is neither a file nor a directory`,
+  });
 });
 
 test("a file in the folder that cannot be read fails the whole load", (t) => {
