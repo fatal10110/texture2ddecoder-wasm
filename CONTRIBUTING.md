@@ -261,6 +261,12 @@ the jobs by changed paths; skipped jobs report success, so all of them can be re
 
 Run the reader job locally with `npm ci && npm run verify`.
 
+## Releases
+
+The reader packages version in lockstep; `texture2ddecoder-wasm` versions on its own. User-facing
+changes go under the `Unreleased` heading of their package line in [CHANGELOG.md](CHANGELOG.md).
+The publish procedure is in [RELEASING.md](RELEASING.md).
+
 ## Reporting Issues
 
 ### Bug Reports

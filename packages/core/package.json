@@ -1,6 +1,6 @@
 {
   "name": "unity-asset-reader",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Browser-first Unity AssetBundle parser: isomorphic, synchronous, zero platform dependencies.",
   "license": "MIT",
   "main": "dist/index.cjs",
@@ -23,7 +23,8 @@
     "pretest": "npm run build",
     "build": "rollup -c rollup.config.mjs",
     "test": "tsx --test tests/*.test.ts",
-    "check:browser": "node ../../scripts/check-browser.mjs core"
+    "check:browser": "node ../../scripts/check-browser.mjs core",
+    "prepublishOnly": "npm run verify --prefix ../.."
   },
   "keywords": [
     "unity",
