@@ -74,6 +74,18 @@ describe("BC3 colour half: 4-colour mode regardless of c0/c1 order (#137)", () =
     ]);
   });
 
+  it("truncates the thirds, as the submodule's 4-colour branch and Pillow do", async () => {
+    // 0x0841 is (8, 8, 8): r5 = 1 -> 8 | 0, g6 = 2 -> 8 | 0, b5 = 1 -> 8 | 0. The spec
+    // gives no rounding rule; c2 = 8 / 3 = 2 (not 3) and c3 = 16 / 3 = 5 pin truncation.
+    const data = new Uint8Array([...ALPHA_128, ...colourBlock(0x0000, 0x0841, INDICES_0123)]);
+    assertRows(await decode_bc3(data, 4, 4), 4, [
+      [0, 0, 0, 128],
+      [8, 8, 8, 128],
+      [2, 2, 2, 128],
+      [5, 5, 5, 128],
+    ]);
+  });
+
   it("c0 > c1 decodes as before", async () => {
     const data = new Uint8Array([...ALPHA_128, ...colourBlock(0xf800, 0x001f, INDICES_0123)]);
     assertRows(await decode_bc3(data, 4, 4), 4, [
@@ -95,6 +107,21 @@ describe("BC3 colour half: 4-colour mode regardless of c0/c1 order (#137)", () =
     const grey: Rgba = [132, 130, 132, 128];
     const blue: Rgba = [0, 0, 255, 128];
     assertRows(await decode_bc3(data, 8, 4), 8, [grey, grey, grey, grey, blue, blue, blue, blue]);
+  });
+
+  it("covers partial blocks and crops them (6x5 from 2x2 blocks)", async () => {
+    const block = [...ALPHA_128, ...colourBlock(0x8410, 0x8410, ALL_INDEX_3)];
+    const data = new Uint8Array([...block, ...block, ...block, ...block]);
+    const bgra = await decode_bc3(data, 6, 5);
+    assert.ok(bgra, "decoder returned null");
+    assert.strictEqual(bgra.length, 6 * 5 * 4);
+    for (let i = 0; i < 6 * 5; i++) {
+      assert.deepStrictEqual(
+        Array.from(bgra.subarray(i * 4, i * 4 + 4)),
+        [132, 130, 132, 128],
+        `pixel (${i % 6}, ${Math.floor(i / 6)})`
+      );
+    }
   });
 });
 
