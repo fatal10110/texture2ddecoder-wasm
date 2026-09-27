@@ -287,6 +287,36 @@ test('Unity "0.0.0" in a file of format 18 or later: the 2017.1 layout', () => {
   }
 });
 
+test('Unity "0.0.0": an object that does not fit the 2017.1 layout is refused, not corrupt', () => {
+  // #36 as amended on #136: the layout is inferred from the format, so a misfit
+  // means "not that layout", which the file cannot tell apart from corruption.
+  const { bytes } = build(L2017_1);
+  const misfits: [string, Uint8Array][] = [
+    ["4 bytes left over", withTail(bytes, 0, 0, 0, 0)],
+    ["1 byte left over", withTail(bytes, 0)],
+    ["4 bytes short", bytes.subarray(0, bytes.length - 4)],
+    ["cut inside m_Resource", bytes.subarray(0, bytes.length - 12)],
+    ["the 5.0 layout's bytes, 2 bytes short", build(L5_0).bytes.subarray(0, bytes.length - 2)],
+  ];
+  for (const format of [18, 22]) {
+    for (const [why, data] of misfits) {
+      const reader = readerOf(FROM, data, { unity: STRIPPED, text: "0.0.0", format });
+      assert.throws(
+        () => readAudioClip(reader),
+        (err: unknown) =>
+          versionRefusal("0.0.0")(err) &&
+          (err as UnsupportedError).message.includes("does not fit 2017.1's AudioClip layout"),
+        `format ${format}: ${why}`,
+      );
+    }
+  }
+  // m_Name comes before any layout choice: a bad one is still corrupt.
+  const badName = bytes.slice();
+  new DataView(badName.buffer).setInt32(0, -1, true);
+  const reader = readerOf(FROM, badName, { unity: STRIPPED, text: "0.0.0", format: 22 });
+  assert.throws(() => readAudioClip(reader), CorruptError);
+});
+
 /** Refused with the file's own version string, per the #36 rule. */
 const REFUSED: { unity: UnityVersion; text: string; format: number; why: string }[] = [
   { unity: STRIPPED, text: "0.0.0", format: 17, why: "[0,0,0,0] in format 17 (5.5 to 2018.4)" },

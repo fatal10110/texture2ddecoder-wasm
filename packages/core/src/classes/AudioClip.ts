@@ -90,10 +90,13 @@ export interface AudioClipData extends AudioClip {
  * up by. Below 3.4 there is no type tree data, so such a file is refused too.
  *
  * A file whose Unity version is unknown (`[0, 0, 0, 0]`) is read when its
- * format is 18 or later (rule for version-stripped files, #36): such a file is
- * Unity 2019.1 or later, and the layout has not changed from 2017.1 to 6000.6.
- * Below 18 the format allows 5.0's layout and 2017.1's, which have the same
- * size (`m_Ambisonic` takes a byte of padding), so the bytes cannot decide.
+ * format is 18 or later (rule for version-stripped files, #36, as amended on
+ * #136): such a file is Unity 2019.1 or later, and the layout has not changed
+ * from 2017.1 to 6000.6. That layout is inferred, not known, so an object that
+ * does not fit it past `m_Name` (bytes left over, or too few) is refused as not
+ * that layout rather than called corrupt. Below 18 the format allows 5.0's
+ * layout and 2017.1's, which have the same size (`m_Ambisonic` takes a byte of
+ * padding), so the bytes cannot decide.
  *
  * Only player builds are read: an editor file (`BuildTarget.NoTarget`) holds
  * editor-only fields (`m_EditorResource`, ...) that upstream does not read.
@@ -109,12 +112,14 @@ export interface AudioClipData extends AudioClip {
  *
  * @param reader the object's reader, rewound first and left at its end
  * @throws {UnsupportedError} of kind `"Unity version"`, with the file's own
- *   `unityVersion` as `found`, below 3.4 or for an unknown version below
- *   format 18; of kind `"build target"` for an editor file; of kind
+ *   `unityVersion` as `found`, below 3.4, for an unknown version below format
+ *   18, and for an unknown version whose fields after `m_Name` do not fit
+ *   2017.1's layout; of kind `"build target"` for an editor file; of kind
  *   `"AudioClip storage"` for a streamed clip before 5.0
  * @throws {CorruptError} when the object ends early, a count or string length
  *   is negative or runs past its end, `m_Offset` or `m_Size` is 2^53 or above,
- *   or bytes are left over after the last field
+ *   or bytes are left over after the last field, with the version known; with
+ *   it unknown, only inside `m_Name`, which every layout starts with
  */
 export function readAudioClip(reader: ObjectReader): AudioClip {
   const { version } = reader;
@@ -135,16 +140,37 @@ export function readAudioClip(reader: ObjectReader): AudioClip {
   }
 
   const base = readNamedObject(reader);
-  const out = !stripped && !atLeast(version, 5, 0)
-    ? readLegacyFields(reader, base)
-    : readFields(reader, base, stripped || atLeast(version, 2017, 1));
+  if (!stripped) {
+    const out = atLeast(version, 5, 0)
+      ? readFields(reader, base, atLeast(version, 2017, 1))
+      : readLegacyFields(reader, base);
+    checkEnd(reader);
+    return out;
+  }
+  // #36 rule, as amended on #136: the layout is inferred from the format, so a
+  // misfit past m_Name means "not 2017.1's layout", which the file cannot tell
+  // apart from corruption.
+  try {
+    const out = readFields(reader, base, true);
+    checkEnd(reader);
+    return out;
+  } catch (error) {
+    if (!(error instanceof CorruptError)) throw error;
+    throw refuse(
+      reader,
+      "the object does not fit 2017.1's AudioClip layout, the only one formats 18 and " +
+        `later allow (${error.message})`,
+    );
+  }
+}
 
+/** The object must end where its last field does. */
+function checkEnd(reader: ObjectReader): void {
   if (reader.remaining !== 0) {
     throw new CorruptError(
       `AudioClip ${reader.pathId} ends at ${reader.position} of its ${reader.byteSize} bytes`,
     );
   }
-  return out;
 }
 
 /** 5.0+: everything after `m_Name`; `m_Ambisonic` from 2017.1. */
