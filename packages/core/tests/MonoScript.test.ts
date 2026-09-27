@@ -1,7 +1,7 @@
-// MonoScript (#39): the hardcoded reader, checked against readTypeTree() on the
-// same objects and against what the oracle's goldens say about each script
-// (R12). The oracle does not dump MonoScript objects (make-goldens.py's
-// DUMPED_CLASSES), so there is no dump to compare whole.
+// MonoScript (#39): the hardcoded reader, checked against the oracle's typetree
+// dumps (R12, #124) and readTypeTree() on the same objects, in every editor
+// fixture, and against hand-built layouts for each version gate of Unity's
+// type trees (UnityPy's TPK data).
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -47,54 +47,38 @@ function goldenPropertiesHash(name: string, pathId: bigint): string {
   return types[0]!.oldTypeHash!;
 }
 
-/**
- * What the fixture project's C# says (fixtures/BUILDING.md): `FixtureData` in
- * `main`, `RegistryData` in `registry/refs`, both in the global namespace and
- * Unity's default assembly, which Unity 6 names without `.dll`. Checked
- * against UnityPy 1.25.3 for every typed fixture (recorded on the PR).
- */
-function expectedScript(name: string): Record<string, string> {
-  const className = name.endsWith("/registry/refs") ? "RegistryData" : "FixtureData";
-  const assembly = name.includes("/6000.") ? "Assembly-CSharp" : "Assembly-CSharp.dll";
-  return { m_Name: className, m_ClassName: className, m_Namespace: "", m_AssemblyName: assembly };
-}
-
 // --- every MonoScript of the editor fixtures ----------------------------------------
 
 for (const name of FIXTURES) {
-  test(`${name}: readMonoScript equals readTypeTree() and the goldens`, () => {
+  test(`${name}: readMonoScript equals the golden dump and readTypeTree()`, () => {
     const objects = objectsOf(name, ClassID.MonoScript);
     assert.equal(objects.length, 1);
-    for (const { env, reader, enableTypeTree } of objects) {
+    for (const { env, reader, dump, enableTypeTree } of objects) {
+      // A build without type trees is compared with its typed twin's dump.
+      assert.ok(dump, `no golden dump for MonoScript ${reader.pathId}`);
       const script = readMonoScript(reader);
       // The golden object table's byteSize, consumed exactly.
       assert.equal(reader.position, reader.byteSize, "byteSize not consumed exactly");
-      assert.deepEqual(env.objects.find((o) => o.pathId === reader.pathId)!.read(), script);
 
-      assert.deepEqual(Object.keys(script), [
-        "m_Name",
-        "m_ExecutionOrder",
-        "m_PropertiesHash",
-        "m_ClassName",
-        "m_Namespace",
-        "m_AssemblyName",
-      ]);
-      const { m_Name, m_ClassName, m_Namespace, m_AssemblyName } = script;
-      assert.deepEqual({ m_Name, m_ClassName, m_Namespace, m_AssemblyName }, expectedScript(name));
-      assert.equal(script.m_ExecutionOrder, 0);
+      // Every field with the oracle's values. The golden needs no conversion:
+      // a MonoScript has no int64 or float, and the oracle dumps a Hash128 as
+      // readTypeTree() does, one number per "bytes[i]" key.
+      assert.deepEqual(script, dump);
+      // Same keys in the same (type tree) order at every depth, which deepEqual
+      // does not check.
+      assert.equal(JSON.stringify(script), JSON.stringify(dump));
+      // obj.read() goes through the registry to this reader.
+      assert.deepEqual(env.objects.find((o) => o.pathId === reader.pathId)!.read(), script);
+      // What the m_PropertiesHash JSDoc promises and a dump cannot show: it is
+      // the oldTypeHash of the MonoBehaviour type whose object points here.
       assert.equal(hex(script.m_PropertiesHash), goldenPropertiesHash(name, reader.pathId));
 
       if (enableTypeTree) {
-        // Every field, in Unity's order, as the type tree reads it.
         const tree = reader.readTypeTree();
-        assert.deepEqual(Object.keys(script), Object.keys(tree));
         assert.deepEqual(script, tree);
+        assert.equal(JSON.stringify(script), JSON.stringify(tree));
       } else {
         assert.equal(reader.serializedType?.nodes, null, "the file has a type tree after all");
-        // The typed twin holds the same object under the same path id.
-        const [twin] = objectsOf(typedTwin(name), ClassID.MonoScript);
-        assert.equal(twin?.reader.pathId, reader.pathId);
-        assert.deepEqual(script, twin.reader.readTypeTree());
       }
     }
   });

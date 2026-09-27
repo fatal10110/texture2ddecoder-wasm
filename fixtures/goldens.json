@@ -2764,6 +2764,33 @@
                 }
               }
             },
+            "-5055261391591463299": {
+              "value": {
+                "m_Name": "FixtureData",
+                "m_ExecutionOrder": 0,
+                "m_PropertiesHash": {
+                  "bytes[0]": 113,
+                  "bytes[1]": 0,
+                  "bytes[2]": 92,
+                  "bytes[3]": 187,
+                  "bytes[4]": 71,
+                  "bytes[5]": 42,
+                  "bytes[6]": 92,
+                  "bytes[7]": 240,
+                  "bytes[8]": 150,
+                  "bytes[9]": 78,
+                  "bytes[10]": 34,
+                  "bytes[11]": 22,
+                  "bytes[12]": 178,
+                  "bytes[13]": 167,
+                  "bytes[14]": 93,
+                  "bytes[15]": 72
+                },
+                "m_ClassName": "FixtureData",
+                "m_Namespace": "",
+                "m_AssemblyName": "Assembly-CSharp.dll"
+              }
+            },
             "1": {
               "value": {
                 "m_Name": "main",
@@ -4583,6 +4610,33 @@
                 }
               }
             },
+            "-5055261391591463299": {
+              "value": {
+                "m_Name": "FixtureData",
+                "m_ExecutionOrder": 0,
+                "m_PropertiesHash": {
+                  "bytes[0]": 113,
+                  "bytes[1]": 0,
+                  "bytes[2]": 92,
+                  "bytes[3]": 187,
+                  "bytes[4]": 71,
+                  "bytes[5]": 42,
+                  "bytes[6]": 92,
+                  "bytes[7]": 240,
+                  "bytes[8]": 150,
+                  "bytes[9]": 78,
+                  "bytes[10]": 34,
+                  "bytes[11]": 22,
+                  "bytes[12]": 178,
+                  "bytes[13]": 167,
+                  "bytes[14]": 93,
+                  "bytes[15]": 72
+                },
+                "m_ClassName": "FixtureData",
+                "m_Namespace": "",
+                "m_AssemblyName": "Assembly-CSharp.dll"
+              }
+            },
             "1": {
               "value": {
                 "m_Name": "main",
@@ -6109,6 +6163,33 @@
             }
           ],
           "typetrees": {
+            "-1717385589351710209": {
+              "value": {
+                "m_Name": "RegistryData",
+                "m_ExecutionOrder": 0,
+                "m_PropertiesHash": {
+                  "bytes[0]": 49,
+                  "bytes[1]": 254,
+                  "bytes[2]": 233,
+                  "bytes[3]": 12,
+                  "bytes[4]": 211,
+                  "bytes[5]": 67,
+                  "bytes[6]": 144,
+                  "bytes[7]": 38,
+                  "bytes[8]": 242,
+                  "bytes[9]": 247,
+                  "bytes[10]": 140,
+                  "bytes[11]": 235,
+                  "bytes[12]": 16,
+                  "bytes[13]": 78,
+                  "bytes[14]": 84,
+                  "bytes[15]": 32
+                },
+                "m_ClassName": "RegistryData",
+                "m_Namespace": "",
+                "m_AssemblyName": "Assembly-CSharp.dll"
+              }
+            },
             "1": {
               "value": {
                 "m_Name": "refs",
@@ -8008,6 +8089,33 @@
                   "size": 0,
                   "path": ""
                 }
+              }
+            },
+            "-5055261391591463299": {
+              "value": {
+                "m_Name": "FixtureData",
+                "m_ExecutionOrder": 0,
+                "m_PropertiesHash": {
+                  "bytes[0]": 113,
+                  "bytes[1]": 0,
+                  "bytes[2]": 92,
+                  "bytes[3]": 187,
+                  "bytes[4]": 71,
+                  "bytes[5]": 42,
+                  "bytes[6]": 92,
+                  "bytes[7]": 240,
+                  "bytes[8]": 150,
+                  "bytes[9]": 78,
+                  "bytes[10]": 34,
+                  "bytes[11]": 22,
+                  "bytes[12]": 178,
+                  "bytes[13]": 167,
+                  "bytes[14]": 93,
+                  "bytes[15]": 72
+                },
+                "m_ClassName": "FixtureData",
+                "m_Namespace": "",
+                "m_AssemblyName": "Assembly-CSharp.dll"
               }
             },
             "1": {
@@ -10976,6 +11084,33 @@
             }
           ],
           "typetrees": {
+            "-2518432286213258198": {
+              "value": {
+                "m_Name": "FixtureData",
+                "m_ExecutionOrder": 0,
+                "m_PropertiesHash": {
+                  "bytes[0]": 113,
+                  "bytes[1]": 0,
+                  "bytes[2]": 92,
+                  "bytes[3]": 187,
+                  "bytes[4]": 71,
+                  "bytes[5]": 42,
+                  "bytes[6]": 92,
+                  "bytes[7]": 240,
+                  "bytes[8]": 150,
+                  "bytes[9]": 78,
+                  "bytes[10]": 34,
+                  "bytes[11]": 22,
+                  "bytes[12]": 178,
+                  "bytes[13]": 167,
+                  "bytes[14]": 93,
+                  "bytes[15]": 72
+                },
+                "m_ClassName": "FixtureData",
+                "m_Namespace": "",
+                "m_AssemblyName": "Assembly-CSharp.dll"
+              }
+            },
             "-7189836546933969454": {
               "value": {
                 "m_GameObject": {
@@ -12811,6 +12946,33 @@
             }
           ],
           "typetrees": {
+            "-2518432286213258198": {
+              "value": {
+                "m_Name": "FixtureData",
+                "m_ExecutionOrder": 0,
+                "m_PropertiesHash": {
+                  "bytes[0]": 113,
+                  "bytes[1]": 0,
+                  "bytes[2]": 92,
+                  "bytes[3]": 187,
+                  "bytes[4]": 71,
+                  "bytes[5]": 42,
+                  "bytes[6]": 92,
+                  "bytes[7]": 240,
+                  "bytes[8]": 150,
+                  "bytes[9]": 78,
+                  "bytes[10]": 34,
+                  "bytes[11]": 22,
+                  "bytes[12]": 178,
+                  "bytes[13]": 167,
+                  "bytes[14]": 93,
+                  "bytes[15]": 72
+                },
+                "m_ClassName": "FixtureData",
+                "m_Namespace": "",
+                "m_AssemblyName": "Assembly-CSharp.dll"
+              }
+            },
             "-7189836546933969454": {
               "value": {
                 "m_GameObject": {
@@ -14593,6 +14755,33 @@
             }
           ],
           "typetrees": {
+            "-5905195012383509730": {
+              "value": {
+                "m_Name": "RegistryData",
+                "m_ExecutionOrder": 0,
+                "m_PropertiesHash": {
+                  "bytes[0]": 49,
+                  "bytes[1]": 254,
+                  "bytes[2]": 233,
+                  "bytes[3]": 12,
+                  "bytes[4]": 211,
+                  "bytes[5]": 67,
+                  "bytes[6]": 144,
+                  "bytes[7]": 38,
+                  "bytes[8]": 242,
+                  "bytes[9]": 247,
+                  "bytes[10]": 140,
+                  "bytes[11]": 235,
+                  "bytes[12]": 16,
+                  "bytes[13]": 78,
+                  "bytes[14]": 84,
+                  "bytes[15]": 32
+                },
+                "m_ClassName": "RegistryData",
+                "m_Namespace": "",
+                "m_AssemblyName": "Assembly-CSharp.dll"
+              }
+            },
             "1": {
               "value": {
                 "m_Name": "refs",
@@ -16650,6 +16839,33 @@
             }
           ],
           "typetrees": {
+            "-2518432286213258198": {
+              "value": {
+                "m_Name": "FixtureData",
+                "m_ExecutionOrder": 0,
+                "m_PropertiesHash": {
+                  "bytes[0]": 113,
+                  "bytes[1]": 0,
+                  "bytes[2]": 92,
+                  "bytes[3]": 187,
+                  "bytes[4]": 71,
+                  "bytes[5]": 42,
+                  "bytes[6]": 92,
+                  "bytes[7]": 240,
+                  "bytes[8]": 150,
+                  "bytes[9]": 78,
+                  "bytes[10]": 34,
+                  "bytes[11]": 22,
+                  "bytes[12]": 178,
+                  "bytes[13]": 167,
+                  "bytes[14]": 93,
+                  "bytes[15]": 72
+                },
+                "m_ClassName": "FixtureData",
+                "m_Namespace": "",
+                "m_AssemblyName": "Assembly-CSharp.dll"
+              }
+            },
             "-7189836546933969454": {
               "value": {
                 "m_GameObject": {
@@ -22225,6 +22441,33 @@
                 "m_PathFlags": 7,
                 "m_SceneHashes": []
               }
+            },
+            "4203245748248992679": {
+              "value": {
+                "m_Name": "FixtureData",
+                "m_ExecutionOrder": 0,
+                "m_PropertiesHash": {
+                  "bytes[0]": 70,
+                  "bytes[1]": 141,
+                  "bytes[2]": 122,
+                  "bytes[3]": 79,
+                  "bytes[4]": 49,
+                  "bytes[5]": 151,
+                  "bytes[6]": 178,
+                  "bytes[7]": 163,
+                  "bytes[8]": 215,
+                  "bytes[9]": 209,
+                  "bytes[10]": 57,
+                  "bytes[11]": 146,
+                  "bytes[12]": 61,
+                  "bytes[13]": 192,
+                  "bytes[14]": 190,
+                  "bytes[15]": 249
+                },
+                "m_ClassName": "FixtureData",
+                "m_Namespace": "",
+                "m_AssemblyName": "Assembly-CSharp"
+              }
             }
           }
         }
@@ -24100,6 +24343,33 @@
                 "m_ExplicitDataLayout": 0,
                 "m_PathFlags": 7,
                 "m_SceneHashes": []
+              }
+            },
+            "4203245748248992679": {
+              "value": {
+                "m_Name": "FixtureData",
+                "m_ExecutionOrder": 0,
+                "m_PropertiesHash": {
+                  "bytes[0]": 70,
+                  "bytes[1]": 141,
+                  "bytes[2]": 122,
+                  "bytes[3]": 79,
+                  "bytes[4]": 49,
+                  "bytes[5]": 151,
+                  "bytes[6]": 178,
+                  "bytes[7]": 163,
+                  "bytes[8]": 215,
+                  "bytes[9]": 209,
+                  "bytes[10]": 57,
+                  "bytes[11]": 146,
+                  "bytes[12]": 61,
+                  "bytes[13]": 192,
+                  "bytes[14]": 190,
+                  "bytes[15]": 249
+                },
+                "m_ClassName": "FixtureData",
+                "m_Namespace": "",
+                "m_AssemblyName": "Assembly-CSharp"
               }
             }
           }
@@ -26938,6 +27208,33 @@
                 "m_SceneHashes": []
               }
             },
+            "3471881875269403484": {
+              "value": {
+                "m_Name": "RegistryData",
+                "m_ExecutionOrder": 0,
+                "m_PropertiesHash": {
+                  "bytes[0]": 105,
+                  "bytes[1]": 112,
+                  "bytes[2]": 254,
+                  "bytes[3]": 69,
+                  "bytes[4]": 51,
+                  "bytes[5]": 172,
+                  "bytes[6]": 216,
+                  "bytes[7]": 185,
+                  "bytes[8]": 240,
+                  "bytes[9]": 61,
+                  "bytes[10]": 102,
+                  "bytes[11]": 188,
+                  "bytes[12]": 25,
+                  "bytes[13]": 177,
+                  "bytes[14]": 168,
+                  "bytes[15]": 60
+                },
+                "m_ClassName": "RegistryData",
+                "m_Namespace": "",
+                "m_AssemblyName": "Assembly-CSharp"
+              }
+            },
             "6352459401869971755": {
               "value": {
                 "m_GameObject": {
@@ -29498,6 +29795,33 @@
                 "m_ExplicitDataLayout": 0,
                 "m_PathFlags": 7,
                 "m_SceneHashes": []
+              }
+            },
+            "4203245748248992679": {
+              "value": {
+                "m_Name": "FixtureData",
+                "m_ExecutionOrder": 0,
+                "m_PropertiesHash": {
+                  "bytes[0]": 70,
+                  "bytes[1]": 141,
+                  "bytes[2]": 122,
+                  "bytes[3]": 79,
+                  "bytes[4]": 49,
+                  "bytes[5]": 151,
+                  "bytes[6]": 178,
+                  "bytes[7]": 163,
+                  "bytes[8]": 215,
+                  "bytes[9]": 209,
+                  "bytes[10]": 57,
+                  "bytes[11]": 146,
+                  "bytes[12]": 61,
+                  "bytes[13]": 192,
+                  "bytes[14]": 190,
+                  "bytes[15]": 249
+                },
+                "m_ClassName": "FixtureData",
+                "m_Namespace": "",
+                "m_AssemblyName": "Assembly-CSharp"
               }
             }
           }
