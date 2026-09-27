@@ -1,0 +1,282 @@
+// The ClassID -> reader registry behind `obj.read()` (#103): the hardcoded
+// Texture2D reader with its image data resolved, the readTypeTree() fallback,
+// and the refusals. Image hashes and dumps come from the oracle (R12).
+
+import assert from "node:assert/strict";
+import { test } from "node:test";
+
+import {
+  fixtureNames,
+  golden,
+  loadFixture,
+  sha256,
+  type GoldenTexture,
+} from "../../../fixtures/helpers.js";
+import type { Texture2DData } from "../src/classes/registry.js";
+import { readTexture2D } from "../src/classes/Texture2D.js";
+import { load, type Env } from "../src/env.js";
+import { CorruptError, ResourceNotFoundError, UnsupportedError } from "../src/errors.js";
+import { ClassID } from "../src/serialized/ClassID.js";
+import { ObjectReader } from "../src/serialized/ObjectReader.js";
+import { readSerializedFile } from "../src/serialized/SerializedFile.js";
+
+/** Fixtures holding a Texture2D, per their golden object tables. */
+const TEXTURE_FIXTURES = fixtureNames().filter((name) =>
+  Object.values(golden(name).objects).some((objs) =>
+    objs.some((o) => o.classId === ClassID.Texture2D),
+  ),
+);
+
+/** Fixtures whose SerializedFiles all carry type trees, and those built without. */
+const TYPED = fixtureNames().filter((name) => {
+  const files = Object.values(golden(name).serialized ?? {});
+  return files.length > 0 && files.every((sf) => sf.enableTypeTree);
+});
+const NO_TYPE_TREE = fixtureNames().filter((name) => name.includes("/lz4-notypetree/"));
+
+const loadName = (name: string): Env => load([{ name, data: loadFixture(name) }]);
+
+/**
+ * The oracle's texture entries for a fixture, by path id. A build without
+ * type trees has none of its own; its typed twin holds the same objects.
+ */
+function textureGoldens(name: string): Map<string, GoldenTexture> {
+  const source = golden(name.replace(/lz4-notypetree/g, "lz4"));
+  const out = new Map<string, GoldenTexture>();
+  for (const sf of Object.values(source.serialized ?? {})) {
+    for (const [pathId, texture] of Object.entries(sf.textures ?? {})) out.set(pathId, texture);
+  }
+  return out;
+}
+
+/** `read()` without `imageData`: what `readTexture2D` alone returns. */
+function withoutImageData(data: Texture2DData): Omit<Texture2DData, "imageData"> {
+  const { imageData: _, ...rest } = data;
+  return rest;
+}
+
+// --- Texture2D: the registered hardcoded reader ------------------------------------
+
+for (const name of TEXTURE_FIXTURES) {
+  test(`${name}: env.objects -> obj.read() gives every Texture2D and its golden image`, () => {
+    const env = loadName(name);
+    const want = textureGoldens(name);
+    const textures = env.objects.filter((o) => o.type === ClassID.Texture2D);
+    assert.equal(textures.length, want.size);
+
+    for (const obj of textures) {
+      const expected = want.get(String(obj.pathId));
+      assert.ok(expected, `no golden for Texture2D ${obj.pathId}`);
+      const data: Texture2DData = obj.read();
+
+      // The hardcoded reader's result, plus the image data and nothing else.
+      assert.deepEqual(Object.keys(data), [...Object.keys(readTexture2D(obj)), "imageData"]);
+      assert.deepEqual(withoutImageData(data), readTexture2D(obj));
+      assert.equal(data.m_Name, expected.name);
+      assert.equal(data.m_TextureFormat, expected.format);
+      assert.equal(data.imageData.length, expected.imageSize);
+      assert.equal(sha256(data.imageData), expected.imageSha256);
+
+      // A view, never a copy (R7): into the .resS node, or the inline bytes.
+      const stream = data.m_StreamData;
+      if (stream?.path) {
+        assert.equal(data["image data"].length, 0);
+        const ress = env.files.find((f) => f.path.endsWith(".resS"))!.data;
+        assert.equal(data.imageData.buffer, ress.buffer);
+        assert.equal(data.imageData.byteOffset, ress.byteOffset + stream.offset);
+      } else {
+        assert.equal(data.imageData, data["image data"]);
+      }
+    }
+  });
+}
+
+test("the read() texture checks cover .resS and inline data, typed and not, every editor", () => {
+  const kinds = new Set<string>();
+  for (const name of TEXTURE_FIXTURES) {
+    const editor = name.split("/")[1];
+    const typed = name.includes("/lz4-notypetree/") ? "notypetree" : "typed";
+    for (const obj of loadName(name).objects.filter((o) => o.type === ClassID.Texture2D)) {
+      const where = obj.read<Texture2DData>().m_StreamData?.path ? "resS" : "inline";
+      kinds.add(`${editor} ${typed} ${where}`);
+    }
+  }
+  for (const editor of ["2019.4.41f2", "2020.3.30f1", "6000.3.25f1"]) {
+    for (const typed of ["typed", "notypetree"]) assert.ok(kinds.has(`${editor} ${typed} resS`));
+  }
+  assert.ok(kinds.has("6000.3.25f1 typed inline"));
+});
+
+for (const name of TEXTURE_FIXTURES.filter((n) => n.includes("/lz4-notypetree/"))) {
+  test(`${name}: read() takes the hardcoded path, where the type tree cannot`, () => {
+    for (const obj of loadName(name).objects.filter((o) => o.type === ClassID.Texture2D)) {
+      assert.equal(obj.serializedType?.nodes, null, "the file has a type tree after all");
+      assert.throws(() => obj.readTypeTree(), UnsupportedError);
+      assert.ok(obj.read<Texture2DData>().imageData.length > 0);
+    }
+  });
+}
+
+test("a typed Texture2D is still read by the hardcoded reader, not its type tree", () => {
+  // From 2020.1 the type tree reads m_StreamData.offset as UInt64, a bigint (D9);
+  // the hardcoded reader gives a number.
+  const obj = loadName("editor/6000.3.25f1/lz4/texture").objects.find(
+    (o) => o.type === ClassID.Texture2D,
+  )!;
+  const tree = obj.readTypeTree() as { m_StreamData: { offset: unknown } };
+  assert.equal(typeof tree.m_StreamData.offset, "bigint");
+  assert.equal(typeof obj.read<Texture2DData>().m_StreamData?.offset, "number");
+});
+
+// --- the readTypeTree() fallback ----------------------------------------------------
+
+for (const name of TYPED) {
+  test(`${name}: read() of a class without a reader is the readTypeTree() result`, () => {
+    const others = loadName(name).objects.filter((o) => o.type !== ClassID.Texture2D);
+    assert.ok(others.length > 0);
+    for (const obj of others) assert.deepEqual(obj.read(), obj.readTypeTree(), `${obj.pathId}`);
+  });
+}
+
+test("read() of a TextAsset equals the oracle's dump", () => {
+  const names = TYPED.filter((n) => n.endsWith("/shared"));
+  assert.equal(names.length, 9);
+  for (const name of names) {
+    const obj = loadName(name).objects.find((o) => o.type === ClassID.TextAsset);
+    assert.ok(obj, `${name}: no TextAsset`);
+    const dump = Object.values(golden(name).serialized!)
+      .map((s) => s.typetrees[String(obj.pathId)])
+      .find((d) => d !== undefined);
+    assert.ok(dump, `${name}: no golden dump for ${obj.pathId}`);
+    // A TextAsset has only strings, which the §5 normalization leaves as they are.
+    assert.deepEqual(obj.read(), dump.value, name);
+  }
+});
+
+// --- refusals ---------------------------------------------------------------------
+
+for (const name of NO_TYPE_TREE) {
+  test(`${name}: read() of a class without a reader or type tree throws UnsupportedError`, () => {
+    const others = loadName(name).objects.filter((o) => o.type !== ClassID.Texture2D);
+    assert.ok(others.length > 0);
+    for (const obj of others) {
+      assert.throws(
+        () => obj.read(),
+        (err: unknown) =>
+          err instanceof UnsupportedError &&
+          err.kind === "object without a type tree" &&
+          err.found === `class ${obj.type}, path id ${obj.pathId}`,
+      );
+    }
+  });
+}
+
+/** Every fixture whose Texture2D data is in a `.resS` node. */
+const RESS_FIXTURES = TEXTURE_FIXTURES.filter((name) =>
+  Object.keys(golden(name).files).some((path) => path.endsWith(".resS")),
+);
+
+for (const name of RESS_FIXTURES) {
+  test(`${name}: read() without the .resS throws ResourceNotFoundError`, () => {
+    const { files } = loadName(name);
+    const ress = files.find((f) => f.path.endsWith(".resS"))!;
+    const cab = files.find((f) => f !== ress)!;
+    // The SerializedFile alone, as a loose input: nothing else is loaded.
+    const obj = load([{ name: cab.path, data: cab.data }]).objects.find(
+      (o) => o.type === ClassID.Texture2D,
+    )!;
+    const { path } = readTexture2D(obj).m_StreamData!;
+    assert.throws(
+      () => obj.read(),
+      (err: unknown) =>
+        err instanceof ResourceNotFoundError && err.path === path && err.fileName === ress.path,
+    );
+  });
+}
+
+test("read() finds the .resS passed as its own input next to a loose SerializedFile", () => {
+  const { files } = loadName("editor/2020.3.30f1/lz4/texture");
+  const ress = files.find((f) => f.path.endsWith(".resS"))!;
+  const cab = files.find((f) => f !== ress)!;
+  const env = load([cab, ress].map(({ path, data }) => ({ name: path, data })));
+  const obj = env.objects.find((o) => o.type === ClassID.Texture2D)!;
+  const { imageData, m_StreamData } = obj.read<Texture2DData>();
+  assert.equal(imageData.buffer, ress.data.buffer);
+  assert.equal(imageData.length, m_StreamData!.size);
+});
+
+/** A Texture2D's SerializedFile and entry, taken apart to build a reader by hand. */
+function handBuilt(name: string): ObjectReader {
+  const node = loadName(name).files.find((f) => golden(name).serialized![f.path])!;
+  const sf = readSerializedFile(node.data);
+  const info = sf.objects.find((o) => o.classId === ClassID.Texture2D)!;
+  return new ObjectReader(node.data, sf, info);
+}
+
+test("a reader not built by load() reads inline data, and has no .resS to look in", () => {
+  const inline = handBuilt("editor/6000.3.25f1/plain/textures").read<Texture2DData>();
+  assert.ok(inline.imageData.length > 0);
+  assert.equal(inline.imageData, inline["image data"]);
+
+  const streamed = handBuilt("editor/6000.3.25f1/lz4/texture");
+  const { path } = readTexture2D(streamed).m_StreamData!;
+  assert.throws(
+    () => streamed.read(),
+    (err: unknown) => err instanceof ResourceNotFoundError && err.path === path,
+  );
+});
+
+/**
+ * A big-endian format-8 SerializedFile (Unity 3.x layout, the smallest that
+ * records an editor version) whose one object, path id 1, is a Texture2D of
+ * four bytes. `"0.0.0"` is what `AssetBundleStripUnityVersion` writes; none of
+ * the editor fixtures holds a Texture2D in a stripped build.
+ */
+function format8Texture(unityVersion: string): Uint8Array {
+  const bytes: number[] = [];
+  const u8 = (v: number) => bytes.push(v & 0xff);
+  const u16 = (v: number) => (u8(v >> 8), u8(v));
+  const u32 = (v: number) => (u16(v >>> 16), u16(v));
+  const cstring = (s: string) => ([...s].forEach((c) => u8(c.charCodeAt(0))), u8(0));
+
+  u8(1); // endianess: big
+  cstring(unityVersion);
+  u32(19); // m_TargetPlatform: StandaloneWindows64
+  u32(0); // types
+  u32(0); // bigIDEnabled
+  u32(1); // objects
+  u32(1); // m_PathID
+  u32(0); // byteStart, relative to m_DataOffset
+  u32(4); // byteSize
+  u32(ClassID.Texture2D); // typeID
+  u16(ClassID.Texture2D); // classID
+  u16(0); // isDestroyed
+  u32(0); // externals
+  cstring(""); // userInformation
+  const metadata = bytes.splice(0);
+
+  const dataOffset = 16;
+  u32(metadata.length);
+  u32(dataOffset + 4 + metadata.length); // file size
+  u32(8); // m_Version
+  u32(dataOffset);
+  bytes.push(0, 0, 0, 0, ...metadata);
+  return Uint8Array.from(bytes);
+}
+
+test("read() of a Texture2D in a version-stripped file: UnsupportedError(Unity version)", () => {
+  const data = format8Texture("0.0.0");
+  const [obj, ...more] = load([{ name: "CAB-stripped", data }]).objects;
+  assert.ok(obj && more.length === 0);
+  assert.equal(obj.type, ClassID.Texture2D);
+  assert.deepEqual(obj.version, [0, 0, 0, 0]);
+  assert.throws(
+    () => obj.read(),
+    (err: unknown) =>
+      err instanceof UnsupportedError && err.kind === "Unity version" && err.found === "0.0.0",
+  );
+  // The same file with a version gets past the version check to the bytes.
+  const versioned = load([{ name: "CAB-v", data: format8Texture("3.4.2f3") }]).objects[0]!;
+  assert.deepEqual(versioned.version, [3, 4, 2, 3]);
+  assert.throws(() => versioned.read(), CorruptError);
+});

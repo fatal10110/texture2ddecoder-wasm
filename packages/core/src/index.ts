@@ -43,3 +43,4 @@ export type { Texture } from "./classes/Texture.js";
 export { readTexture2D } from "./classes/Texture2D.js";
 export type { GLTextureSettings, StreamingInfo, Texture2D } from "./classes/Texture2D.js";
 export { TextureFormat } from "./classes/TextureFormat.js";
+export type { ObjectData, Texture2DData } from "./classes/registry.js";

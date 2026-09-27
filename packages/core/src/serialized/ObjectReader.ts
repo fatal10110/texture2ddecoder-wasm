@@ -2,6 +2,11 @@
 // Ported from AssetStudio/Math/XForm.cs (MIT, © Perfare / RazTools / Razviar)
 // Ported from AssetStudio/EndianBinaryReader.cs (MIT, © Perfare / RazTools / Razviar)
 
+import {
+  readObjectData,
+  type ObjectData,
+  type ResourceReader,
+} from "../classes/registry.js";
 import { CorruptError } from "../errors.js";
 import { BinaryReader } from "../io/BinaryReader.js";
 import type { BuildTarget } from "./BuildTarget.js";
@@ -29,6 +34,20 @@ export interface XForm {
   t: Vector3;
   q: Quaternion;
   s: Vector3;
+}
+
+/**
+ * The resource reader of each object `load()` built, for {@link ObjectReader.read}.
+ * A side table rather than a field, so it stays out of the public class.
+ */
+const resourceReaders = new WeakMap<ObjectReader, ResourceReader>();
+
+/**
+ * Let `reader.read()` read resource files through `resources` (the env's
+ * `readResource`). Internal: `load()` calls it for every object it builds.
+ */
+export function setResourceReader(reader: ObjectReader, resources: ResourceReader): void {
+  resourceReaders.set(reader, resources);
 }
 
 /**
@@ -178,6 +197,35 @@ export class ObjectReader extends BinaryReader {
    */
   readTypeTree(): TypeTreeObject {
     return readTypeTree(this);
+  }
+
+  /**
+   * Read the whole object: with the hardcoded reader of its class when there
+   * is one, as upstream does, and with {@link readTypeTree} otherwise.
+   *
+   * Hardcoded readers so far: `Texture2D`, which returns a `Texture2DData`,
+   * the `readTexture2D` fields plus `imageData`, the image bytes resolved: a
+   * view into the `.resS` / `.resource` file `m_StreamData` names, read
+   * through the env that built this reader, or the inline `image data`.
+   *
+   * `T` is the caller's claim about the result, not checked: pick it after
+   * checking {@link type}, as in
+   * `if (obj.type === ClassID.Texture2D) decodeTexture2D(obj.read())`, where
+   * it is inferred from the parameter. Without it the result is the union.
+   *
+   * @throws {UnsupportedError} from the class reader - a `Texture2D` of a file
+   *   whose Unity version is unknown (stripped) or an editor file - or, for a
+   *   class without a hardcoded reader, when the file has no type tree, naming
+   *   the class id and path id
+   * @throws {ResourceNotFoundError} when the data is in a resource file that
+   *   was not passed to `load()`; always, for data in a resource file, when
+   *   this reader was not built by `load()`
+   * @throws {CorruptError} when the data does not hold together, or the
+   *   resource range runs past the end of its file
+   */
+  read<T extends ObjectData = ObjectData>(): T {
+    // The caller's claim, per the JSDoc: `T` narrows the union unchecked.
+    return readObjectData(this, resourceReaders.get(this)) as T;
   }
 }
 

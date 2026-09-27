@@ -8,7 +8,7 @@ import { resolvePPtr, type PPtr, type PPtrResolution } from "./classes/PPtr.js";
 import { gunzip } from "./codec/inflate.js";
 import { CorruptError, ResourceNotFoundError, UnsupportedError } from "./errors.js";
 import { SerializedFileFormatVersion as V } from "./serialized/FormatVersion.js";
-import { ObjectReader } from "./serialized/ObjectReader.js";
+import { ObjectReader, setResourceReader } from "./serialized/ObjectReader.js";
 import {
   baseName,
   readSerializedFile,
@@ -278,9 +278,16 @@ export function load(inputs: readonly LoadInput[]): Env {
   }
 
   let index: EnvIndex | undefined;
-  const indexed = (): EnvIndex => (index ??= indexSerializedFiles(out.serialized));
+  const indexed = (): EnvIndex => {
+    if (index) return index;
+    index = indexSerializedFiles(out.serialized);
+    // `obj.read()` reads a texture's `.resS` data through this env (#103).
+    const readResource = env.readResource.bind(env);
+    for (const object of index.objects) setResourceReader(object, readResource);
+    return index;
+  };
 
-  return {
+  const env: Env = {
     files: out.files,
     get objects() {
       return indexed().objects;
@@ -301,6 +308,7 @@ export function load(inputs: readonly LoadInput[]): Env {
       return readRange(findResource(ref.path, source.container, out.byName), ref);
     },
   };
+  return env;
 }
 
 /**
