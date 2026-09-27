@@ -1,0 +1,106 @@
+name: Release
+
+# Publishes all four packages at one version with npm trusted publishing (#175). The procedure,
+# the one-time npm setup and the bootstrap of the first publish are in RELEASING.md. npm matches
+# the trusted publisher on this file's name: renaming release.yml breaks publishing until each
+# package's trusted-publisher entry on npmjs.com is updated to the new name.
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run everything but publish with `npm publish --dry-run`"
+        type: boolean
+        default: true
+
+# id-token: write lets npm exchange the job's OIDC token for a publish token and sign the
+# provenance. contents: read only: the GitHub release is created by hand (RELEASING.md).
+permissions:
+  contents: read
+  id-token: write
+
+# Never two publishes of one ref at a time; never cancel one halfway.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+      # The texture decode tests fail instead of skipping when the WASM is missing. Also set for
+      # the full verify that each reader package's prepublishOnly reruns.
+      REQUIRE_WASM: "1"
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Trusted publishing needs npm >= 11.5.1 and Node >= 22.14.0
+      # (https://docs.npmjs.com/trusted-publishers). setup-node's `22` is the latest 22.x.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install npm 11
+        run: |
+          npm install -g npm@^11.5.1
+          node -e 'const [a, b] = process.versions.node.split(".").map(Number);
+            if (a < 22 || (a === 22 && b < 14)) throw new Error("Node " + process.version + " < 22.14.0");'
+          echo "node $(node --version), npm $(npm --version)"
+
+      # Before anything is built: a wrong tag or a half-bumped release stops here. A real publish
+      # needs a tag; a dry run off a branch checks only that the four versions agree.
+      - name: Version guard
+        id: guard
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "$DRY_RUN" != "true" ] && [ "$REF_TYPE" != "tag" ]; then
+            echo "::error::A real publish runs only from a v<version> tag; this is $REF_TYPE $REF_NAME."
+            exit 1
+          fi
+          if [ "$REF_TYPE" = "tag" ]; then
+            version=$(node scripts/check-release.mjs "$REF_NAME")
+          else
+            version=$(node scripts/check-release.mjs)
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Releasing $version (dry run: $DRY_RUN)"
+
+      # The gate: the same checks as CI's reader and decoder jobs, with the WASM built from the
+      # pinned emsdk (#57), since the decoder tarball ships it.
+      - run: npm ci
+      - run: npm run build:wasm
+      - run: npm run verify
+      - run: npm test -w unity-asset-reader-decoder
+
+      # Dependencies first: decoder, then core, then the packages that depend or peer on them.
+      # A name@version already on npm is skipped, so a run that failed halfway can be re-run.
+      # No token: npm authenticates with the job's OIDC token and adds provenance by itself.
+      # NPM_BOOTSTRAP_TOKEN exists only for the one-time bootstrap in RELEASING.md.
+      - name: Publish
+        env:
+          VERSION: ${{ steps.guard.outputs.version }}
+          NPM_BOOTSTRAP_TOKEN: ${{ secrets.NPM_BOOTSTRAP_TOKEN }}
+          NPM_CONFIG_PROVENANCE: "true"
+        run: |
+          if [ -n "$NPM_BOOTSTRAP_TOKEN" ]; then
+            echo "::warning::NPM_BOOTSTRAP_TOKEN is set; delete it once trusted publishing is set up."
+            echo "//registry.npmjs.org/:_authToken=\${NPM_BOOTSTRAP_TOKEN}" > "$HOME/.npmrc"
+          fi
+          dry=()
+          if [ "$DRY_RUN" = "true" ]; then dry=(--dry-run); fi
+          for pkg in unity-asset-reader-decoder unity-asset-reader unity-asset-reader-texture unity-asset-reader-node; do
+            published=$(npm view "$pkg@$VERSION" version 2>/dev/null || true)
+            if [ "$published" = "$VERSION" ]; then
+              echo "::notice::$pkg@$VERSION is already on npm, skipping."
+              continue
+            fi
+            npm publish -w "$pkg" --access public "${dry[@]}"
+          done
