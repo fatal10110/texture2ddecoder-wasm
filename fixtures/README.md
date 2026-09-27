@@ -46,7 +46,9 @@ editor wrote `0xFFC00000` into the first variant it built (`lz4`) and
 bytes as written, so the reader has to keep a NaN's sign bit.
 
 The tested SerializedFile range is **formats 21 and 22** (Unity 2019.4 to
-6000.x); `scripts/tests/fixtures.test.ts` fails if either format goes missing.
+6000.x); `scripts/tests/fixtures.test.ts` fails if either format goes missing,
+or if either loses a non-empty or empty `TypelessData`, a `.resS` node or one
+of the two NaN patterns (#86).
 Format 20 and older are ported but have no fixture.
 
 ## M1 container fixtures (`bundles/*.bundle`)
