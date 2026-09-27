@@ -1,6 +1,6 @@
 // Ported from AssetStudio.Utility/Texture2DConverter.cs, AssetStudio/Math/Half.cs and HalfHelper.cs (MIT, © Perfare / RazTools / Razviar)
 
-import { CorruptError, UnsupportedError } from "unity-asset-reader";
+import { CorruptError, TextureFormat, UnsupportedError } from "unity-asset-reader";
 
 /** Decoded pixels: 4 bytes per pixel, R G B A, `width * height * 4` bytes (D5). */
 export interface RgbaImage {
@@ -14,26 +14,24 @@ export interface RgbaImage {
  * Block and Crunch formats go through `texture2ddecoder-wasm` instead (#32).
  */
 const BYTES_PER_PIXEL: ReadonlyMap<number, number> = new Map([
-  [1, 1], // Alpha8
-  [2, 2], // ARGB4444
-  [3, 3], // RGB24
-  [4, 4], // RGBA32
-  [5, 4], // ARGB32
-  [7, 2], // RGB565
-  [9, 2], // R16
-  [13, 2], // RGBA4444
-  [14, 4], // BGRA32
-  [15, 2], // RHalf
-  [16, 4], // RGHalf
-  [17, 8], // RGBAHalf
-  [18, 4], // RFloat
-  [19, 8], // RGFloat
-  [20, 16], // RGBAFloat
-  [21, 2], // YUY2: 4 bytes per two pixels
-  [22, 4], // RGB9e5Float
+  [TextureFormat.Alpha8, 1],
+  [TextureFormat.ARGB4444, 2],
+  [TextureFormat.RGB24, 3],
+  [TextureFormat.RGBA32, 4],
+  [TextureFormat.ARGB32, 4],
+  [TextureFormat.RGB565, 2],
+  [TextureFormat.R16, 2],
+  [TextureFormat.RGBA4444, 2],
+  [TextureFormat.BGRA32, 4],
+  [TextureFormat.RHalf, 2],
+  [TextureFormat.RGHalf, 4],
+  [TextureFormat.RGBAHalf, 8],
+  [TextureFormat.RFloat, 4],
+  [TextureFormat.RGFloat, 8],
+  [TextureFormat.RGBAFloat, 16],
+  [TextureFormat.YUY2, 2], // 4 bytes per two pixels
+  [TextureFormat.RGB9e5Float, 4],
 ]);
-
-const YUY2 = 21;
 
 /**
  * Convert the first mip level of an uncompressed ("plain") texture to RGBA8.
@@ -76,7 +74,7 @@ export function convertPlain(
   if (!Number.isInteger(width) || width < 0 || !Number.isInteger(height) || height < 0) {
     throw new CorruptError(`texture size ${width} x ${height} is not a non-negative integer size`);
   }
-  if (format === YUY2 && width % 2 !== 0) {
+  if (format === TextureFormat.YUY2 && width % 2 !== 0) {
     throw new UnsupportedError("YUY2 texture width", width, "YUY2 packs pixels in pairs");
   }
   const pixels = width * height;
@@ -94,81 +92,81 @@ export function convertPlain(
   const half = (i: number) => halfToFloat(view.getUint16(i, true));
 
   switch (format) {
-    case 1: // Alpha8
+    case TextureFormat.Alpha8:
       for (let i = 0; i < pixels; i++) {
         out[i * 4] = out[i * 4 + 1] = out[i * 4 + 2] = 255;
         out[i * 4 + 3] = data[i]!;
       }
       break;
-    case 2: // ARGB4444: 16-bit little endian, A in the top nibble, B in the bottom
+    case TextureFormat.ARGB4444: // 16-bit little endian, A in the top nibble, B in the bottom
       for (let i = 0; i < pixels; i++) {
         const p = u16(i * 2);
         put(out, i, nibble(p >> 8), nibble(p >> 4), nibble(p), nibble(p >> 12));
       }
       break;
-    case 3: // RGB24
+    case TextureFormat.RGB24:
       for (let i = 0; i < pixels; i++) {
         put(out, i, data[i * 3]!, data[i * 3 + 1]!, data[i * 3 + 2]!, 255);
       }
       break;
-    case 4: // RGBA32
+    case TextureFormat.RGBA32:
       out.set(data.subarray(0, need));
       break;
-    case 5: // ARGB32
+    case TextureFormat.ARGB32:
       for (let i = 0; i < pixels; i++) {
         put(out, i, data[i * 4 + 1]!, data[i * 4 + 2]!, data[i * 4 + 3]!, data[i * 4]!);
       }
       break;
-    case 7: // RGB565: 16-bit little endian, R in the top 5 bits; bits repeated to widen
+    case TextureFormat.RGB565: // 16-bit little endian, R in the top 5 bits; bits repeated to widen
       for (let i = 0; i < pixels; i++) {
         const p = u16(i * 2);
         put(out, i, ((p >> 8) & 0xf8) | (p >> 13), ((p >> 3) & 0xfc) | ((p >> 9) & 3),
           ((p << 3) & 0xf8) | ((p >> 2) & 7), 255);
       }
       break;
-    case 9: // R16
+    case TextureFormat.R16:
       for (let i = 0; i < pixels; i++) put(out, i, downscale16(u16(i * 2)), 0, 0, 255);
       break;
-    case 13: // RGBA4444: 16-bit little endian, R in the top nibble, A in the bottom
+    case TextureFormat.RGBA4444: // 16-bit little endian, R in the top nibble, A in the bottom
       for (let i = 0; i < pixels; i++) {
         const p = u16(i * 2);
         put(out, i, nibble(p >> 12), nibble(p >> 8), nibble(p >> 4), nibble(p));
       }
       break;
-    case 14: // BGRA32
+    case TextureFormat.BGRA32:
       for (let i = 0; i < pixels; i++) {
         put(out, i, data[i * 4 + 2]!, data[i * 4 + 1]!, data[i * 4]!, data[i * 4 + 3]!);
       }
       break;
-    case 15: // RHalf
+    case TextureFormat.RHalf:
       for (let i = 0; i < pixels; i++) put(out, i, unorm(half(i * 2)), 0, 0, 255);
       break;
-    case 16: // RGHalf
+    case TextureFormat.RGHalf:
       for (let i = 0; i < pixels; i++) {
         put(out, i, unorm(half(i * 4)), unorm(half(i * 4 + 2)), 0, 255);
       }
       break;
-    case 17: // RGBAHalf
+    case TextureFormat.RGBAHalf:
       for (let i = 0; i < pixels; i++) {
         const o = i * 8;
         put(out, i, unorm(half(o)), unorm(half(o + 2)), unorm(half(o + 4)), unorm(half(o + 6)));
       }
       break;
-    case 18: // RFloat
+    case TextureFormat.RFloat:
       for (let i = 0; i < pixels; i++) put(out, i, unorm(f32(i * 4)), 0, 0, 255);
       break;
-    case 19: // RGFloat
+    case TextureFormat.RGFloat:
       for (let i = 0; i < pixels; i++) {
         put(out, i, unorm(f32(i * 8)), unorm(f32(i * 8 + 4)), 0, 255);
       }
       break;
-    case 20: // RGBAFloat
+    case TextureFormat.RGBAFloat:
       for (let i = 0; i < pixels; i++) {
         const o = i * 16;
         put(out, i, unorm(f32(o)), unorm(f32(o + 4)), unorm(f32(o + 8)), unorm(f32(o + 12)));
       }
       break;
-    case 21: // YUY2: Y0 U Y1 V per pixel pair, BT.601 video range
+    case TextureFormat.YUY2: // Y0 U Y1 V per pixel pair, BT.601 video range
       for (let i = 0; i < pixels; i += 2) {
         const y0 = data[i * 2]! - 16;
         const d = data[i * 2 + 1]! - 128;
@@ -178,7 +176,7 @@ export function convertPlain(
         yuv(out, i + 1, y1, d, e);
       }
       break;
-    case 22: // RGB9e5Float: 9-bit R G B mantissas, shared 5-bit exponent (bias 15) on top
+    case TextureFormat.RGB9e5Float: // 9-bit R G B mantissas, shared 5-bit exponent (bias 15) on top
       for (let i = 0; i < pixels; i++) {
         const n = view.getUint32(i * 4, true);
         const scale = 2 ** ((n >>> 27) - 24);
