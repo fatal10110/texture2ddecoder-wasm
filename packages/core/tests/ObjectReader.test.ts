@@ -78,8 +78,8 @@ test("object readers cover both format 21 (UInt32 byteStart) and 22 (Int64 byteS
   assert.deepEqual([...formats].sort(), [21, 22]);
 });
 
-test("a TextAsset reader starts at m_Name and ends after m_Script", () => {
-  let checked = 0;
+test("a TextAsset reader starts at m_Name and ends after m_Script, in both formats", () => {
+  const formats = new Set<number>();
   for (const name of SERIALIZED_FIXTURES) {
     for (const [path, expected] of Object.entries(golden(name).serialized!)) {
       for (const r of readers(node(name, path))) {
@@ -91,11 +91,11 @@ test("a TextAsset reader starts at m_Name and ends after m_Script", () => {
         assert.equal(r.readAlignedString(), want.m_Name);
         assert.equal(r.readAlignedString(), want.m_Script);
         assert.equal(r.remaining, 0);
-        checked++;
+        formats.add(r.format);
       }
     }
   }
-  assert.ok(checked >= 2, `only ${checked} TextAsset objects checked`);
+  assert.deepEqual([...formats].sort(), [21, 22]);
 });
 
 // --- unhappy paths ------------------------------------------------------------
