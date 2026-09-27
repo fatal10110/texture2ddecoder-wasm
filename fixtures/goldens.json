@@ -365,7 +365,102 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {
+            "1": {
+              "value": {
+                "m_Name": "",
+                "m_PreloadTable": [],
+                "m_Container": [
+                  [
+                    "assetbundlemanifest",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 0,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "2"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "",
+                "m_Dependencies": [],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
+            },
+            "2": {
+              "value": {
+                "m_Name": "AssetBundleManifest",
+                "AssetBundleNames": [
+                  [0, "shared"],
+                  [1, "main"]
+                ],
+                "AssetBundlesWithVariant": [],
+                "AssetBundleInfos": [
+                  [
+                    0,
+                    {
+                      "AssetBundleHash": {
+                        "bytes[0]": 251,
+                        "bytes[1]": 5,
+                        "bytes[2]": 81,
+                        "bytes[3]": 196,
+                        "bytes[4]": 34,
+                        "bytes[5]": 229,
+                        "bytes[6]": 61,
+                        "bytes[7]": 85,
+                        "bytes[8]": 113,
+                        "bytes[9]": 89,
+                        "bytes[10]": 137,
+                        "bytes[11]": 120,
+                        "bytes[12]": 98,
+                        "bytes[13]": 83,
+                        "bytes[14]": 34,
+                        "bytes[15]": 181
+                      },
+                      "AssetBundleDependencies": []
+                    }
+                  ],
+                  [
+                    1,
+                    {
+                      "AssetBundleHash": {
+                        "bytes[0]": 222,
+                        "bytes[1]": 52,
+                        "bytes[2]": 62,
+                        "bytes[3]": 179,
+                        "bytes[4]": 4,
+                        "bytes[5]": 182,
+                        "bytes[6]": 37,
+                        "bytes[7]": 244,
+                        "bytes[8]": 16,
+                        "bytes[9]": 103,
+                        "bytes[10]": 215,
+                        "bytes[11]": 184,
+                        "bytes[12]": 184,
+                        "bytes[13]": 94,
+                        "bytes[14]": 102,
+                        "bytes[15]": 235
+                      },
+                      "AssetBundleDependencies": [0]
+                    }
+                  ]
+                ]
+              }
+            }
+          }
         }
       }
     },
@@ -638,6 +733,53 @@
             }
           ],
           "typetrees": {
+            "1": {
+              "value": {
+                "m_Name": "main",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "9053748467371775859"
+                  },
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-5055261391591463299"
+                  },
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "3992972000369313186"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/main/data.asset",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 3,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "3992972000369313186"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "main",
+                "m_Dependencies": ["shared"],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
+            },
             "3992972000369313186": {
               "value": {
                 "m_GameObject": {
@@ -834,6 +976,45 @@
           ],
           "refTypes": [],
           "typetrees": {
+            "1": {
+              "value": {
+                "m_Name": "shared",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "9053748467371775859"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/shared/hello.txt",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 1,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "9053748467371775859"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "shared",
+                "m_Dependencies": [],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
+            },
             "9053748467371775859": {
               "value": {
                 "m_Name": "hello",
@@ -1003,7 +1184,102 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {
+            "1": {
+              "value": {
+                "m_Name": "",
+                "m_PreloadTable": [],
+                "m_Container": [
+                  [
+                    "assetbundlemanifest",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 0,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "2"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "",
+                "m_Dependencies": [],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
+            },
+            "2": {
+              "value": {
+                "m_Name": "AssetBundleManifest",
+                "AssetBundleNames": [
+                  [0, "shared"],
+                  [1, "main"]
+                ],
+                "AssetBundlesWithVariant": [],
+                "AssetBundleInfos": [
+                  [
+                    0,
+                    {
+                      "AssetBundleHash": {
+                        "bytes[0]": 145,
+                        "bytes[1]": 216,
+                        "bytes[2]": 0,
+                        "bytes[3]": 244,
+                        "bytes[4]": 178,
+                        "bytes[5]": 31,
+                        "bytes[6]": 116,
+                        "bytes[7]": 233,
+                        "bytes[8]": 242,
+                        "bytes[9]": 2,
+                        "bytes[10]": 188,
+                        "bytes[11]": 59,
+                        "bytes[12]": 228,
+                        "bytes[13]": 151,
+                        "bytes[14]": 152,
+                        "bytes[15]": 75
+                      },
+                      "AssetBundleDependencies": []
+                    }
+                  ],
+                  [
+                    1,
+                    {
+                      "AssetBundleHash": {
+                        "bytes[0]": 217,
+                        "bytes[1]": 30,
+                        "bytes[2]": 114,
+                        "bytes[3]": 149,
+                        "bytes[4]": 113,
+                        "bytes[5]": 174,
+                        "bytes[6]": 42,
+                        "bytes[7]": 60,
+                        "bytes[8]": 194,
+                        "bytes[9]": 46,
+                        "bytes[10]": 189,
+                        "bytes[11]": 66,
+                        "bytes[12]": 46,
+                        "bytes[13]": 207,
+                        "bytes[14]": 40,
+                        "bytes[15]": 63
+                      },
+                      "AssetBundleDependencies": [0]
+                    }
+                  ]
+                ]
+              }
+            }
+          }
         }
       }
     },
@@ -1276,6 +1552,53 @@
             }
           ],
           "typetrees": {
+            "1": {
+              "value": {
+                "m_Name": "main",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "9053748467371775859"
+                  },
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-5055261391591463299"
+                  },
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "3992972000369313186"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/main/data.asset",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 3,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "3992972000369313186"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "main",
+                "m_Dependencies": ["shared"],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
+            },
             "3992972000369313186": {
               "value": {
                 "m_GameObject": {
@@ -1472,6 +1795,45 @@
           ],
           "refTypes": [],
           "typetrees": {
+            "1": {
+              "value": {
+                "m_Name": "shared",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "9053748467371775859"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/shared/hello.txt",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 1,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "9053748467371775859"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "shared",
+                "m_Dependencies": [],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
+            },
             "9053748467371775859": {
               "value": {
                 "m_Name": "hello",
@@ -1751,6 +2113,53 @@
             }
           ],
           "typetrees": {
+            "1": {
+              "value": {
+                "m_Name": "main",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "9053748467371775859"
+                  },
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-5055261391591463299"
+                  },
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "3992972000369313186"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/main/data.asset",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 3,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "3992972000369313186"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "main",
+                "m_Dependencies": ["shared"],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
+            },
             "3992972000369313186": {
               "value": {
                 "m_GameObject": {
@@ -1947,6 +2356,45 @@
           ],
           "refTypes": [],
           "typetrees": {
+            "1": {
+              "value": {
+                "m_Name": "shared",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "9053748467371775859"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/shared/hello.txt",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 1,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "9053748467371775859"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "shared",
+                "m_Dependencies": [],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
+            },
             "9053748467371775859": {
               "value": {
                 "m_Name": "hello",
@@ -2116,7 +2564,102 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {
+            "1": {
+              "value": {
+                "m_Name": "",
+                "m_PreloadTable": [],
+                "m_Container": [
+                  [
+                    "assetbundlemanifest",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 0,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "2"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "",
+                "m_Dependencies": [],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
+            },
+            "2": {
+              "value": {
+                "m_Name": "AssetBundleManifest",
+                "AssetBundleNames": [
+                  [0, "shared"],
+                  [1, "main"]
+                ],
+                "AssetBundlesWithVariant": [],
+                "AssetBundleInfos": [
+                  [
+                    0,
+                    {
+                      "AssetBundleHash": {
+                        "bytes[0]": 68,
+                        "bytes[1]": 228,
+                        "bytes[2]": 139,
+                        "bytes[3]": 136,
+                        "bytes[4]": 238,
+                        "bytes[5]": 198,
+                        "bytes[6]": 108,
+                        "bytes[7]": 52,
+                        "bytes[8]": 52,
+                        "bytes[9]": 237,
+                        "bytes[10]": 49,
+                        "bytes[11]": 237,
+                        "bytes[12]": 161,
+                        "bytes[13]": 40,
+                        "bytes[14]": 158,
+                        "bytes[15]": 114
+                      },
+                      "AssetBundleDependencies": []
+                    }
+                  ],
+                  [
+                    1,
+                    {
+                      "AssetBundleHash": {
+                        "bytes[0]": 24,
+                        "bytes[1]": 155,
+                        "bytes[2]": 150,
+                        "bytes[3]": 51,
+                        "bytes[4]": 63,
+                        "bytes[5]": 190,
+                        "bytes[6]": 74,
+                        "bytes[7]": 161,
+                        "bytes[8]": 149,
+                        "bytes[9]": 198,
+                        "bytes[10]": 79,
+                        "bytes[11]": 52,
+                        "bytes[12]": 188,
+                        "bytes[13]": 157,
+                        "bytes[14]": 209,
+                        "bytes[15]": 177
+                      },
+                      "AssetBundleDependencies": [0]
+                    }
+                  ]
+                ]
+              }
+            }
+          }
         }
       }
     },
@@ -2483,7 +3026,102 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {
+            "1": {
+              "value": {
+                "m_Name": "",
+                "m_PreloadTable": [],
+                "m_Container": [
+                  [
+                    "assetbundlemanifest",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 0,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "2"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "",
+                "m_Dependencies": [],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
+            },
+            "2": {
+              "value": {
+                "m_Name": "AssetBundleManifest",
+                "AssetBundleNames": [
+                  [0, "shared"],
+                  [1, "main"]
+                ],
+                "AssetBundlesWithVariant": [],
+                "AssetBundleInfos": [
+                  [
+                    0,
+                    {
+                      "AssetBundleHash": {
+                        "bytes[0]": 175,
+                        "bytes[1]": 139,
+                        "bytes[2]": 84,
+                        "bytes[3]": 62,
+                        "bytes[4]": 208,
+                        "bytes[5]": 146,
+                        "bytes[6]": 60,
+                        "bytes[7]": 84,
+                        "bytes[8]": 178,
+                        "bytes[9]": 149,
+                        "bytes[10]": 81,
+                        "bytes[11]": 195,
+                        "bytes[12]": 234,
+                        "bytes[13]": 84,
+                        "bytes[14]": 117,
+                        "bytes[15]": 33
+                      },
+                      "AssetBundleDependencies": []
+                    }
+                  ],
+                  [
+                    1,
+                    {
+                      "AssetBundleHash": {
+                        "bytes[0]": 65,
+                        "bytes[1]": 181,
+                        "bytes[2]": 204,
+                        "bytes[3]": 72,
+                        "bytes[4]": 68,
+                        "bytes[5]": 225,
+                        "bytes[6]": 27,
+                        "bytes[7]": 34,
+                        "bytes[8]": 200,
+                        "bytes[9]": 140,
+                        "bytes[10]": 250,
+                        "bytes[11]": 183,
+                        "bytes[12]": 204,
+                        "bytes[13]": 114,
+                        "bytes[14]": 6,
+                        "bytes[15]": 135
+                      },
+                      "AssetBundleDependencies": [0]
+                    }
+                  ]
+                ]
+              }
+            }
+          }
         }
       }
     },
@@ -2823,6 +3461,53 @@
                 }
               },
               "oracleNote": "UnityPy stops before the ManagedReferencesRegistry v1 Terminus sentinel (44 bytes, verified present); dump read with check_read=False - see #25"
+            },
+            "1": {
+              "value": {
+                "m_Name": "main",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "-4527522604521991290"
+                  },
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-7189836546933969454"
+                  },
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-2518432286213258198"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/main/data.asset",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 3,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "-7189836546933969454"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "main",
+                "m_Dependencies": ["shared"],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
             }
           }
         }
@@ -2956,6 +3641,45 @@
               "value": {
                 "m_Name": "hello",
                 "m_Script": "Hello from unity-asset-reader fixtures.\nLine 2: \u00e9\u20ac\ud83d\ude00\n"
+              }
+            },
+            "1": {
+              "value": {
+                "m_Name": "shared",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-4527522604521991290"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/shared/hello.txt",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 1,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "-4527522604521991290"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "shared",
+                "m_Dependencies": [],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
               }
             }
           }
@@ -3121,7 +3845,102 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {
+            "1": {
+              "value": {
+                "m_Name": "",
+                "m_PreloadTable": [],
+                "m_Container": [
+                  [
+                    "assetbundlemanifest",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 0,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "2"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "",
+                "m_Dependencies": [],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
+            },
+            "2": {
+              "value": {
+                "m_Name": "AssetBundleManifest",
+                "AssetBundleNames": [
+                  [0, "shared"],
+                  [1, "main"]
+                ],
+                "AssetBundlesWithVariant": [],
+                "AssetBundleInfos": [
+                  [
+                    0,
+                    {
+                      "AssetBundleHash": {
+                        "bytes[0]": 166,
+                        "bytes[1]": 149,
+                        "bytes[2]": 140,
+                        "bytes[3]": 221,
+                        "bytes[4]": 157,
+                        "bytes[5]": 1,
+                        "bytes[6]": 82,
+                        "bytes[7]": 103,
+                        "bytes[8]": 26,
+                        "bytes[9]": 166,
+                        "bytes[10]": 132,
+                        "bytes[11]": 231,
+                        "bytes[12]": 68,
+                        "bytes[13]": 46,
+                        "bytes[14]": 92,
+                        "bytes[15]": 219
+                      },
+                      "AssetBundleDependencies": []
+                    }
+                  ],
+                  [
+                    1,
+                    {
+                      "AssetBundleHash": {
+                        "bytes[0]": 71,
+                        "bytes[1]": 10,
+                        "bytes[2]": 100,
+                        "bytes[3]": 50,
+                        "bytes[4]": 186,
+                        "bytes[5]": 13,
+                        "bytes[6]": 227,
+                        "bytes[7]": 108,
+                        "bytes[8]": 131,
+                        "bytes[9]": 14,
+                        "bytes[10]": 229,
+                        "bytes[11]": 94,
+                        "bytes[12]": 145,
+                        "bytes[13]": 40,
+                        "bytes[14]": 117,
+                        "bytes[15]": 193
+                      },
+                      "AssetBundleDependencies": [0]
+                    }
+                  ]
+                ]
+              }
+            }
+          }
         }
       }
     },
@@ -3461,6 +4280,53 @@
                 }
               },
               "oracleNote": "UnityPy stops before the ManagedReferencesRegistry v1 Terminus sentinel (44 bytes, verified present); dump read with check_read=False - see #25"
+            },
+            "1": {
+              "value": {
+                "m_Name": "main",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "-4527522604521991290"
+                  },
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-7189836546933969454"
+                  },
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-2518432286213258198"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/main/data.asset",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 3,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "-7189836546933969454"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "main",
+                "m_Dependencies": ["shared"],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
             }
           }
         }
@@ -3594,6 +4460,45 @@
               "value": {
                 "m_Name": "hello",
                 "m_Script": "Hello from unity-asset-reader fixtures.\nLine 2: \u00e9\u20ac\ud83d\ude00\n"
+              }
+            },
+            "1": {
+              "value": {
+                "m_Name": "shared",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-4527522604521991290"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/shared/hello.txt",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 1,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "-4527522604521991290"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "shared",
+                "m_Dependencies": [],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
               }
             }
           }
@@ -3936,6 +4841,53 @@
                 }
               },
               "oracleNote": "UnityPy stops before the ManagedReferencesRegistry v1 Terminus sentinel (44 bytes, verified present); dump read with check_read=False - see #25"
+            },
+            "1": {
+              "value": {
+                "m_Name": "main",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "-4527522604521991290"
+                  },
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-7189836546933969454"
+                  },
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-2518432286213258198"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/main/data.asset",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 3,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "-7189836546933969454"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "main",
+                "m_Dependencies": ["shared"],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
             }
           }
         }
@@ -4069,6 +5021,45 @@
               "value": {
                 "m_Name": "hello",
                 "m_Script": "Hello from unity-asset-reader fixtures.\nLine 2: \u00e9\u20ac\ud83d\ude00\n"
+              }
+            },
+            "1": {
+              "value": {
+                "m_Name": "shared",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-4527522604521991290"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/shared/hello.txt",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 1,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "-4527522604521991290"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "shared",
+                "m_Dependencies": [],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
               }
             }
           }
@@ -4234,7 +5225,102 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {
+            "1": {
+              "value": {
+                "m_Name": "",
+                "m_PreloadTable": [],
+                "m_Container": [
+                  [
+                    "assetbundlemanifest",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 0,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "2"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "",
+                "m_Dependencies": [],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
+            },
+            "2": {
+              "value": {
+                "m_Name": "AssetBundleManifest",
+                "AssetBundleNames": [
+                  [0, "shared"],
+                  [1, "main"]
+                ],
+                "AssetBundlesWithVariant": [],
+                "AssetBundleInfos": [
+                  [
+                    0,
+                    {
+                      "AssetBundleHash": {
+                        "bytes[0]": 181,
+                        "bytes[1]": 77,
+                        "bytes[2]": 109,
+                        "bytes[3]": 190,
+                        "bytes[4]": 94,
+                        "bytes[5]": 146,
+                        "bytes[6]": 169,
+                        "bytes[7]": 203,
+                        "bytes[8]": 190,
+                        "bytes[9]": 94,
+                        "bytes[10]": 25,
+                        "bytes[11]": 71,
+                        "bytes[12]": 91,
+                        "bytes[13]": 133,
+                        "bytes[14]": 185,
+                        "bytes[15]": 2
+                      },
+                      "AssetBundleDependencies": []
+                    }
+                  ],
+                  [
+                    1,
+                    {
+                      "AssetBundleHash": {
+                        "bytes[0]": 163,
+                        "bytes[1]": 161,
+                        "bytes[2]": 232,
+                        "bytes[3]": 87,
+                        "bytes[4]": 98,
+                        "bytes[5]": 214,
+                        "bytes[6]": 128,
+                        "bytes[7]": 15,
+                        "bytes[8]": 241,
+                        "bytes[9]": 53,
+                        "bytes[10]": 188,
+                        "bytes[11]": 139,
+                        "bytes[12]": 171,
+                        "bytes[13]": 71,
+                        "bytes[14]": 166,
+                        "bytes[15]": 225
+                      },
+                      "AssetBundleDependencies": [0]
+                    }
+                  ]
+                ]
+              }
+            }
+          }
         }
       }
     },
@@ -4601,7 +5687,102 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {
+            "1": {
+              "value": {
+                "m_Name": "",
+                "m_PreloadTable": [],
+                "m_Container": [
+                  [
+                    "assetbundlemanifest",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 0,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "2"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "",
+                "m_Dependencies": [],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
+            },
+            "2": {
+              "value": {
+                "m_Name": "AssetBundleManifest",
+                "AssetBundleNames": [
+                  [0, "shared"],
+                  [1, "main"]
+                ],
+                "AssetBundlesWithVariant": [],
+                "AssetBundleInfos": [
+                  [
+                    0,
+                    {
+                      "AssetBundleHash": {
+                        "bytes[0]": 238,
+                        "bytes[1]": 251,
+                        "bytes[2]": 17,
+                        "bytes[3]": 117,
+                        "bytes[4]": 74,
+                        "bytes[5]": 99,
+                        "bytes[6]": 203,
+                        "bytes[7]": 95,
+                        "bytes[8]": 37,
+                        "bytes[9]": 65,
+                        "bytes[10]": 207,
+                        "bytes[11]": 224,
+                        "bytes[12]": 146,
+                        "bytes[13]": 33,
+                        "bytes[14]": 171,
+                        "bytes[15]": 70
+                      },
+                      "AssetBundleDependencies": []
+                    }
+                  ],
+                  [
+                    1,
+                    {
+                      "AssetBundleHash": {
+                        "bytes[0]": 25,
+                        "bytes[1]": 97,
+                        "bytes[2]": 127,
+                        "bytes[3]": 86,
+                        "bytes[4]": 202,
+                        "bytes[5]": 249,
+                        "bytes[6]": 241,
+                        "bytes[7]": 186,
+                        "bytes[8]": 226,
+                        "bytes[9]": 172,
+                        "bytes[10]": 131,
+                        "bytes[11]": 202,
+                        "bytes[12]": 157,
+                        "bytes[13]": 150,
+                        "bytes[14]": 205,
+                        "bytes[15]": 139
+                      },
+                      "AssetBundleDependencies": [0]
+                    }
+                  ]
+                ]
+              }
+            }
+          }
         }
       }
     },
@@ -4947,6 +6128,53 @@
                   ]
                 }
               }
+            },
+            "1": {
+              "value": {
+                "m_Name": "main",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "-162899914357300573"
+                  },
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-1429281316117538216"
+                  },
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "4203245748248992679"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/main/data.asset",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 3,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "-1429281316117538216"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "main",
+                "m_Dependencies": ["shared"],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
             }
           }
         }
@@ -5080,6 +6308,45 @@
               "value": {
                 "m_Name": "hello",
                 "m_Script": "Hello from unity-asset-reader fixtures.\nLine 2: \u00e9\u20ac\ud83d\ude00\n"
+              }
+            },
+            "1": {
+              "value": {
+                "m_Name": "shared",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-162899914357300573"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/shared/hello.txt",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 1,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "-162899914357300573"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "shared",
+                "m_Dependencies": [],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
               }
             }
           }
@@ -5245,7 +6512,102 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {
+            "1": {
+              "value": {
+                "m_Name": "",
+                "m_PreloadTable": [],
+                "m_Container": [
+                  [
+                    "assetbundlemanifest",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 0,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "2"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "",
+                "m_Dependencies": [],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
+            },
+            "2": {
+              "value": {
+                "m_Name": "AssetBundleManifest",
+                "AssetBundleNames": [
+                  [0, "shared"],
+                  [1, "main"]
+                ],
+                "AssetBundlesWithVariant": [],
+                "AssetBundleInfos": [
+                  [
+                    0,
+                    {
+                      "AssetBundleHash": {
+                        "bytes[0]": 238,
+                        "bytes[1]": 251,
+                        "bytes[2]": 17,
+                        "bytes[3]": 117,
+                        "bytes[4]": 74,
+                        "bytes[5]": 99,
+                        "bytes[6]": 203,
+                        "bytes[7]": 95,
+                        "bytes[8]": 37,
+                        "bytes[9]": 65,
+                        "bytes[10]": 207,
+                        "bytes[11]": 224,
+                        "bytes[12]": 146,
+                        "bytes[13]": 33,
+                        "bytes[14]": 171,
+                        "bytes[15]": 70
+                      },
+                      "AssetBundleDependencies": []
+                    }
+                  ],
+                  [
+                    1,
+                    {
+                      "AssetBundleHash": {
+                        "bytes[0]": 25,
+                        "bytes[1]": 97,
+                        "bytes[2]": 127,
+                        "bytes[3]": 86,
+                        "bytes[4]": 202,
+                        "bytes[5]": 249,
+                        "bytes[6]": 241,
+                        "bytes[7]": 186,
+                        "bytes[8]": 226,
+                        "bytes[9]": 172,
+                        "bytes[10]": 131,
+                        "bytes[11]": 202,
+                        "bytes[12]": 157,
+                        "bytes[13]": 150,
+                        "bytes[14]": 205,
+                        "bytes[15]": 139
+                      },
+                      "AssetBundleDependencies": [0]
+                    }
+                  ]
+                ]
+              }
+            }
+          }
         }
       }
     },
@@ -5591,6 +6953,53 @@
                   ]
                 }
               }
+            },
+            "1": {
+              "value": {
+                "m_Name": "main",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "-162899914357300573"
+                  },
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-1429281316117538216"
+                  },
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "4203245748248992679"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/main/data.asset",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 3,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "-1429281316117538216"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "main",
+                "m_Dependencies": ["shared"],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
             }
           }
         }
@@ -5724,6 +7133,45 @@
               "value": {
                 "m_Name": "hello",
                 "m_Script": "Hello from unity-asset-reader fixtures.\nLine 2: \u00e9\u20ac\ud83d\ude00\n"
+              }
+            },
+            "1": {
+              "value": {
+                "m_Name": "shared",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-162899914357300573"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/shared/hello.txt",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 1,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "-162899914357300573"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "shared",
+                "m_Dependencies": [],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
               }
             }
           }
@@ -6072,6 +7520,53 @@
                   ]
                 }
               }
+            },
+            "1": {
+              "value": {
+                "m_Name": "main",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 1,
+                    "m_PathID": "-162899914357300573"
+                  },
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-1429281316117538216"
+                  },
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "4203245748248992679"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/main/data.asset",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 3,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "-1429281316117538216"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "main",
+                "m_Dependencies": ["shared"],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
             }
           }
         }
@@ -6205,6 +7700,45 @@
               "value": {
                 "m_Name": "hello",
                 "m_Script": "Hello from unity-asset-reader fixtures.\nLine 2: \u00e9\u20ac\ud83d\ude00\n"
+              }
+            },
+            "1": {
+              "value": {
+                "m_Name": "shared",
+                "m_PreloadTable": [
+                  {
+                    "m_FileID": 0,
+                    "m_PathID": "-162899914357300573"
+                  }
+                ],
+                "m_Container": [
+                  [
+                    "assets/fixtures/shared/hello.txt",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 1,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "-162899914357300573"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "shared",
+                "m_Dependencies": [],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
               }
             }
           }
@@ -6370,7 +7904,102 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {
+            "1": {
+              "value": {
+                "m_Name": "",
+                "m_PreloadTable": [],
+                "m_Container": [
+                  [
+                    "assetbundlemanifest",
+                    {
+                      "preloadIndex": 0,
+                      "preloadSize": 0,
+                      "asset": {
+                        "m_FileID": 0,
+                        "m_PathID": "2"
+                      }
+                    }
+                  ]
+                ],
+                "m_MainAsset": {
+                  "preloadIndex": 0,
+                  "preloadSize": 0,
+                  "asset": {
+                    "m_FileID": 0,
+                    "m_PathID": "0"
+                  }
+                },
+                "m_RuntimeCompatibility": 1,
+                "m_AssetBundleName": "",
+                "m_Dependencies": [],
+                "m_IsStreamedSceneAssetBundle": false,
+                "m_ExplicitDataLayout": 0,
+                "m_PathFlags": 7,
+                "m_SceneHashes": []
+              }
+            },
+            "2": {
+              "value": {
+                "m_Name": "AssetBundleManifest",
+                "AssetBundleNames": [
+                  [0, "shared"],
+                  [1, "main"]
+                ],
+                "AssetBundlesWithVariant": [],
+                "AssetBundleInfos": [
+                  [
+                    0,
+                    {
+                      "AssetBundleHash": {
+                        "bytes[0]": 238,
+                        "bytes[1]": 251,
+                        "bytes[2]": 17,
+                        "bytes[3]": 117,
+                        "bytes[4]": 74,
+                        "bytes[5]": 99,
+                        "bytes[6]": 203,
+                        "bytes[7]": 95,
+                        "bytes[8]": 37,
+                        "bytes[9]": 65,
+                        "bytes[10]": 207,
+                        "bytes[11]": 224,
+                        "bytes[12]": 146,
+                        "bytes[13]": 33,
+                        "bytes[14]": 171,
+                        "bytes[15]": 70
+                      },
+                      "AssetBundleDependencies": []
+                    }
+                  ],
+                  [
+                    1,
+                    {
+                      "AssetBundleHash": {
+                        "bytes[0]": 25,
+                        "bytes[1]": 97,
+                        "bytes[2]": 127,
+                        "bytes[3]": 86,
+                        "bytes[4]": 202,
+                        "bytes[5]": 249,
+                        "bytes[6]": 241,
+                        "bytes[7]": 186,
+                        "bytes[8]": 226,
+                        "bytes[9]": 172,
+                        "bytes[10]": 131,
+                        "bytes[11]": 202,
+                        "bytes[12]": 157,
+                        "bytes[13]": 150,
+                        "bytes[14]": 205,
+                        "bytes[15]": 139
+                      },
+                      "AssetBundleDependencies": [0]
+                    }
+                  ]
+                ]
+              }
+            }
+          }
         }
       }
     },
