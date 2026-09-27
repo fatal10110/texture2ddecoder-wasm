@@ -16,6 +16,9 @@ const GUID_SIZE = 16;
 /** What upstream assumes a file too old to name its editor was written by. */
 const DEFAULT_UNITY_VERSION = "2.5.0f5";
 
+/** What a build with the Unity version stripped writes in its place. */
+const STRIPPED_VERSION = "0.0.0";
+
 /** The fixed header every SerializedFile starts with, always big-endian. */
 export interface SerializedFileHeader {
   /** Bytes of metadata (types, objects, externals, ...) after the header. */
@@ -319,6 +322,24 @@ function readObjectInfo(
   }
 
   return { pathId, byteStart, byteSize, typeId, classId, serializedType, isDestroyed, stripped };
+}
+
+/**
+ * Give a parsed file the editor version it does not record itself (upstream
+ * `SerializedFile.SetVersion`): set `unityVersion` and re-parse `version`.
+ * Internal (not exported from the package): env uses it for a file below
+ * format 7 found in a bundle, which takes the bundle's `unityRevision`.
+ *
+ * The stripped placeholder `"0.0.0"` names no editor, so it leaves the file
+ * as it was, like upstream.
+ *
+ * @param file the file to change, in place
+ * @param text a Unity version string such as `"2.6.1f3"`
+ */
+export function setUnityVersion(file: SerializedFile, text: string): void {
+  if (text === STRIPPED_VERSION) return;
+  file.unityVersion = text;
+  file.version = parseUnityVersion(text);
 }
 
 /**

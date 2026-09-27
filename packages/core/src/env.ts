@@ -6,10 +6,12 @@ import { readWebFile } from "./bundle/WebFile.js";
 import { resolvePPtr, type PPtr, type PPtrResolution } from "./classes/PPtr.js";
 import { gunzip } from "./codec/inflate.js";
 import { CorruptError, UnsupportedError } from "./errors.js";
+import { SerializedFileFormatVersion as V } from "./serialized/FormatVersion.js";
 import { ObjectReader } from "./serialized/ObjectReader.js";
 import {
   baseName,
   readSerializedFile,
+  setUnityVersion,
   type SerializedFile,
 } from "./serialized/SerializedFile.js";
 
@@ -73,6 +75,10 @@ export interface Env {
    * Every object of every SerializedFile in {@link files}, in file order and,
    * within a file, in object table order.
    *
+   * A SerializedFile below format 7 does not record the editor that wrote it;
+   * when it is a node of a bundle, its objects' `version` is the bundle's
+   * `unityRevision`, as upstream does, and `[0, 0, 0, 0]` otherwise.
+   *
    * The SerializedFiles are parsed on the first access of this or of
    * {@link resolve}, not by {@link load}, so a file this library cannot parse
    * never costs a caller who only unpacks. The result is kept; a failed parse
@@ -124,6 +130,11 @@ interface SerializedCandidate {
   /** Its own path. */
   path: string;
   data: Uint8Array;
+  /**
+   * `unityRevision` of the bundle it is a node of; `undefined` when it is not
+   * a node of a bundle.
+   */
+  revision: string | undefined;
 }
 
 /** What {@link load} collects on its way down. */
@@ -169,7 +180,8 @@ interface EnvIndex {
 export function load(inputs: readonly LoadInput[]): Env {
   const out: Collected = { files: [], serialized: [] };
   for (const { name, data } of inputs) {
-    ingest(name, data instanceof Uint8Array ? data : new Uint8Array(data), 0, false, "", out);
+    const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+    ingest(name, bytes, 0, false, "", undefined, out);
   }
 
   let index: EnvIndex | undefined;
@@ -209,10 +221,10 @@ function indexSerializedFiles(candidates: readonly SerializedCandidate[]): EnvIn
   // Upstream matches externals with `OrdinalIgnoreCase`; lower-casing agrees
   // with it on every name Unity writes (`CAB-<hex>`, `sharedassets0.assets`).
   const byName = new Map<string, SerializedFileEntry>();
-  for (const { source, path, data } of candidates) {
+  for (const { source, path, data, revision } of candidates) {
     let entry: SerializedFileEntry;
     try {
-      entry = readEntry(path, data);
+      entry = readEntry(path, data, revision);
     } catch (error) {
       throw withSource(source, error);
     }
@@ -229,12 +241,24 @@ function indexSerializedFiles(candidates: readonly SerializedCandidate[]): EnvIn
 /**
  * Parse one SerializedFile and give each of its objects a reader.
  *
+ * A file below format 7 does not record the editor that wrote it, so one found
+ * in a bundle takes the bundle's `unityRevision` first, before any reader
+ * copies the version (upstream `LoadAssetsFromMemory`). Anywhere else it keeps
+ * `[0, 0, 0, 0]`, as upstream's loose and `UnityWebData` paths do.
+ *
+ * @param revision `unityRevision` of the bundle the file is a node of
  * @throws {CorruptError} when the object table lists a path id twice. Unity
  *   never writes that, and either choice of object would leave a pointer to
  *   it meaning one of two things; upstream's `ObjectsDic.Add` throws too.
  */
-function readEntry(path: string, data: Uint8Array): SerializedFileEntry {
+function readEntry(
+  path: string,
+  data: Uint8Array,
+  revision: string | undefined,
+): SerializedFileEntry {
   const file = readSerializedFile(data);
+  // An empty revision names nothing; upstream checks `IsNullOrEmpty`.
+  if (revision && file.header.version < V.Unknown_7) setUnityVersion(file, revision);
   const objects = new Map<bigint, ObjectReader>();
   for (const info of file.objects) {
     if (objects.has(info.pathId)) {
@@ -251,6 +275,8 @@ function readEntry(path: string, data: Uint8Array): SerializedFileEntry {
  *
  * @param trail the containers this file was found in, outermost first, each
  *   followed by `": "`; empty for an input
+ * @param revision `unityRevision` of the bundle this file is a node of;
+ *   `undefined` for an input and for a node of anything else
  */
 function ingest(
   name: string,
@@ -258,10 +284,11 @@ function ingest(
   depth: number,
   packed: boolean,
   trail: string,
+  revision: string | undefined,
   out: Collected,
 ): void {
   try {
-    openFile(name, data, depth, packed, trail, out);
+    openFile(name, data, depth, packed, trail, revision, out);
   } catch (error) {
     throw withSource(name, error);
   }
@@ -273,6 +300,7 @@ function ingest(
  *
  * @param packed whether this file came out of a container rather than from the
  *   caller, which is what decides how far a sniff may be trusted
+ * @param revision as for {@link ingest}
  */
 function openFile(
   name: string,
@@ -280,6 +308,7 @@ function openFile(
   depth: number,
   packed: boolean,
   trail: string,
+  revision: string | undefined,
   out: Collected,
 ): void {
   if (depth > MAX_DEPTH) {
@@ -302,31 +331,36 @@ function openFile(
   // Unity gzips whole files for web delivery, never a node inside a bundle, so
   // nothing real is left unopened.
   if (type === "resource" || (packed && !SIGNED_CONTAINERS.includes(type))) {
-    keep(name, data, type, trail, out);
+    keep(name, data, type, trail, revision, out);
     return;
   }
 
   // Everything that is left goes through `detectContainer`, which owns the
   // reason each refused type is refused (R9).
+  //
+  // Only a bundle's own nodes get its revision: upstream's `LoadWebFile`
+  // passes none, and a gzip wrapper is only ever opened for an input.
   const inner = `${trail}${name}: `;
   switch (detectContainer(data)) {
     case "serialized":
-      keep(name, data, type, trail, out);
+      keep(name, data, type, trail, revision, out);
       return;
     // Upstream re-sniffs the decompressed bytes under the same path, so a
     // gzip-wrapped bundle keeps the `.gz` name only if it unwraps to a leaf.
     case "gzip":
-      ingest(name, gunzip(data), depth + 1, packed, inner, out);
+      ingest(name, gunzip(data), depth + 1, packed, inner, undefined, out);
       return;
     case "UnityWebData":
       for (const file of readWebFile(data).files) {
-        ingest(file.path, file.data, depth + 1, true, inner, out);
+        ingest(file.path, file.data, depth + 1, true, inner, undefined, out);
       }
       return;
-    default:
-      for (const file of readBundle(data).files) {
-        ingest(file.path, file.data, depth + 1, true, inner, out);
+    default: {
+      const bundle = readBundle(data);
+      for (const file of bundle.files) {
+        ingest(file.path, file.data, depth + 1, true, inner, bundle.header.unityRevision, out);
       }
+    }
   }
 }
 
@@ -339,9 +373,12 @@ function keep(
   data: Uint8Array,
   type: FileType,
   trail: string,
+  revision: string | undefined,
   out: Collected,
 ): void {
-  if (type === "serialized") out.serialized.push({ source: `${trail}${name}`, path: name, data });
+  if (type === "serialized") {
+    out.serialized.push({ source: `${trail}${name}`, path: name, data, revision });
+  }
   out.files.push({ path: name, data });
 }
 

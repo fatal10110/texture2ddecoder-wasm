@@ -5,7 +5,11 @@ import { fixtureNames, golden, loadFixture } from "../../../fixtures/helpers.js"
 import { load } from "../src/env.js";
 import { CorruptError, UnsupportedError } from "../src/errors.js";
 import { BuildTarget } from "../src/serialized/BuildTarget.js";
-import { readSerializedFile, type SerializedFile } from "../src/serialized/SerializedFile.js";
+import {
+  readSerializedFile,
+  setUnityVersion,
+  type SerializedFile,
+} from "../src/serialized/SerializedFile.js";
 
 const hex = (bytes: Uint8Array | null): string | null =>
   bytes === null ? null : Buffer.from(bytes).toString("hex");
@@ -122,6 +126,19 @@ test("keeps the stripped-file version suffix but parses only its leading numbers
     assert.equal(sf.enableTypeTree, false);
     assert.ok(sf.types.every((t) => t.nodes === null));
   }
+});
+
+test("setUnityVersion sets both version fields but skips the stripped placeholder", () => {
+  const sf = readSerializedFile(node(FORMAT_22.name, MAIN_CAB));
+  const written = sf.unityVersion;
+
+  setUnityVersion(sf, "0.0.0");
+  assert.equal(sf.unityVersion, written);
+  assert.deepEqual(sf.version, FORMAT_22.editor);
+
+  setUnityVersion(sf, "2.6.1f3");
+  assert.equal(sf.unityVersion, "2.6.1f3");
+  assert.deepEqual(sf.version, [2, 6, 1, 3]);
 });
 
 test("reads script types and ref types of the MonoBehaviour fixture", () => {

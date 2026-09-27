@@ -256,7 +256,10 @@ function buildWebData(files: { path: string; data: Uint8Array }[]): Uint8Array {
 }
 
 /** A stored (uncompressed) `UnityFS` bundle holding one node per file. */
-function buildBundle(files: { path: string; data: Uint8Array }[]): Uint8Array {
+function buildBundle(
+  files: { path: string; data: Uint8Array }[],
+  unityRevision = "2022.3.0f1",
+): Uint8Array {
   const blocks = new Writer();
   for (const file of files) blocks.raw(file.data);
   const blocksData = blocks.done();
@@ -271,7 +274,7 @@ function buildBundle(files: { path: string; data: Uint8Array }[]): Uint8Array {
   }
   const blocksInfo = info.done();
 
-  const header = new Writer().cstring("UnityFS").u32be(6).cstring("5.x.x").cstring("2022.3.0f1");
+  const header = new Writer().cstring("UnityFS").u32be(6).cstring("5.x.x").cstring(unityRevision);
   // 0x40 = BlocksAndDirectoryInfoCombined, compression type 0 (none).
   const size = header.length + 8 + 12 + blocksInfo.length + blocksData.length;
   header.i64be(size).u32be(blocksInfo.length).u32be(blocksInfo.length).u32be(0x40);
@@ -372,6 +375,114 @@ test("refuses containers nested past the depth cap instead of overflowing the st
       error.kind === "container nesting" &&
       /above the 16 level limit/.test(error.message),
   );
+});
+
+// --- format < 7: the enclosing bundle's revision -----------------------------
+
+/**
+ * A format-6 SerializedFile (Unity 2.x), which records no editor version: a
+ * 16-byte header, one 4-byte object, then the metadata, big-endian here. No
+ * editor we have writes this format, so it is built by hand.
+ */
+function format6SerializedFile(): Uint8Array {
+  const metadata = new Writer()
+    .u8(1) // endianess: big
+    .u32be(0) // types
+    .u32be(1) // objects
+    .u32be(1) // m_PathID, Int32 before format 14
+    .u32be(0) // byteStart, relative to m_DataOffset
+    .u32be(4) // byteSize
+    .u32be(ClassID.TextAsset) // typeID: the class id itself before format 16
+    .u16be(ClassID.TextAsset) // classID
+    .u16be(0) // isDestroyed
+    .u32be(0) // externals
+    .cstring("") // userInformation
+    .done();
+  const dataOffset = 16;
+  const fileSize = dataOffset + 4 + metadata.length;
+  return new Writer()
+    .u32be(metadata.length)
+    .u32be(fileSize)
+    .u32be(6) // m_Version
+    .u32be(dataOffset)
+    .raw(payload(4))
+    .raw(metadata)
+    .done();
+}
+
+const LEGACY = format6SerializedFile();
+
+test("the hand-written format-6 SerializedFile parses and names no editor", () => {
+  const sf = readSerializedFile(LEGACY);
+  assert.equal(sf.header.version, 6);
+  assert.equal(sf.unityVersion, "2.5.0f5");
+  assert.deepEqual(sf.version, [0, 0, 0, 0]);
+  assert.deepEqual(
+    sf.objects.map((o) => [o.pathId, o.classId, o.byteStart, o.byteSize]),
+    [[1n, ClassID.TextAsset, 16, 4]],
+  );
+});
+
+test("an object of a format-6 SerializedFile in a bundle reports the bundle's unityRevision", () => {
+  const bundle = buildBundle([{ path: "CAB-old", data: LEGACY }], "2.6.1f3");
+  const { objects } = load([{ name: "old.bundle", data: bundle }]);
+
+  assert.deepEqual(
+    objects.map((o) => [o.pathId, o.format, o.version]),
+    [[1n, 6, [2, 6, 1, 3]]],
+  );
+});
+
+test("a format-6 SerializedFile passed as an input keeps version [0, 0, 0, 0]", () => {
+  const { objects } = load([{ name: "CAB-old", data: LEGACY }]);
+
+  assert.deepEqual(
+    objects.map((o) => [o.pathId, o.format, o.version]),
+    [[1n, 6, [0, 0, 0, 0]]],
+  );
+});
+
+test("a bundle's revision reaches its own nodes only, not a UnityWebData file's", () => {
+  // Upstream's LoadWebFile passes no revision; a bundle nested anywhere passes
+  // its own, not the outer bundle's.
+  const inner = buildBundle([{ path: "CAB-inner", data: LEGACY }], "3.0.0f5");
+  const web = buildWebData([
+    { path: "CAB-web", data: LEGACY },
+    { path: "inner.bundle", data: inner },
+  ]);
+  const outer = buildBundle([{ path: "web.data", data: web }], "2.6.1f3");
+  const env = load([{ name: "outer.bundle", data: outer }]);
+
+  assert.deepEqual(
+    env.files.map((f) => f.path),
+    ["CAB-web", "CAB-inner"],
+  );
+  assert.deepEqual(
+    env.objects.map((o) => o.version),
+    [
+      [0, 0, 0, 0],
+      [3, 0, 0, 5],
+    ],
+  );
+});
+
+test("a bundle nested directly in a bundle gives its nodes its own revision", () => {
+  const inner = buildBundle([{ path: "CAB-old", data: LEGACY }], "3.0.0f5");
+  const outer = buildBundle([{ path: "inner.bundle", data: inner }], "2.6.1f3");
+  const { objects } = load([{ name: "outer.bundle", data: outer }]);
+
+  assert.deepEqual(objects.map((o) => o.version), [[3, 0, 0, 5]]);
+});
+
+test("a SerializedFile of format 7 or later keeps its own version inside any bundle", () => {
+  const node = load([{ name: SHARED, data: loadFixture(SHARED) }]).files[0]!.data;
+  const own = readSerializedFile(node).version;
+  assert.deepEqual(own, [6000, 3, 25, 1]);
+
+  const bundle = buildBundle([{ path: SHARED_CAB, data: node }], "2.6.1f3");
+  const { objects } = load([{ name: "old.bundle", data: bundle }]);
+  assert.ok(objects.length > 0);
+  for (const object of objects) assert.deepEqual(object.version, own);
 });
 
 // --- refusals ----------------------------------------------------------------
