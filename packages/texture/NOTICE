@@ -8,7 +8,8 @@ ported from.
 
 AssetStudio -- https://github.com/Razviar/assetstudio (MIT)
   Copyright (c) Perfare, RazTools, Razviar
-  Source of truth for AssetBundle, SerializedFile, TypeTree and class layout.
+  Source of truth for AssetBundle, SerializedFile, TypeTree and class layout,
+  and for the plain texture format conversion (Texture2DConverter.cs, Half.cs).
 
 UnityPy -- https://github.com/K0lb3/UnityPy (MIT)
   Copyright (c) K0lb3
