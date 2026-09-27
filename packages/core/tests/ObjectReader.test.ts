@@ -137,6 +137,13 @@ test("names the class ids the fixtures hold", () => {
   assert.equal(ClassID.Sprite, 213);
 });
 
+test("holds every name of upstream's ClassIDType, game-specific ones included", () => {
+  assert.equal(Object.keys(ClassID).length, 381);
+  assert.equal(classIdName(601), "MiHoYoGrassData");
+  assert.equal(classIdName(1205), "LODLevel");
+  assert.equal(classIdName(1211), "MiHoYoTextureStreamingPreloader");
+});
+
 test("keeps both of upstream's names for 126 and looks up NavMeshProjectSettings", () => {
   assert.equal(ClassID.NavMeshAreas, 126);
   assert.equal(ClassID.NavMeshProjectSettings, 126);
@@ -149,7 +156,7 @@ test("keeps both of upstream's names for 126 and looks up NavMeshProjectSettings
 test("returns undefined for a class id it does not name, without throwing", () => {
   assert.equal(classIdName(-1), "UnknownType");
   assert.equal(classIdName(7), undefined);
-  assert.equal(classIdName(601), undefined); // an upstream miHoYo-only id
+  assert.equal(classIdName(1209), undefined); // a gap in upstream's 1201-1211 run
   assert.equal(classIdName(0x7fffffff), undefined);
 });
 

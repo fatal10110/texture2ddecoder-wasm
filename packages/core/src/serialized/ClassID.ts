@@ -8,10 +8,6 @@
  * `obj.classId === ClassID.Texture2D`. A class id stays the number the file
  * holds: one missing here (a newer Unity class, a game's own class) is still
  * a valid id, and {@link classIdName} returns `undefined` for it.
- *
- * Upstream's game-specific entries (601 to 606 and 1201 to 1211, the `MiHoYo*`
- * ones and their neighbours) are left out: they name one game's classes, not
- * Unity's, and belong with the game variants (M6).
  */
 export const ClassID = {
   UnknownType: -1,
@@ -236,6 +232,12 @@ export const ClassID = {
   SpriteMask: 331,
   WorldAnchor: 362,
   OcclusionCullingData: 363,
+  MiHoYoGrassData: 601,
+  MiHoYoGrassBlock: 603,
+  MiHoYoGrassLand: 602,
+  MiHoYoVegetationInteractor: 604,
+  MiHoYoWindParameterConfigurator: 605,
+  MiHoYoGrassGlobalConfigurator: 606,
   SmallestEditorClassID: 1000,
   PrefabInstance: 1001,
   EditorExtensionImpl: 1002,
@@ -289,6 +291,16 @@ export const ClassID = {
   BuildReport: 1125,
   PackedAssets: 1126,
   VideoClipImporter: 1127,
+  PlaneCullingOccluder: 1201,
+  BakedCollisionData: 1202,
+  ObjectInstanceCache: 1203,
+  MiHoYoLodLoader: 1204,
+  LODLevel: 1205,
+  MiHoYoLodMeshGroup: 1206,
+  MiHoYoInstanceColor: 1207,
+  MiHoYoBinData: 1208,
+  IndexObject: 1210,
+  MiHoYoTextureStreamingPreloader: 1211,
   ActivationLogComponent: 2000,
   MonoObject: 100003,
   Collision: 100004,
