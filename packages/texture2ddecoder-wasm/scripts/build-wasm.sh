@@ -34,12 +34,17 @@ echo ""
 
 cd "$PROJECT_ROOT"
 
+# Pinned, not :latest, so every build uses one toolchain (#57). 4.0.7 is the
+# emsdk that built the published 1.2.2: its v1.2.2 build is byte-identical to
+# the tarball's wasm/. The digest keeps a re-pushed tag from changing the output.
+EMSDK_IMAGE="emscripten/emsdk:4.0.7@sha256:8acec700a48dbff5250afc1e3ee545b7c002b689043ee82c277de6481a237fd7"
+
 # Build using Docker with Emscripten
 docker run --rm \
     -v "$PROJECT_ROOT:/project" \
     -v "$PROJECT_ROOT/texture2ddecoder/src:/project-src" \
     -w /project \
-    emscripten/emsdk:latest \
+    "$EMSDK_IMAGE" \
     bash -c '
         echo "Compiling C++ to WebAssembly..."
         em++ \
