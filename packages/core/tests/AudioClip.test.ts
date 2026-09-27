@@ -434,6 +434,16 @@ test("before 5.0, a streamed clip reads its count as m_Size, then a UInt32 m_Off
   }
 });
 
+test("before 5.0, bytes after a streamed clip's m_Offset throw CorruptError", () => {
+  // Upstream reads any misfit after the count as streamed and ignores what
+  // follows the offset; here the object must end at m_Offset.
+  for (const extra of [[0], [0, 0, 0, 0]]) {
+    const bytes = withTail(build(STREAMED).bytes, ...extra);
+    const reader = readerOf(FROM, bytes, { unity: [4, 7, 2, 1], format: 9 });
+    assert.throws(() => readAudioClip(reader), CorruptError, `${extra.length} extra bytes`);
+  }
+});
+
 test("before 5.0, a streamed clip in a bundle reads <file>.resS: the referenced range", () => {
   const cab = format9File(build(STREAMED).bytes);
   const bundle = unityRaw([
