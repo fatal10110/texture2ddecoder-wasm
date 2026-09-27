@@ -387,11 +387,11 @@ Unpacks Unity Crunch compressed data.
 
 #### `initialize(options?: { wasmPath?: string; locateFile?: (path: string, prefix: string) => string }): Promise<void>`
 
-Manually initialize the WebAssembly module. This is called automatically on first use of any decode function in Node.js, but must be called explicitly in browser environments.
+Manually initialize the WebAssembly module. This is called automatically on first use of any decode function in Node.js, but must be called explicitly in browser environments, including Web Workers.
 
 **Parameters:**
 
-- `options.wasmPath` - (Browser required) Path or URL to the directory containing WASM files
+- `options.wasmPath` - (Browser and Web Worker required) Path or URL to the directory containing WASM files
 - `options.locateFile` - (Optional) Custom function to locate WASM binary files for advanced use cases
 
 **Node.js Example:**
@@ -417,6 +417,8 @@ await initialize({
   locateFile: (path) => `https://cdn.example.com/custom/${path}`,
 });
 ```
+
+**Web Workers:** the same `initialize({ wasmPath })` call works inside a dedicated or module Worker, which has no `window`. Decode large textures there to keep the page responsive.
 
 **Framework Integration:**
 This approach works seamlessly with:
