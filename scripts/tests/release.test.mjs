@@ -123,3 +123,16 @@ test("the release workflow publishes in dependency order", () => {
   const names = readManifests(root).map((pkg) => pkg.name);
   assert.deepEqual(loops[0]?.[1]?.trim().split(/\s+/), names);
 });
+
+// npm's trusted publisher does not check the ref, only repo, workflow file and environment. The
+// `npm` environment (tags `v*.*.*` only) is what keeps a branch's edited copy of release.yml from
+// publishing, so every run that is not a dry run must be in it (RELEASING.md, One-time setup).
+test("the release workflow publishes only from the npm environment", () => {
+  const workflow = read(".github/workflows/release.yml");
+  const dryRun = "github.event_name == 'workflow_dispatch' && inputs.dry_run";
+  const environments = [...workflow.matchAll(/^\s*environment:\s*(.+)$/gm)].map((m) => m[1]);
+  assert.deepEqual(environments, [`\${{ !(${dryRun}) && 'npm' || '' }}`]);
+  // The same condition decides `--dry-run`, so no run publishes outside the environment.
+  const dryRunEnv = [...workflow.matchAll(/^\s*DRY_RUN:\s*(.+)$/gm)].map((m) => m[1]);
+  assert.deepEqual(dryRunEnv, [`\${{ ${dryRun} }}`]);
+});

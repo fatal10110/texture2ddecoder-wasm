@@ -29,6 +29,12 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # A real publish runs in the `npm` environment, whose deployment rule admits only `v*.*.*`
+    # tags. Each package's trusted publisher on npm names this environment, so an OIDC token from
+    # any other ref (a branch that edits its own copy of this file, a PR run) is refused by npm,
+    # and NPM_BOOTSTRAP_TOKEN is a secret of this environment only. Dry runs use no environment,
+    # so they still run on any branch. Must stay in step with DRY_RUN below.
+    environment: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) && 'npm' || '' }}
     env:
       DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
       # The texture decode tests fail instead of skipping when the WASM is missing. Also set for
@@ -83,7 +89,8 @@ jobs:
       # Dependencies first: decoder, then core, then the packages that depend or peer on them.
       # A name@version already on npm is skipped, so a run that failed halfway can be re-run.
       # No token: npm authenticates with the job's OIDC token and adds provenance by itself.
-      # NPM_BOOTSTRAP_TOKEN exists only for the one-time bootstrap in RELEASING.md.
+      # NPM_BOOTSTRAP_TOKEN (a secret of the `npm` environment) exists only for the one-time
+      # bootstrap in RELEASING.md.
       - name: Publish
         env:
           VERSION: ${{ steps.guard.outputs.version }}

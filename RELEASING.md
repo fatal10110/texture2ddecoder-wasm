@@ -42,13 +42,31 @@ by itself. The only exception is the one-time bootstrap of the first publish, be
 Permissions are `contents: read` and `id-token: write`. The workflow does not create the GitHub
 release (that would need `contents: write`); step 5 below does it by hand.
 
+Every run that is not a dry run uses the GitHub environment `npm`, which admits only `v*.*.*`
+tags (see [One-time setup](#github-environment-npm)). npm's trusted publisher checks the
+repository, the workflow file name and the environment, but not the ref, so the environment is
+what stops a branch that edits its own copy of `release.yml` (adding a `pull_request` or branch
+`push` trigger, say) from publishing: its run either names no environment, which npm refuses, or
+names `npm`, which GitHub starts only on a `v*.*.*` tag.
+
 **Dry run.** Actions → Release → *Run workflow* on any branch, with `dry_run` ticked (the
 default): the same job, but `npm publish --dry-run`, and the tag check is skipped when the ref is
-a branch. Use it after changing the workflow or the packaging. GitHub only offers *Run workflow*
-for a workflow that is on the default branch, so the first dry run is possible after the PR that
-adds it is merged. `dry_run` unticked is refused unless the run is on a `v<version>` tag.
+a branch. It runs outside the `npm` environment, so it sees no npm secret. Use it after changing
+the workflow or the packaging. GitHub only offers *Run workflow* for a workflow that is on the
+default branch, so the first dry run is possible after the PR that adds it is merged. `dry_run` unticked is refused unless the run is on a `v<version>` tag.
 
 ## One-time setup
+
+### GitHub environment `npm`
+
+Settings → Environments → *New environment* `npm`, then under *Deployment branches and tags*
+choose *Selected branches and tags* and add one rule of type **tag** with the pattern `v*.*.*`.
+No branch rule. The bootstrap token below is a secret of this environment, never a repository
+secret: jobs outside the environment cannot read it.
+
+The rule admits any tag that matches, and a tag push runs the `release.yml` of the tagged commit.
+To keep that to maintainers, add a tag ruleset (Settings → Rules → Rulesets → *New tag ruleset*,
+target `v*.*.*`, restrict creations, updates and deletions) that only maintainers can bypass.
 
 ### Trusted publisher, per package
 
@@ -68,12 +86,12 @@ For each of `unity-asset-reader-decoder`, `unity-asset-reader`, `unity-asset-rea
 | Organization or user | `fatal10110` |
 | Repository | `texture2ddecoder-wasm` (the current name; see [After the repo rename](#after-the-repo-rename)) |
 | Workflow filename | `release.yml` (file name only, with the extension; all fields are case-sensitive) |
-| Environment name | empty (the workflow uses no GitHub environment) |
+| Environment name | `npm` |
 
 or, from a shell logged in to npm with 2FA:
 
 ```bash
-npm trust github <name> --file release.yml --repo fatal10110/texture2ddecoder-wasm --allow-publish
+npm trust github <name> --file release.yml --repo fatal10110/texture2ddecoder-wasm --env npm --allow-publish
 ```
 
 npm does not validate the entry when it is saved; a typo shows up as `ENEEDAUTH` at publish time.
@@ -87,7 +105,7 @@ publish needs a token. The ways to do it, least bad first:
 
 | Option | Cost |
 |---|---|
-| **Token in the workflow, once.** Publish 1.0.0 through this workflow, authenticated by a short-lived token in the repo secret `NPM_BOOTSTRAP_TOKEN`. | For about an hour a write token sits in the repo secrets. npm's token page selects from packages and scopes that exist, so for four new names it has to be an *All packages* token, which can publish every package of the account; keep its expiry at the minimum (1 day). In return 1.0.0 is built and gated exactly like every later release and still gets provenance (token publishes from GitHub Actions with `id-token: write` support it; the job sets `NPM_CONFIG_PROVENANCE=true`). |
+| **Token in the workflow, once.** Publish 1.0.0 through this workflow, authenticated by a short-lived token in the `npm` environment's secret `NPM_BOOTSTRAP_TOKEN`. | For about an hour a write token sits in the environment's secrets, readable only by a job in the `npm` environment, which starts only on a `v*.*.*` tag. npm's token page selects from packages and scopes that exist, so for four new names it has to be an *All packages* token, which can publish every package of the account; keep its expiry at the minimum (1 day). In return 1.0.0 is built and gated exactly like every later release and still gets provenance (token publishes from GitHub Actions with `id-token: write` support it; the job sets `NPM_CONFIG_PROVENANCE=true`). |
 | Placeholder publish from a laptop (for example a `0.0.0` of each name), then link the publishers, then release 1.0.0 by tag. | Four empty versions stay on npm for good (unpublishing one blocks reusing that version number), and each name's first version is junk. |
 | `npm publish` of 1.0.0 from a laptop. | 1.0.0 has no provenance (npm generates it only in a supported CI runner), is built on one machine outside the gate, and needs Docker locally for the WASM. |
 
@@ -95,8 +113,9 @@ Do the first:
 
 1. Create a granular access token on npmjs.com: *Read and write*, *All packages*, expiry 1 day,
    *Bypass 2FA* ticked (a CI job cannot answer a 2FA prompt).
-2. Add it as the repository secret `NPM_BOOTSTRAP_TOKEN` (Settings → Secrets and variables →
-   Actions). The publish step writes it to the job's `~/.npmrc` only when it is set, and warns.
+2. Add it as the secret `NPM_BOOTSTRAP_TOKEN` of the `npm` environment (Settings →
+   Environments → `npm` → *Environment secrets*; not a repository secret). The publish step
+   writes it to the job's `~/.npmrc` only when it is set, and warns.
 3. Release 1.0.0 with the steps below (tag `v1.0.0`).
 4. Set up the trusted publisher of each of the four packages (above).
 5. Delete the `NPM_BOOTSTRAP_TOKEN` secret and revoke the token on npmjs.com. With the secret
