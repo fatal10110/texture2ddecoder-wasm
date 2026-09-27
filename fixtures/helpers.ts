@@ -174,7 +174,7 @@ export interface GoldenPlatform {
   /** `m_PlatformBlob` as hex; `null` for Xbox 360, which has none. */
   platformBlob: string | null;
   /**
-   * For DXT: `[stride, c0High, c1High]`, the input made 4-colour with
+   * For DXT1: `[stride, c0High, c1High]`, the input made 4-colour with
    * {@link fourColor} after `syntheticBytes`; `null` otherwise.
    */
   fourColor: [number, number, number] | null;
@@ -253,7 +253,7 @@ export function deswizzleGoldens(): Record<string, GoldenDeswizzle> {
 
 /**
  * `data` with every BC1 colour block in 4-colour mode (c0 > c1), in place, as
- * `four_color` in `scripts/make-goldens.py` makes the DXT inputs of the
+ * `four_color` in `scripts/make-goldens.py` makes the DXT1 inputs of the
  * `platform` goldens: in each `stride` bytes, the top bit of byte `c0High`
  * set and of byte `c1High` cleared. See `PLATFORM` there for why.
  */

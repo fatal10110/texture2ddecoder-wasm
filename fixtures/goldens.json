@@ -44429,11 +44429,11 @@
       "width": 16,
       "height": 16,
       "platformBlob": "000000000000000004000000",
-      "fourColor": [16, 9, 11],
+      "fourColor": null,
       "inputSize": 8192,
-      "inputSha256": "e53d3a0b2c45a1a2352dd67f92a9b7a1d6dc6a1b94d65b9dd75597ce7accf7bb",
-      "rgbaSha256": "70aebd2743040e13e47a3bfcd0ba18a63339b5a82b92ccf9829afd9d0ffd3756",
-      "rgbaTopDownSha256": "0431633151b3c95274e74bff7c1bd604a860f592d40dd4483adb61af7b4fe955"
+      "inputSha256": "43e83ad01cb2b7545c7a433053c47dce4ae22eac05b6b3335613cf7d908c6a85",
+      "rgbaSha256": "c5e109bba17cf442f22d44a78891c25b8c7c43c68864da66e89ef4338d9e2603",
+      "rgbaTopDownSha256": "92a2ffcc505d6704a77069af2782f2a514a023312023584cdea8e4d33d147de7"
     },
     "Switch BC5": {
       "platform": 38,
@@ -44465,11 +44465,11 @@
       "width": 16,
       "height": 8,
       "platformBlob": null,
-      "fourColor": [16, 8, 10],
+      "fourColor": null,
       "inputSize": 128,
-      "inputSha256": "1e5c45c24b085d13eacebf1ab80ef429bdf513047cedd88596557e785af1d4e6",
-      "rgbaSha256": "26f9da8709c360bb7bbce57c5c4431fb2b84f8f833fa2b72872f19750a566ca1",
-      "rgbaTopDownSha256": "0d4bc07d796194aeb835c2c484f30495838761a61b1c2f8cb7b415c1b0fe67fc"
+      "inputSha256": "f4da04f1985c7700fc7393a47e8c0fa93f8d5e44a17e9bec30dbac5c331494f4",
+      "rgbaSha256": "3589192c3cfc0a52190823abdc7ed10607a75776b9b75ce2de67e392a320d457",
+      "rgbaTopDownSha256": "c2b35f63d13f272cfbec7c14bfd62fcc5add926118dff8a8e2836eff2f664dc5"
     }
   },
   "deswizzle": {

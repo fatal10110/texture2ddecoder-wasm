@@ -186,30 +186,31 @@ SYNTHETIC = [
 # multiples of the Switch padding, so the crop back to the texture's size runs.
 #
 # BC1 colour blocks (DXT1, and the colour half of DXT5) whose c0 <= c1 are where
-# UnityPy's Pillow parts ways with Texture2DDecoder (texture2ddecoder-wasm
+# UnityPy's Pillow parts ways with upstream Texture2DDecoder (texture2ddecoder-wasm
 # 1.2.2's, and AssetStudio's and K0lb3's, which agree with it). Verdicts (#131):
 #   DXT1 index 3: AssetStudio, opaque black. Pillow gives transparent black,
 #     but Unity's DXT1 has no alpha.
 #   DXT5 colour: Pillow is right. The spec decodes it as though c0 > c1
 #     always, and Texture2DDecoder's 3-colour mode is a defect, fixed in
-#     the decoder by #137, first published in unity-asset-reader-decoder
-#     1.0.0; #147 drops four_color for DXT5 once that is on npm.
-# The fixtures' DXT data has no such block (#32), random bytes do. So the DXT
+#     the decoder by #137 (unity-asset-reader-decoder 1.0.0), which the
+#     texture package depends on. So the DXT5 inputs are the random bytes
+#     unmodified, c0 <= c1 blocks included (#147).
+# The fixtures' DXT data has no such block (#32), random bytes do. So the DXT1
 # inputs get every colour block's c0 > c1, by setting the top bit of c0's high
 # byte and clearing c1's (`four_color`, mirrored by `fourColor` in the texture
 # tests): each entry is (block stride, index of c0's high byte, index of c1's),
 # as stored, so swapped for Xbox 360. With that, every decoder agrees on every
-# pixel.
+# DXT1 pixel.
 PLATFORM = [
     # name, BuildTarget, TextureFormat, width, height, log2 of Switch GOBs per block, four_color
     ("Switch RGBA32", BuildTarget.Switch, 4, 20, 10, 1, None),
     ("Switch RGB24", BuildTarget.Switch, 3, 12, 6, 2, None),
     ("Switch ARGB4444", BuildTarget.Switch, 2, 24, 8, 1, None),
     ("Switch DXT1", BuildTarget.Switch, 10, 36, 20, 3, (8, 1, 3)),
-    ("Switch DXT5", BuildTarget.Switch, 12, 16, 16, 4, (16, 9, 11)),
+    ("Switch DXT5", BuildTarget.Switch, 12, 16, 16, 4, None),
     ("Switch BC5", BuildTarget.Switch, 27, 8, 40, 2, None),
     ("XBOX360 DXT1", BuildTarget.XBOX360, 10, 16, 8, None, (8, 0, 2)),
-    ("XBOX360 DXT5", BuildTarget.XBOX360, 12, 16, 8, None, (16, 8, 10)),
+    ("XBOX360 DXT5", BuildTarget.XBOX360, 12, 16, 8, None, None),
 ]
 # UnityPy's Switch deswizzle on its own, one case per texel shape of its
 # TEXTURE_FORMAT_BLOCK_SIZE_MAP (#33); see deswizzle_goldens().
@@ -666,7 +667,7 @@ def platform_goldens() -> dict:
     `m_PlatformBlob` whose bytes 8-11 hold log2 of the GOBs per block (the
     only bytes UnityPy reads), over `synthetic_bytes(name)`: the whole padded
     first level for Switch, the first level for Xbox 360, in 4-colour BC1
-    blocks for DXT (`four_color`, see PLATFORM). Both row orders are
+    blocks for DXT1 (`four_color`, see PLATFORM). Both row orders are
     recorded: `rgbaSha256` as stored (`flip=False`, like every other texture
     golden) and `rgbaTopDownSha256` (`flip=True`).
     """

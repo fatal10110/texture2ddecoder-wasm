@@ -96,6 +96,20 @@ async function decodeStored(input: Texture2DData): Promise<string> {
   return sha256(reverseRows(out.data, out.width));
 }
 
+/**
+ * How many DXT5 blocks of `data` have a colour half with c0 <= c1, the blocks
+ * upstream Texture2DDecoder decoded in 3-colour mode (#131). Xbox 360 stores
+ * the 16-bit words big-endian.
+ */
+function lowC0Blocks(data: Uint8Array, bigEndian: boolean): number {
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  let n = 0;
+  for (let block = 0; block < data.length; block += 16) {
+    if (view.getUint16(block + 8, !bigEndian) <= view.getUint16(block + 10, !bigEndian)) n++;
+  }
+  return n;
+}
+
 // --- against UnityPy ------------------------------------------------------------
 
 /** A format of each texel shape in the deswizzle goldens, as `switchLayout` takes it. */
@@ -142,10 +156,17 @@ wasmTest("Switch and Xbox 360 textures = UnityPy on generated data, top row firs
     "Switch RGBA32", "XBOX360 DXT1", "XBOX360 DXT5",
   ]);
   for (const [name, g] of Object.entries(goldens)) {
-    // DXT inputs in 4-colour blocks, where UnityPy's decoder and AssetStudio's agree.
+    // DXT1 inputs in 4-colour blocks, where UnityPy's decoder and AssetStudio's agree.
     const imageData = syntheticBytes(name, g.inputSize);
     if (g.fourColor) fourColor(imageData, ...g.fourColor);
     assert.equal(sha256(imageData), g.inputSha256, name);
+    assert.equal(g.fourColor !== null, g.format === F.DXT1, `${name}: fourColor`);
+    // DXT5 inputs as generated, c0 <= c1 colour blocks included: the decoder decodes
+    // them in 4-colour mode, as the spec and Pillow do (#137, #147).
+    if (g.format === F.DXT5) {
+      const low = lowC0Blocks(imageData, g.platform === BuildTarget.XBOX360);
+      assert.ok(low > 0, `${name}: no c0 <= c1 colour block`);
+    }
     const platformBlob =
       g.platformBlob === null ? undefined : new Uint8Array(Buffer.from(g.platformBlob, "hex"));
     const input = texture(g.format, g.width, g.height, imageData, g.platform, platformBlob);
