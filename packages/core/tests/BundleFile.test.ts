@@ -538,6 +538,13 @@ test('refuses 0x200 on a "0.0.0" bundle whose bytes do not read as padded blocks
   }
 });
 
+test('reports a truncated "0.0.0" bundle as corrupt, not as an ambiguous 0x200', () => {
+  // The header still claims the full size, so the padded reading fits and is
+  // accepted; the missing bytes are then plain corruption, as with a revision.
+  const full = loadFixture("editor/6000.3.25f1/stripped/lz4");
+  assert.throws(() => readBundle(full.subarray(0, full.length - 10)), CorruptError);
+});
+
 test("stitches a file that spans two blocks", () => {
   const first = payload(48, 11);
   const second = payload(16, 13);

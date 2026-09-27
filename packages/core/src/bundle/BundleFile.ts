@@ -271,22 +271,26 @@ function readArchiveBundle(
  *
  * So the padded reading has to account for every byte: the data blocks must
  * end where the header says the bundle ends. A bundle that fails that, or
- * fails to decode on the way (which is what the key block read as blocks info
- * does), is refused as the ambiguous flag it is rather than handed over
- * shifted (R9). Without an editor version this reader cannot tell such a
- * bundle from a corrupt one, so it does not claim either.
+ * whose blocks info fails to decode (which is what the key block read as
+ * blocks info does), is refused as the ambiguous flag it is rather than handed
+ * over shifted (R9). Without an editor version this reader cannot tell such a
+ * bundle from a corrupt one, so it does not claim either. Once the layout
+ * fits, the data blocks are read as for any bundle, and their errors are the
+ * usual ones.
  *
- * @throws {UnsupportedError} when the bundle does not read as padded blocks
+ * @throws {UnsupportedError} when the blocks info does not read as padded blocks
+ * @throws {CorruptError} when the layout fits but a data block or node does not
  */
 function readStrippedPadded(
   reader: BinaryReader,
   header: BundleHeader,
   version: UnityVersion,
 ): BundleFile {
+  let layout: { blocks: StorageBlock[]; nodes: DirectoryNode[] };
   try {
-    const { blocks, nodes } = readBlocksInfoAndDirectory(reader, header, version);
+    layout = readBlocksInfoAndDirectory(reader, header, version);
     let end = reader.position;
-    for (const block of blocks) end += block.compressedSize;
+    for (const block of layout.blocks) end += block.compressedSize;
     const atTheEnd = (header.flags & ArchiveFlags.BlocksInfoAtTheEnd) !== 0;
     const expected = header.size - (atTheEnd ? header.compressedBlocksInfoSize : 0);
     if (end !== expected) {
@@ -294,7 +298,6 @@ function readStrippedPadded(
         `data blocks end at ${end} but the header puts the end at ${expected}`,
       );
     }
-    return { header, files: readFiles(nodes, readBlocks(reader, blocks)) };
   } catch (error) {
     if (!(error instanceof CorruptError)) throw error;
     throw new UnsupportedError(
@@ -305,6 +308,9 @@ function readStrippedPadded(
         "the bit meant AssetBundle encryption",
     );
   }
+  // The padded reading fits, so from here on a failure is plain corruption,
+  // reported as it would be for a bundle that names its editor.
+  return { header, files: readFiles(layout.nodes, readBlocks(reader, layout.blocks)) };
 }
 
 /**
