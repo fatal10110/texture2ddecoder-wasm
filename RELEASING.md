@@ -78,9 +78,10 @@ repository the job runs in. Publish before the repo rename, or do the rename ste
    at the same version; never publish a reader package at a version the others do not have.
 4. **Tag and release notes.** Tag the published commit and create a GitHub release whose notes
    are the version's `CHANGELOG.md` section. The existing `v1.0.1` ... `v1.2.2` tags are
-   `texture2ddecoder-wasm` releases, and `v1.0.0` is taken by it too, so new tags name the
-   package: `unity-asset-reader@<version>` for the lockstep reader release (one tag for all
-   three) and `texture2ddecoder-wasm@<version>` for a decoder release.
+   `texture2ddecoder-wasm` releases, and npm already has an untagged `texture2ddecoder-wasm`
+   1.0.0, so a bare `v1.0.0` would be ambiguous. New tags name the package:
+   `unity-asset-reader@<version>` for the lockstep reader release (one tag for all three) and
+   `texture2ddecoder-wasm@<version>` for a decoder release.
 5. **After the publish.**
    - `examples/cdn-worker.js`: `READER_VERSION` matches the published reader version; check the
      live jsDelivr path (#150).
