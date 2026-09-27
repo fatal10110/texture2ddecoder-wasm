@@ -92,7 +92,8 @@ export function objectBytes(
 
 /**
  * A reader over `bytes` as an object of `from` (a fixture's file and entry)
- * in a file of the given Unity version and platform.
+ * in a file of the given Unity version, platform and, when given,
+ * SerializedFile format (the fixture's, 21 or 22, otherwise).
  */
 export function synthetic(
   from: Pick<ReturnType<typeof objectBytes>, "sf" | "info">,
@@ -100,9 +101,11 @@ export function synthetic(
   unity: UnityVersion,
   text = unity.slice(0, 3).join("."),
   platform: BuildTarget = BuildTarget.StandaloneWindows64,
+  format = from.sf.header.version,
 ): ObjectReader {
   const file: SerializedFile = {
     ...from.sf,
+    header: { ...from.sf.header, version: format },
     unityVersion: text,
     version: unity,
     targetPlatform: platform,
@@ -114,7 +117,8 @@ export function synthetic(
  * Little-endian bytes for a field layout, and the object a reader must return
  * for it. Fields are `"<kind> <name>"`, or `"align"`; kinds: `i32`, `u32`,
  * `u8`, `bool`, `str` (aligned string), `bytes` (count + 3 bytes, not
- * aligned), `pptr` (Int32 file id + Int64 path id) and `hash`
+ * aligned), `pptr` (Int32 file id + Int64 path id), `pptr32` (Int32 file id
+ * + Int32 path id, format < 14) and `hash`
  * (16 bytes, as a `Hash128`). Each value differs from its neighbours.
  */
 export function build(fields: string[]): { bytes: Uint8Array; expected: Record<string, unknown> } {
@@ -157,6 +161,13 @@ export function build(fields: string[]): { bytes: Uint8Array; expected: Record<s
       view.setBigInt64(0, -(2n ** 60n) - BigInt(i), true);
       push(8);
       expected[name] = { m_FileID: i, m_PathID: -(2n ** 60n) - BigInt(i) };
+    } else if (kind === "pptr32") {
+      // Format < 14: the path id is 32-bit.
+      view.setInt32(0, i, true);
+      push(4);
+      view.setInt32(0, -1_000_000 - i, true);
+      push(4);
+      expected[name] = { m_FileID: i, m_PathID: BigInt(-1_000_000 - i) };
     } else if (kind === "hash") {
       const hash: Record<string, number> = {};
       for (let b = 0; b < 16; b++) {

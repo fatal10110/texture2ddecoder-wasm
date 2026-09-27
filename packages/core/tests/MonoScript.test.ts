@@ -114,20 +114,10 @@ test("the MonoScript checks cover formats 21 and 22, typed and without type tree
 
 const FROM = objectBytes("editor/6000.3.25f1/uncompressed/main", ClassID.MonoScript);
 const TAIL = ["str m_ClassName", "str m_Namespace", "str m_AssemblyName"];
-const OLD_HEAD = ["str m_Name", "u32 m_PropertiesHash"];
 const V5_HEAD = ["str m_Name", "i32 m_ExecutionOrder", "hash m_PropertiesHash"];
 
-/**
- * Unity's player type trees (UnityPy's TPK data) from 3.4 on, and upstream's
- * gates before it, where no type tree data exists.
- */
+/** Unity's player type trees (UnityPy's TPK data), which start at 3.4. */
 const LAYOUTS: { unity: UnityVersion; fields: string[] }[] = [
-  {
-    unity: [2, 6, 1, 1],
-    fields: [...OLD_HEAD, "str m_PathName", "str m_ClassName", "str m_AssemblyName"]
-      .concat("bool m_IsEditorScript"),
-  },
-  { unity: [3, 0, 0, 1], fields: [...OLD_HEAD, ...TAIL, "bool m_IsEditorScript"] },
   {
     unity: [3, 4, 0, 1],
     fields: ["str m_Name", "i32 m_ExecutionOrder", "u32 m_PropertiesHash", ...TAIL]
@@ -159,11 +149,21 @@ for (const { unity, fields } of LAYOUTS) {
 /**
  * Per the class-reader rule on #36: an all-zero version is refused with the
  * file's own version string, from a stripped file (`"0.0.0"`) or a loose file
- * below format 7 (`"2.5.0f5"`, #98).
+ * below format 7 (`"2.5.0f5"`, #98). The bytes cannot pick a layout there:
+ * the candidates differ inside the object, not at its end. A known version
+ * below 3.4 has no type tree data, and is refused too.
  */
-for (const text of ["0.0.0", "2.5.0f5"]) {
-  test(`Unity "${text}" at 0.0.0.0: UnsupportedError("Unity version")`, () => {
-    const reader = synthetic(FROM, FROM.bytes, [0, 0, 0, 0], text);
+const REFUSED: { unity: UnityVersion; text: string; format?: number }[] = [
+  { unity: [0, 0, 0, 0], text: "0.0.0" },
+  { unity: [0, 0, 0, 0], text: "2.5.0f5", format: 6 },
+  { unity: [3, 3, 0, 1], text: "3.3.0f1", format: 9 },
+  { unity: [3, 0, 0, 1], text: "3.0.0f1", format: 8 },
+  { unity: [2, 6, 1, 1], text: "2.6.1f1", format: 6 },
+];
+
+for (const { unity, text, format } of REFUSED) {
+  test(`Unity "${text}" at ${unity.join(".")}: UnsupportedError("Unity version")`, () => {
+    const reader = synthetic(FROM, FROM.bytes, unity, text, undefined, format);
     assert.throws(
       () => readMonoScript(reader),
       (err: unknown) =>

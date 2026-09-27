@@ -1,6 +1,6 @@
 // Ported from AssetStudio/Classes/TextAsset.cs (MIT, © Perfare / RazTools / Razviar)
 
-import { CorruptError } from "../errors.js";
+import { CorruptError, UnsupportedError } from "../errors.js";
 import { BinaryReader } from "../io/BinaryReader.js";
 import type { ObjectReader } from "../serialized/ObjectReader.js";
 import { readCount } from "../serialized/TypeTree.js";
@@ -28,39 +28,53 @@ export interface TextAsset extends NamedObject {
  *
  * Unity's type trees (UnityPy's TPK data) have `m_PathName` after `m_Script`
  * from 3.4 until 2017.1, in player and editor files alike; upstream does not
- * read it. With a version from 3.4 on, the version decides. It is the last
- * field, so when the version gives no layout - the file does not record one
- * (`[0, 0, 0, 0]`: stripped, or a loose file below format 7), or it is older
- * than 3.4, where no type tree data says - whether it is there shows in the
- * bytes left after `m_Script`, and no version is needed. That keeps a
- * TextAsset of a version-stripped bundle readable, where the #36 rule would
- * have a reader that guesses from the version refuse it.
+ * read it. Below 3.4 there is no type tree data, so such a file is refused.
+ *
+ * A file of format 7 or later whose Unity version was stripped
+ * (`[0, 0, 0, 0]`) is still read, under the rule for version-stripped files
+ * (#36): the two layouts differ only by the trailing `m_PathName`, an aligned
+ * string of at least 4 bytes, so the bytes left after `m_Script` pick one, and
+ * the end-of-object check refuses anything that fits neither. A file below
+ * format 7 also has `[0, 0, 0, 0]` but was written by Unity 2.x, before any
+ * known layout, so it is refused.
  *
  * The object must end exactly after its last field (upstream does not check).
  *
  * @param reader the object's reader, rewound first and left at its end
- * @throws {UnsupportedError} for an editor file with no known header layout,
+ * @throws {UnsupportedError} of kind `"Unity version"`, with the file's own
+ *   `unityVersion` as `found`, for a Unity version below 3.4, or `[0, 0, 0, 0]`
+ *   in a file below format 7; for an editor file with no known header layout,
  *   as `readNamedObject` does
  * @throws {CorruptError} when the object ends early, the `m_Script` or
  *   `m_PathName` byte count is negative or runs past the object's end, or bytes
  *   are left over after the last field
  */
 export function readTextAsset(reader: ObjectReader): TextAsset {
+  const { version } = reader;
+  const stripped = version.every((part) => part === 0);
+  // #36: only a stripped version of a format 7+ file may leave the layout to
+  // the bytes; below 3.4 no layout is known at all.
+  if (stripped ? reader.format < 7 : !atLeast(version, 3, 4)) {
+    throw new UnsupportedError(
+      "Unity version",
+      reader.unityVersion,
+      `object ${reader.pathId}: no known TextAsset layout before Unity 3.4`,
+    );
+  }
+
   const base = readNamedObject(reader);
   const scriptBytes = readCount(reader, `TextAsset ${reader.pathId} m_Script byte`);
   const m_Script = reader.readBytes(scriptBytes);
   reader.align();
   const out: TextAsset = { ...base, m_Script };
 
-  const { version } = reader;
-  // 3.4 to 2017.1: m_PathName follows; gone from 2017.1. Below 3.4, which
-  // includes an unknown [0, 0, 0, 0], the bytes left decide.
-  const hasPathName = atLeast(version, 3, 4)
-    ? !atLeast(version, 2017, 1)
-    : reader.remaining > 0;
-  if (hasPathName) {
-    out.m_PathName = readStringField(reader, "TextAsset", "m_PathName");
-  }
+  // 3.4 to 2017.1: m_PathName follows; gone from 2017.1. Stripped: the bytes
+  // left decide, see above.
+  // ponytail: 2017.1.0b1 still has m_PathName (TPK drops it at b2), and the
+  // gates compare release numbers only (see `atLeast`), so that beta fails the
+  // end-of-object check. Compare `buildType` if it ever matters.
+  const hasPathName = stripped ? reader.remaining > 0 : !atLeast(version, 2017, 1);
+  if (hasPathName) out.m_PathName = readStringField(reader, "TextAsset", "m_PathName");
 
   if (reader.remaining !== 0) {
     throw new CorruptError(

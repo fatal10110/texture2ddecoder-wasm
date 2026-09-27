@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { readTextAsset, textAssetString, type TextAsset } from "../src/classes/TextAsset.js";
-import { CorruptError } from "../src/errors.js";
+import { CorruptError, UnsupportedError } from "../src/errors.js";
 import { BuildTarget } from "../src/serialized/BuildTarget.js";
 import { ClassID } from "../src/serialized/ClassID.js";
 import type { UnityVersion } from "../src/serialized/SerializedFile.js";
@@ -126,14 +126,68 @@ test("with a known version, the version decides whether m_PathName is there", ()
   assert.throws(() => readTextAsset(synthetic(FROM, recent, [5, 6, 7, 1])), CorruptError);
 });
 
-// The #36 rule refuses a reader that picks a layout by version at 0.0.0; this one
-// needs no version there, since the bytes left show whether m_PathName is there.
-for (const text of ["0.0.0", "2.5.0f5"]) {
-  test(`Unity "${text}" at 0.0.0.0: m_PathName is read when bytes are left for it`, () => {
+// The #36 rule for version-stripped files (maintainer decision): at [0,0,0,0] in a
+// format 7+ file the object's bytes may pick the layout when the candidates are
+// unambiguous under the end-of-object check; everything else is refused.
+
+const STRIPPED: UnityVersion = [0, 0, 0, 0];
+
+test('Unity "0.0.0" in a format 22 file: m_PathName is read when bytes are left for it', () => {
+  for (const fields of [OLD, NEW]) {
+    const { bytes, expected } = build(fields);
+    const reader = synthetic(FROM, bytes, STRIPPED, "0.0.0");
+    assert.equal(reader.format, 22);
+    const asset = readTextAsset(reader);
+    assert.deepEqual(Object.keys(asset), Object.keys(expected));
+    assert.deepEqual(asset, expected);
+  }
+});
+
+test('Unity "0.0.0" in a format 7 file: the bytes still decide', () => {
+  const { bytes, expected } = build(OLD);
+  const reader = synthetic(FROM, bytes, STRIPPED, "0.0.0", undefined, 7);
+  assert.deepEqual(readTextAsset(reader), expected);
+});
+
+test('Unity "0.0.0": a tail that fits neither layout throws CorruptError', () => {
+  const { bytes } = build(NEW);
+  const { bytes: old } = build(OLD);
+  const tails = [
+    withTail(bytes, 1), // too short for m_PathName's count
+    withTail(bytes, 1, 0, 0), // likewise
+    withTail(bytes, 8, 0, 0, 0, 0x61), // m_PathName's count runs past the end
+    withTail(bytes, 0xff, 0xff, 0xff, 0xff), // a negative count
+    withTail(old, 0, 0, 0, 0), // bytes left after m_PathName
+  ];
+  for (const [i, tail] of tails.entries()) {
+    assert.throws(
+      () => readTextAsset(synthetic(FROM, tail, STRIPPED, "0.0.0")),
+      CorruptError,
+      `tail ${i}`,
+    );
+  }
+});
+
+/** Refused with the file's own version string, per #36. */
+const REFUSED: { unity: UnityVersion; text: string; format?: number; why: string }[] = [
+  { unity: STRIPPED, text: "2.5.0f5", format: 6, why: "[0,0,0,0] in a format 6 loose file" },
+  { unity: STRIPPED, text: "0.0.0", format: 6, why: "[0,0,0,0] below format 7" },
+  { unity: [3, 3, 0, 1], text: "3.3.0f1", format: 9, why: "a known version below 3.4" },
+  { unity: [2, 6, 1, 1], text: "2.6.1f1", format: 6, why: "a known 2.x version" },
+];
+
+for (const { unity, text, format, why } of REFUSED) {
+  test(`${why}: UnsupportedError("Unity version", "${text}")`, () => {
     for (const fields of [OLD, NEW]) {
-      const { bytes, expected } = build(fields);
-      const asset = readTextAsset(synthetic(FROM, bytes, [0, 0, 0, 0], text));
-      assert.deepEqual(asset, expected);
+      const reader = synthetic(FROM, build(fields).bytes, unity, text, undefined, format);
+      assert.throws(
+        () => readTextAsset(reader),
+        (err: unknown) =>
+          err instanceof UnsupportedError &&
+          err.kind === "Unity version" &&
+          err.found === text &&
+          err.message.includes(`object ${reader.pathId}`),
+      );
     }
   });
 }
@@ -183,7 +237,7 @@ test("m_PathName's length past the object's end throws CorruptError, not an empt
 
 test("a negative m_PathName length throws CorruptError, not an empty path", () => {
   const { bytes } = build(NEW);
-  for (const unity of [[5, 6, 7, 1], [0, 0, 0, 0]] as UnityVersion[]) {
+  for (const unity of [[5, 6, 7, 1], STRIPPED] as UnityVersion[]) {
     const reader = synthetic(FROM, withTail(bytes, 0xff, 0xff, 0xff, 0xff), unity);
     assert.throws(() => readTextAsset(reader), /m_PathName byte count -1 at offset \d+ is negative/);
   }
