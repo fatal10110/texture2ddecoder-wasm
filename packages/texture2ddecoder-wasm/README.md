@@ -43,7 +43,7 @@ Same codecs as [Perfare's Texture2DDecoder](https://github.com/Perfare/AssetStud
 ### BCn (Block Compression)
 
 - BC1 (DXT1) - RGB compression
-- BC3 (DXT5) - RGBA compression
+- BC3 (DXT5) - RGBA compression. Colour always decodes in 4-colour mode, per S3TC ([#137](https://github.com/fatal10110/texture2ddecoder-wasm/issues/137)), so on c0 <= c1 blocks it differs from AssetStudio and K0lb3/texture2ddecoder
 - BC4 - Single channel compression
 - BC5 - Dual channel compression
 - BC6 - HDR compression

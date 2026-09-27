@@ -244,17 +244,18 @@ sprites (#34).
     flip.
   - The DXT inputs have every BC1 colour block in 4-colour mode (c0 > c1,
     `four_color` / `fourColor`). On a c0 <= c1 block the decoders part ways:
-    this library's Texture2DDecoder, AssetStudio's (Kyaru 0.17.0) and K0lb3's
+    `texture2ddecoder-wasm` 1.2.2, AssetStudio's (Kyaru 0.17.0) and K0lb3's
     `texture2ddecoder` 1.0.6 all give the same pixels, and only UnityPy's
     Pillow differs (checked by hand on #131). The verdicts:
     - **DXT1, index 3: AssetStudio**, opaque black. Pillow gives transparent
       black (D3D BC1 semantics), but Unity's DXT1 has no alpha.
-    - **DXT5, colour half: a known decoder defect**, tracked in #137. The spec
+    - **DXT5, colour half: Pillow.** The other decoders' 3-colour mode is a
+      defect, fixed in `texture2ddecoder-wasm`'s bindings by #137. The spec
       (`EXT_texture_compression_s3tc`, D3D BC3) decodes DXT3/DXT5 colour as
-      though c0 > c1 always, as Pillow does. Texture2DDecoder, here and
-      upstream, switches to 3-colour mode instead. The fix belongs in
-      `texture2ddecoder-wasm` (R13), so the generated inputs avoid such blocks
-      rather than pin either result.
+      though c0 > c1 always, as Pillow does. Upstream Texture2DDecoder
+      switches to 3-colour mode instead. No `texture2ddecoder-wasm` release
+      has the fix yet, so the generated DXT5 inputs still avoid such blocks.
+      #147 drops that once the texture package depends on a fixed release.
     The #32 fixtures have no c0 <= c1 block (0 of 32 blocks each in DXT1,
     DXT5 and their Crunch forms, one editor), while random bytes hit it often.
     With 4-colour blocks every decoder agrees on every pixel.
