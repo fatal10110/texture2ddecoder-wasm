@@ -152,6 +152,15 @@ test("refuses format version 1 as unsupported", () => {
   assert.throws(() => readSerializedFile(data), UnsupportedError);
 });
 
+test("throws CorruptError when the metadata is cut inside its last string", () => {
+  // The last ref type's assembly name ends 6 bytes before the metadata does;
+  // a cut there used to come back as "Assembly-CS" instead of an error.
+  const data = node(FORMAT_22.name, MAIN_CAB);
+  const { header } = readSerializedFile(data);
+  const metadataEnd = 48 + header.metadataSize;
+  assert.throws(() => readSerializedFile(data.subarray(0, metadataEnd - 6)), CorruptError);
+});
+
 test("throws CorruptError on truncated metadata", () => {
   const data = node(FORMAT_21.name, MAIN_CAB);
   const sf = readSerializedFile(data);
@@ -312,7 +321,25 @@ test("throws CorruptError when an object names a type index that does not exist"
   w.str("2018.4.0f1").i32(19).u8(0); // no type trees
   w.i32(1).i32(49).u8(0).i16(-1).raw(new Uint8Array(16));
   w.i32(1).align().i64(1n).u32(0).u32(4).i32(5); // type index 5 of 1
-  assert.throws(() => readSerializedFile(w.done()), /type index 5, but the file has 1 types/);
+  assert.throws(
+    () => readSerializedFile(w.done()),
+    (e) => e instanceof CorruptError && /type index 5, but the file has 1 types/.test(e.message),
+  );
+});
+
+test("throws CorruptError on a count larger than the bytes left", () => {
+  // Format 3 externals are a bare C string each, which reads as "" at the end
+  // of the data without advancing - so only the count check can catch this.
+  const meta = new Writer(false);
+  meta.u8(0).setLittle(true);
+  meta.i32(0).i32(0).i32(3); // no types, no objects, three externals
+  const metadata = meta.done();
+  const w = new Writer(false);
+  w.u32(metadata.length).u32(16 + metadata.length).u32(3).u32(16).raw(metadata);
+  assert.throws(
+    () => readSerializedFile(w.done()),
+    (e) => e instanceof CorruptError && /external count 3/.test(e.message),
+  );
 });
 
 test("maps a target platform upstream does not know to UnknownPlatform", () => {
