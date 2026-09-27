@@ -13,3 +13,17 @@ export { load } from "./env.js";
 export type { Env, LoadedFile, LoadInput } from "./env.js";
 export { CorruptError, UnsupportedError } from "./errors.js";
 export { BinaryReader, type Endian } from "./io/BinaryReader.js";
+export { BuildTarget } from "./serialized/BuildTarget.js";
+export { SerializedFileFormatVersion } from "./serialized/FormatVersion.js";
+export { readSerializedFile } from "./serialized/SerializedFile.js";
+export type {
+  FileIdentifier,
+  LocalSerializedObjectIdentifier,
+  ObjectInfo,
+  SerializedFile,
+  SerializedFileHeader,
+  UnityVersion,
+} from "./serialized/SerializedFile.js";
+export type { SerializedType, TypeTreeNode } from "./serialized/TypeTree.js";
+export { ClassID, classIdName } from "./serialized/ClassID.js";
+export { ObjectReader } from "./serialized/ObjectReader.js";
