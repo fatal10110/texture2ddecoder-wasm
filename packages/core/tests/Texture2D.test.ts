@@ -15,13 +15,12 @@ import {
 import { readTexture } from "../src/classes/Texture.js";
 import { readTexture2D, type Texture2D } from "../src/classes/Texture2D.js";
 import { TextureFormat } from "../src/classes/TextureFormat.js";
-import { load, type LoadedFile } from "../src/env.js";
+import { load, type Env } from "../src/env.js";
 import { CorruptError, UnsupportedError } from "../src/errors.js";
 import { BuildTarget } from "../src/serialized/BuildTarget.js";
 import { ClassID } from "../src/serialized/ClassID.js";
 import { ObjectReader } from "../src/serialized/ObjectReader.js";
 import {
-  baseName,
   readSerializedFile,
   type SerializedFile,
   type UnityVersion,
@@ -39,23 +38,23 @@ const STRIPPED = fixtureNames().filter(
 );
 
 interface Loaded {
-  files: LoadedFile[];
+  env: Env;
   /** Texture2D readers by SerializedFile node path, then path id. */
   textures: Map<string, Map<string, ObjectReader>>;
 }
 
+/**
+ * Load a fixture and take its Texture2D readers from `env.objects`, so that
+ * `env.readResource` accepts them. Every texture fixture holds one
+ * SerializedFile, so each object of the env is one of its objects.
+ */
 function loadTextures(name: string): Loaded {
   const env = load([{ name, data: loadFixture(name) }]);
-  const textures = new Map<string, Map<string, ObjectReader>>();
-  for (const { path, data } of env.files) {
-    if (!golden(name).serialized?.[path]) continue;
-    const sf = readSerializedFile(data);
-    const readers = sf.objects
-      .filter((i) => i.classId === ClassID.Texture2D)
-      .map((i) => new ObjectReader(data, sf, i));
-    textures.set(path, new Map(readers.map((r) => [String(r.pathId), r])));
-  }
-  return { files: env.files, textures };
+  const [path, ...more] = Object.keys(golden(name).serialized ?? {});
+  assert.ok(path && !more.length, `${name} does not hold one SerializedFile`);
+  const readers = env.objects.filter((r) => r.type === ClassID.Texture2D);
+  const textures = new Map([[path, new Map(readers.map((r) => [String(r.pathId), r]))]]);
+  return { env, textures };
 }
 
 // --- plan §5 normalization, driven by the golden's type tree, not our output ---
@@ -89,27 +88,29 @@ function normalize(texture: Texture2D, sf: GoldenSerialized): unknown {
   return out;
 }
 
-/** The image bytes, inline or from the `.resS` node the StreamingInfo names. */
-function imageOf(texture: Texture2D, files: LoadedFile[]): Uint8Array {
+/**
+ * The image bytes: inline, or `m_StreamData` handed as it is to the env's
+ * resource resolver (#30).
+ */
+function imageOf(texture: Texture2D, env: Env, reader: ObjectReader): Uint8Array {
   const stream = texture.m_StreamData;
   if (!stream?.path) return texture["image data"];
-  const res = files.find((f) => f.path === baseName(stream.path));
-  assert.ok(res, `no node ${stream.path}`);
-  assert.ok(stream.offset + stream.size <= res.data.length, "StreamingInfo runs past the .resS");
-  return res.data.subarray(stream.offset, stream.offset + stream.size);
+  assert.equal(texture["image data"].length, 0, "both inline and streamed data");
+  return env.readResource(stream, reader);
 }
 
 /** Check one reader's result against the golden texture entry (#31). */
 function checkTextureGolden(
   texture: Texture2D,
-  files: LoadedFile[],
+  env: Env,
+  reader: ObjectReader,
   want: NonNullable<GoldenSerialized["textures"]>[string],
 ): void {
   assert.equal(texture.m_Name, want.name);
   assert.equal(texture.m_Width, want.width);
   assert.equal(texture.m_Height, want.height);
   assert.equal(texture.m_TextureFormat, want.format);
-  const image = imageOf(texture, files);
+  const image = imageOf(texture, env, reader);
   assert.equal(image.length, want.imageSize);
   assert.equal(sha256(image), want.imageSha256);
 }
@@ -118,7 +119,7 @@ function checkTextureGolden(
 
 for (const name of TYPED) {
   test(`${name}: readTexture2D equals the golden dump and readTypeTree()`, () => {
-    const { files, textures } = loadTextures(name);
+    const { env, textures } = loadTextures(name);
     let checked = 0;
     for (const [path, readers] of textures) {
       const sf = golden(name).serialized![path]!;
@@ -133,7 +134,7 @@ for (const name of TYPED) {
         // Every field, in Unity's order, with the oracle's values.
         assert.deepEqual(Object.keys(texture), Object.keys(dump));
         assert.deepEqual(normalize(texture, sf), dump);
-        checkTextureGolden(texture, files, want);
+        checkTextureGolden(texture, env, reader, want);
 
         // The same object through its type tree: only the offset's type differs.
         const tree = reader.readTypeTree() as Record<string, unknown>;
@@ -173,7 +174,7 @@ test("the typed checks cover formats 21 and 22, .resS and inline data", () => {
 for (const name of STRIPPED) {
   test(`${name}: readTexture2D equals the typed build's golden`, () => {
     const twinName = name.replace(/lz4-notypetree/g, "lz4");
-    const { files, textures } = loadTextures(name);
+    const { env, textures } = loadTextures(name);
     const [path, ...morePaths] = [...textures.keys()];
     const [twinPath] = Object.keys(golden(twinName).serialized!);
     assert.ok(path && twinPath && !morePaths.length, "not one SerializedFile");
@@ -190,7 +191,7 @@ for (const name of STRIPPED) {
       const texture = readTexture2D(reader);
       assert.equal(reader.position, reader.byteSize, "byteSize not consumed exactly");
       assert.deepEqual(normalize(texture, twin), twin.typetrees[pathId]!.value);
-      checkTextureGolden(texture, files, want);
+      checkTextureGolden(texture, env, reader, want);
     }
   });
 }
@@ -538,11 +539,21 @@ test("before 2020.1: the offset is an unsigned 32-bit value", () => {
   assert.equal(readTexture2D(synthetic(copy, unity)).m_StreamData!.offset, 0xffff_fff0);
 });
 
-test("a StreamingInfo is the { offset, size, path } a resource lookup takes", () => {
-  const texture = readTexture2D(synthetic(textureObject().bytes, U6000));
-  assert.deepEqual(Object.keys(texture.m_StreamData!), ["offset", "size", "path"]);
-  assert.match(texture.m_StreamData!.path, /^archive:\/CAB-[0-9a-f]+\/CAB-[0-9a-f]+\.resS$/);
-  assert.equal(texture["image data"].length, 0);
+test("m_StreamData goes to env.readResource as it is: a view into the .resS node", () => {
+  const name = "editor/6000.3.25f1/uncompressed/texture";
+  const { env, textures } = loadTextures(name);
+  const [reader] = [...textures.values()][0]!.values();
+  assert.ok(reader);
+  const { m_StreamData: stream } = readTexture2D(reader);
+  assert.ok(stream);
+  assert.deepEqual(Object.keys(stream), ["offset", "size", "path"]);
+  assert.match(stream.path, /^archive:\/CAB-[0-9a-f]+\/CAB-[0-9a-f]+\.resS$/);
+
+  const image = env.readResource(stream, reader);
+  const resS = env.files.find((f) => f.path.endsWith(".resS"))!.data;
+  assert.equal(image.length, stream.size);
+  assert.equal(image.buffer, resS.buffer);
+  assert.equal(image.byteOffset, resS.byteOffset + stream.offset);
 });
 
 test("inline image data is a view into the object's bytes (R7)", () => {
