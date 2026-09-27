@@ -1,6 +1,6 @@
 # Plan: browser-first Unity AssetBundle reader (TS + WASM leaf codecs)
 
-Working name: `unity-asset-reader`. Monorepo (npm workspaces): a shared parser core plus feature packages; the existing `texture2ddecoder-wasm` is one of the packages (D7, D8). License: MIT. Source of truth for behavior: Razviar/assetstudio (MIT). Secondary reference + golden oracle: UnityPy (MIT).
+Working name: `unity-asset-reader`. Monorepo (npm workspaces): a shared parser core plus feature packages; the existing `texture2ddecoder-wasm` is one of the packages (D7, D8). License: MIT, except `unity-asset-reader-texture`, which is `MIT AND Apache-2.0` (see the 2026-09-27b revision). Source of truth for behavior: Razviar/assetstudio (MIT). Secondary reference + golden oracle: UnityPy (MIT).
 
 Checkable rules derived from this plan: [unity-asset-reader-rules.md](unity-asset-reader-rules.md). Workflows: `.claude/skills/{implement-issue,review-implementation,fix-pr-comments}`.
 
@@ -8,7 +8,7 @@ Checkable rules derived from this plan: [unity-asset-reader-rules.md](unity-asse
 
 | # | Decision | Reason |
 |---|---|---|
-| D1 | **Port from AssetStudio (MIT). Do not fork, copy from, or import `@arkntools/unity-js` anywhere — including tests.** | unity-js is **AGPL-3.0**. A fork forces AGPL on the package and on every web app that ships it. AssetStudio, UnityPy and all chosen deps are MIT. This is a derivative port, not clean-room: keep Perfare / RazTools / Razviar (and UnityPy, where consulted) copyright notices in `LICENSE`/`NOTICE`. |
+| D1 | **Port from AssetStudio (MIT). Do not fork, copy from, or import `@arkntools/unity-js` anywhere — including tests.** | unity-js is **AGPL-3.0**. A fork forces AGPL on the package and on every web app that ships it. AssetStudio, UnityPy and all chosen deps are MIT. This is a derivative port, not clean-room: keep Perfare / RazTools / Razviar (and UnityPy, where consulted) copyright notices in `LICENSE`/`NOTICE`. One exception to MIT-only sources: the texture package's sprite tight-mesh fill is derived from ImageSharp.Drawing (Apache-2.0), shipped with attribution and `LICENSE-APACHE` (#34). |
 | D2 | TS parser, WASM only for leaf **C/C++** codecs. **No C# is ever compiled to WASM** (no Blazor / .NET-wasm / NativeAOT-LLVM / IL2CPP output). AssetStudio C# is a read-only behavior reference, hand-ported to TS. | Parsing is byte shuffling; WASM boundary = copies, no gain. A .NET runtime in WASM = multi-MB download + own GC, kills CDN drop-in. WASM inputs allowed: `texture2ddecoder` (C++), fallback `LzmaDec.c` (C), M6 `acl` (C++), `libvorbis` (C), `spirv-cross` (C++). |
 | D3 | Core is isomorphic: zero `node:*`, zero DOM. Input = `Uint8Array`. | "Works in browser same as texture2ddecoder-wasm". |
 | D4 | Core parse path is **sync**. Only `initialize()` and texture decode are async. | Matches existing lib; avoids async colouring the whole reader. Consequence: big bundles block the calling thread — docs and `examples/cdn.html` run the reader in a **Worker**. |
@@ -217,3 +217,5 @@ Revision 2026-09-21c (M1 spike #13 resolved): LZMA is **`lzma1`**, not the `Lzma
 Revision 2026-09-26 (#81, #82): M2 fixtures are editor-built with 2019.4.41f2 (SerializedFile format 21), 2020.3.30f1 and 6000.3.25f1 (format 22); only the bundles are committed, the Unity project stays local and `fixtures/BUILDING.md` carries its sources (R2). The M2 format-version claim and the §6 licensing row name these editors. Also recorded: UnityPy cannot fully read a v1 `[SerializeReference]` registry (≤ 2020.3), so `make-goldens.py` records an `oracleNote` for that case (#25); `files` goldens hash raw node bytes, not UnityPy's re-serialization (#81).
 
 Revision 2026-09-27 (#35, PR #151): M3's `examples/cdn.html` criterion no longer requires jsDelivr. The reader packages are first published in M5 (#45), so M3 proves the page against this repo's builds behind `examples/serve.mjs`, a local stand-in for jsDelivr's `/+esm`; the live jsDelivr check is #150, in M5.
+
+Revision 2026-09-27b (#34, PR #156): the texture package's optional sprite tight-mesh fill is derived from ImageSharp.Drawing v1.0.0-beta15 (Apache-2.0, Six Labors), kept by maintainer decision because it makes the mask match AssetStudio pixel-for-pixel. `unity-asset-reader-texture` therefore declares `"license": "MIT AND Apache-2.0"` and ships `LICENSE-APACHE` plus a `NOTICE` stanza; the derived code carries a per-file Apache-2.0 header. Core, node and `texture2ddecoder-wasm` stay MIT. D1 notes the exception.
