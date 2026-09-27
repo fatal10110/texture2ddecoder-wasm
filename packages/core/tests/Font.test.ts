@@ -263,8 +263,8 @@ test("5.5 to 2017.x: two bytes after m_FontRenderingMode are one too many", () =
 
 const STRIPPED: UnityVersion = [0, 0, 0, 0];
 
-test('Unity "0.0.0" in format 16 or later: the bytes left pick 5.5, 5.6.5 or 2018.1', () => {
-  for (const format of [16, 17, 21, 22]) {
+test('Unity "0.0.0" in format 16 or 17: the bytes left pick 5.5, 5.6.5 or 2018.1', () => {
+  for (const format of [16, 17]) {
     for (const tail of [0, 1, 2] as const) {
       const { bytes, expected } = build((w) => L5_5(w, tail));
       const reader = readerOf(FROM, bytes, { unity: STRIPPED, text: "0.0.0", format });
@@ -273,17 +273,57 @@ test('Unity "0.0.0" in format 16 or later: the bytes left pick 5.5, 5.6.5 or 201
   }
 });
 
-test('Unity "0.0.0": 3 or more bytes after m_FontRenderingMode fit no layout', () => {
-  for (const extra of [[0], [0, 0, 0, 0]]) {
-    const bytes = withTail(build((w) => L5_5(w, 2)).bytes, ...extra);
-    const reader = readerOf(FROM, bytes, { unity: STRIPPED, text: "0.0.0", format: 22 });
-    assert.throws(
-      () => readFont(reader),
-      (err: unknown) =>
-        versionRefusal("0.0.0")(err) &&
-        (err as UnsupportedError).message.includes("fit none of the layouts"),
-    );
+test('Unity "0.0.0" in format 18 or later (2019.1 on): only 2018.1\'s two bools fit', () => {
+  for (const format of [18, 21, 22]) {
+    const { bytes, expected } = build((w) => L5_5(w, 2));
+    const reader = readerOf(FROM, bytes, { unity: STRIPPED, text: "0.0.0", format });
+    assert.deepEqual(readFont(reader), expected, `format ${format}`);
+    // 0 or 1 byte left is 5.5's or 5.6.5's layout, which no editor writing
+    // format 18 or later has.
+    for (const tail of [0, 1] as const) {
+      const short = readerOf(FROM, build((w) => L5_5(w, tail)).bytes, {
+        unity: STRIPPED,
+        text: "0.0.0",
+        format,
+      });
+      assert.throws(
+        () => readFont(short),
+        (err: unknown) =>
+          versionRefusal("0.0.0")(err) &&
+          (err as UnsupportedError).message.includes("fit none of the layouts"),
+        `format ${format}, ${tail} bools`,
+      );
+    }
   }
+});
+
+test('Unity "0.0.0": 3 or more bytes after m_FontRenderingMode fit no layout', () => {
+  for (const format of [17, 22]) {
+    for (const extra of [[0], [0, 0, 0, 0]]) {
+      const bytes = withTail(build((w) => L5_5(w, 2)).bytes, ...extra);
+      const reader = readerOf(FROM, bytes, { unity: STRIPPED, text: "0.0.0", format });
+      assert.throws(
+        () => readFont(reader),
+        (err: unknown) =>
+          versionRefusal("0.0.0")(err) &&
+          (err as UnsupportedError).message.includes("fit none of the layouts"),
+        `format ${format}, ${extra.length} extra`,
+      );
+    }
+  }
+});
+
+test('Unity "0.0.0": an object cut short of the 5.5 fields is refused, not corrupt', () => {
+  const { bytes } = build((w) => L5_5(w, 2));
+  // Cut inside m_FontNames: past m_Name, which every layout starts with.
+  const cut = bytes.subarray(0, bytes.length - 30);
+  const reader = readerOf(FROM, cut, { unity: STRIPPED, text: "0.0.0", format: 22 });
+  assert.throws(
+    () => readFont(reader),
+    (err: unknown) =>
+      versionRefusal("0.0.0")(err) &&
+      (err as UnsupportedError).message.includes("does not fit"),
+  );
 });
 
 const REFUSED: { unity: UnityVersion; text: string; format: number; why: string }[] = [

@@ -100,11 +100,16 @@ export interface Font extends NamedObject {
  * byte left after `m_FontRenderingMode` is it and none is its absence.
  *
  * A file whose Unity version is unknown (`[0, 0, 0, 0]`) is read when its
- * format is 16 (5.5) or later (rule for version-stripped files, #36): every
- * layout those formats allow shares the fields through `m_FontRenderingMode`,
- * and the bytes left, 0, 1 or 2, pick 5.5's, the one with
- * `m_UseLegacyBoundsCalculation` or 2018.1's. Before 16 the layouts differ
- * inside the object, so the file is refused.
+ * format is 16 (5.5) or later (rule for version-stripped files, #36, as
+ * amended on #136: the format and the object's bytes must leave exactly one
+ * candidate). Every layout those formats allow shares the fields through
+ * `m_FontRenderingMode`. In formats 16 and 17 (5.5 to 2018.4) the bytes left,
+ * 0, 1 or 2, pick 5.5's, the one with `m_UseLegacyBoundsCalculation` or
+ * 2018.1's. Format 18 and later is only written by 2019.1 on, so there 2018.1's
+ * two bools are the one candidate. An object that fits none of them past
+ * `m_Name` (a tail of another length, or too few bytes for the shared fields)
+ * is refused as not a layout of its format rather than called corrupt. Before
+ * 16 the layouts differ inside the object, so the file is refused.
  *
  * The object must end exactly after its last field (upstream does not check).
  *
@@ -116,11 +121,13 @@ export interface Font extends NamedObject {
  * @param reader the object's reader, rewound first and left at its end
  * @throws {UnsupportedError} of kind `"Unity version"`, with the file's own
  *   `unityVersion` as `found`, below 3.4, for an unknown version below format
- *   16, or for an unknown version whose bytes after `m_FontRenderingMode` fit
- *   no layout; as `readNamedObject` does, for an editor file of unknown version
+ *   16, or for an unknown version whose fields after `m_Name` fit no layout of
+ *   its format; as `readNamedObject` does, for an editor file of unknown
+ *   version
  * @throws {CorruptError} when the object ends early, a count or string length
  *   is negative or runs past its end, or bytes are left over after the last
- *   field
+ *   field, with the version known; with it unknown, only inside `m_Name`,
+ *   which every layout starts with
  */
 export function readFont(reader: ObjectReader): Font {
   const { version } = reader;
@@ -134,30 +141,58 @@ export function readFont(reader: ObjectReader): Font {
   }
 
   const base = readNamedObject(reader);
-  const out = stripped || atLeast(version, 5, 5) ? readFields(reader, base) : readOld(reader, base);
-
+  if (stripped) return readUnversioned(reader, base);
+  const out = atLeast(version, 5, 5) ? readFields(reader, base) : readOld(reader, base);
   // 5.5+: the tail bools (see above); 0 bytes are left when neither is there.
-  if (stripped) {
-    if (reader.remaining > 2) {
-      throw refuse(
-        reader,
-        `the ${reader.remaining} bytes after m_FontRenderingMode fit none of the layouts ` +
-          "of format 16 and later (5.5, 5.6.5, 2018.1)",
-      );
-    }
-    readTail(reader, out, reader.remaining);
-  } else if (atLeast(version, 2018, 1)) {
-    readTail(reader, out, 2);
-  } else if (atLeast(version, 5, 5)) {
-    readTail(reader, out, reader.remaining === 1 ? 1 : 0);
-  }
+  if (atLeast(version, 2018, 1)) readTail(reader, out, 2);
+  else if (atLeast(version, 5, 5)) readTail(reader, out, reader.remaining === 1 ? 1 : 0);
+  checkEnd(reader);
+  return out;
+}
 
+/**
+ * The fields after `m_Name` of a file of unknown version and format 16 or
+ * later (#36 rule, as amended on #136; see `readFont`): the 5.5 fields, then
+ * as many tail bools as the bytes left and the format allow.
+ *
+ * @throws {UnsupportedError} when the object fits no layout of its format
+ */
+function readUnversioned(reader: ObjectReader, base: NamedObject): Font {
+  // Format 18+ is 2019.1 or later, which has both bools (TPK: from 2018.1.0b2).
+  const v2019 = reader.format >= V.RefactorShareableTypeTreeData;
+  let out: Font;
+  try {
+    out = readFields(reader, base);
+  } catch (error) {
+    if (!(error instanceof CorruptError)) throw error;
+    throw refuse(
+      reader,
+      `the object does not fit the Font layout of format ${reader.format}, which every ` +
+        `layout from 5.5 on shares up to m_FontRenderingMode (${error.message})`,
+    );
+  }
+  const left = reader.remaining;
+  if (v2019 ? left !== 2 : left > 2) {
+    const layouts = v2019
+      ? "2018.1's, the only one format 18 and later allow"
+      : "5.5, 5.6.5, 2018.1";
+    throw refuse(
+      reader,
+      `the ${left} bytes after m_FontRenderingMode fit none of the layouts of format ` +
+        `${reader.format} (${layouts})`,
+    );
+  }
+  readTail(reader, out, left);
+  return out;
+}
+
+/** The object must end where its last field does. */
+function checkEnd(reader: ObjectReader): void {
   if (reader.remaining !== 0) {
     throw new CorruptError(
       `Font ${reader.pathId} ends at ${reader.position} of its ${reader.byteSize} bytes`,
     );
   }
-  return out;
 }
 
 /** 5.5+: the fields after `m_Name` through `m_FontRenderingMode`. */
