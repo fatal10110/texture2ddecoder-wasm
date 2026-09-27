@@ -57,10 +57,14 @@ export interface Texture2DData extends Texture2D {
 export type MonoBehaviourData = MonoBehaviour & { [field: string]: unknown };
 
 /**
- * What `obj.read()` returns: a hardcoded class reader's result for a class
- * that has one ({@link Texture2DData} for a `Texture2D`, `TextAsset`,
- * `MonoScript`, {@link MonoBehaviourData} for a `MonoBehaviour`, `Material`), and the
- * `readTypeTree()` result for any other class.
+ * What `obj.read()` returns: the result of its class's hardcoded reader when
+ * the class has one, and the `readTypeTree()` result for any other class.
+ *
+ * The classes with a hardcoded reader are the keys of `CLASS_READERS` below,
+ * the one list of them. The members of this union are what those readers
+ * return, plus `TypeTreeObject`; each documents its own shape. The exception
+ * is a `MonoBehaviour` whose file has a type tree, which is read through it
+ * (see {@link MonoBehaviourData}).
  */
 export type ObjectData =
   | Texture2DData
