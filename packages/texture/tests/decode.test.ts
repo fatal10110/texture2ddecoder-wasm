@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { before, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
+  BuildTarget,
   ClassID,
   CorruptError,
   load,
@@ -423,12 +424,32 @@ wasmTest("a texture 0 pixels wide or high is an empty image", async () => {
   }
 });
 
-wasmTest("a size that is not a non-negative integer is a CorruptError", async () => {
-  for (const [w, h] of [[-4, 4], [4.5, 4], [4, Number.NaN]] as const) {
-    await assert.rejects(
-      decodeTexture2D(texture(TextureFormat.DXT1, w, h, new Uint8Array(8))),
-      CorruptError,
-    );
+wasmTest("a negative or non-integer size is a CorruptError, checked first", async () => {
+  // A 12-byte m_PlatformBlob whose bytes 8-11 give log2 of the GOBs per block: 1.
+  const blockLinear = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]);
+  const inputs: [Texture2DData, string][] = [
+    [texture(TextureFormat.DXT1, -4, 4, new Uint8Array(8)), "-4 x 4"],
+    [texture(TextureFormat.DXT1, 4.5, 4, new Uint8Array(8)), "4.5 x 4"],
+    [texture(TextureFormat.DXT1, 4, Number.NaN, new Uint8Array(8)), "4 x NaN"],
+    [texture(TextureFormat.RGBA32, -1, 1, new Uint8Array(4)), "-1 x 1"],
+    // Before the Switch padding, which would compute a NaN layout from it.
+    [
+      {
+        ...texture(TextureFormat.DXT1, Number.NaN, 8, new Uint8Array(4096)),
+        platform: BuildTarget.Switch,
+        m_PlatformBlob: blockLinear,
+      },
+      "NaN x 8",
+    ],
+    // Before the format lookup: a bad size is corrupt whatever the format.
+    [texture(1000, -4, 4, new Uint8Array(64)), "-4 x 4"],
+  ];
+  for (const [input, size] of inputs) {
+    await assert.rejects(decodeTexture2D(input), (e: Error) => {
+      assert.ok(e instanceof CorruptError, `${size}: ${e}`);
+      assert.equal(e.message, `texture size ${size} is not a non-negative integer size`);
+      return true;
+    });
   }
 });
 
