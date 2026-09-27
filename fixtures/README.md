@@ -149,6 +149,12 @@ sprites yet; M3 adds the rest.
 - `files` hashes are of the raw node bytes. For a node UnityPy parses as a
   SerializedFile they come from `entry.reader.bytes`, never `entry.save()`,
   which re-serializes and can differ from the original (#81).
+- The `Hash128`s outside the typetree dumps (`types[].scriptId`,
+  `types[].oldTypeHash`, `externals[].guid`) are hex strings, as is every
+  sha256 (`files`, `textures`, `rawData`, `synthetic`, ...). A `Hash128`
+  inside a typetree dump (a MonoScript's `m_PropertiesHash`, #124; the
+  manifest's `AssetBundleHash`) stays as its type tree lays it out: 16 `UInt8`
+  fields, `"bytes[0]"` to `"bytes[15]"`.
 - UnityPy cannot fully read a `[SerializeReference]` registry of version 1
   (2019.4, 2020.3): its type tree describes one entry, but the data holds the
   entries plus a `Terminus` / `UnityEngine.DMAT` / `FAKE_ASM` sentinel entry that
