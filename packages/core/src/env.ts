@@ -28,6 +28,9 @@ const MAX_DEPTH = 16;
  * The editor version a build with `AssetBundleStripUnityVersion` writes, in
  * the SerializedFile and in the bundle header alike (upstream
  * `IsVersionStripped`).
+ *
+ * A copy of `SerializedFile.ts`'s private `STRIPPED_VERSION`: export that one
+ * and drop this copy the next time that file changes (after #102).
  */
 const STRIPPED_VERSION = "0.0.0";
 
