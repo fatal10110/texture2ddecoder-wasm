@@ -23,7 +23,8 @@
     "pretest": "npm run build",
     "build": "rollup -c rollup.config.mjs",
     "test": "tsx --test tests/*.test.ts",
-    "check:browser": "node ../../scripts/check-browser.mjs core"
+    "check:browser": "node ../../scripts/check-browser.mjs core",
+    "prepublishOnly": "npm run verify --prefix ../.."
   },
   "keywords": [
     "unity",
