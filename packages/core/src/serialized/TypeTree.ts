@@ -184,11 +184,7 @@ function readTypeTreeLegacy(reader: BinaryReader, format: number): TypeTreeNode[
       refTypeHash: 0n,
     });
 
-    const children = reader.readInt32();
-    if (children < 0) {
-      throw new CorruptError(`type tree node "${name}" has ${children} children`);
-    }
-    pending.push(children);
+    pending.push(readCount(reader, `type tree node "${name}" child`));
   }
   return nodes;
 }
@@ -270,15 +266,24 @@ function readInt32Array(reader: BinaryReader): number[] {
 }
 
 /**
- * Read an `Int32` count and refuse a negative one, which upstream turns into
- * an empty list or an exception depending on where it is.
+ * Read an `Int32` count and refuse one that cannot be right: negative, which
+ * upstream turns into an empty list or an exception depending on where it is,
+ * or more than the bytes left, since every counted entry (and every byte of a
+ * byte count) takes at least one. The second check matters where an entry can
+ * read as empty at the end of the data, such as a format 2-4 external, which
+ * is a bare C string.
  *
  * @internal shared with `SerializedFile.ts`, not public API
- * @throws {CorruptError} when the count is negative or runs past the end
+ * @throws {CorruptError} when the count is negative or larger than what remains
  */
 export function readCount(reader: BinaryReader, what: string): number {
   const offset = reader.position;
   const value = reader.readInt32();
   if (value < 0) throw new CorruptError(`${what} count ${value} at offset ${offset} is negative`);
+  if (value > reader.remaining) {
+    throw new CorruptError(
+      `${what} count ${value} at offset ${offset} exceeds the ${reader.remaining} bytes left`,
+    );
+  }
   return value;
 }

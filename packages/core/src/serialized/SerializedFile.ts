@@ -165,6 +165,16 @@ export function readSerializedFile(data: Uint8Array): SerializedFile {
     reader.readInt64(); // reserved
   }
 
+  // From format 9 the metadata follows the header, so a file cut inside it is
+  // caught here - otherwise a cut in a trailing C string reads as a shorter
+  // string rather than as an error.
+  if (format >= V.Unknown_9 && reader.position + header.metadataSize > data.length) {
+    throw new CorruptError(
+      `metadata of ${header.metadataSize} bytes at offset ${reader.position} runs past ` +
+        `the end of ${data.length} bytes`,
+    );
+  }
+
   if (header.endianess === 0) reader.endian = "little";
 
   let unityVersion = DEFAULT_UNITY_VERSION;
