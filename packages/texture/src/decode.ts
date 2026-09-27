@@ -172,7 +172,8 @@ export async function initTexture(options?: InitTextureOptions): Promise<void> {
  *
  * Unity stores the rows bottom row first; they are flipped, so row 0 of the
  * result is the top of the image, as `ImageData` and image files expect
- * (upstream's `ConvertToImage(flip: true)`).
+ * (upstream's `ConvertToImage(flip: true)`). `convertPlain`, the other public
+ * producer of an `RgbaImage`, keeps the stored order instead.
  *
  * Console layouts are undone first, by `platform` (which `obj.read()` sets):
  * - **Xbox 360:** ARGB4444, RGB565, DXT1 and DXT5 store their 16-bit words
