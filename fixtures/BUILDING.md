@@ -282,3 +282,130 @@ and the names Unity gives them, are checked against the asset's YAML
 In 2019.4.41f2 and 2020.3.30f1 it names the entries `00000000` to
 `00000009`, then `0000000A`, `0000000B`, `0000000C`: the id in 8 uppercase
 hex digits. If you rebuild, check the YAML still says so.
+
+## 6. The `plain` texture bundle (#31)
+
+One bundle, `plain/textures`, built with **6000.3.25f1** only: an 8x5
+Texture2D, no mips, in each plain (non-block) format the texture package
+converts in TS - Alpha8, ARGB4444, RGB24, RGBA32, ARGB32, RGB565, R16,
+RGBA4444, BGRA32, RHalf, RGHalf, RGBAHalf, RFloat, RGFloat, RGBAFloat, YUY2 and
+RGB9e5Float. Pixel conversion does not depend on the editor version, so one
+editor is enough. All 17 formats can be created on Windows, YUY2 included.
+
+The textures are made by script, not imported, so their bytes are exactly what
+the script writes: a byte ramp for the 8-bit and packed formats, `k/16` for
+every half and float channel (checkable by hand, and `8/16` hits the 127.5
+rounding tie), and exponents 14 and 15 for RGB9e5 (every value below 1). A
+readable texture made by script keeps its pixels inline in `image data`, so
+this bundle has no `.resS` node; the `texture` bundles of sections 1-3 cover
+that path.
+
+It needs none of the other assets, so any project will do; the committed
+bundle came from a fresh, empty one. Add `Assets/Editor/BuildPlainTextures.cs`:
+
+```csharp
+using System;
+using System.Collections.Generic;
+using System.IO;
+using UnityEditor;
+using UnityEngine;
+
+// One small Texture2D per plain (non-block) format, pixels written raw (#31).
+public static class BuildPlainTextures
+{
+    const string Dir = "Assets/Fixtures/plain";
+    // Not square and an odd height, so a transposed or row-shifted decode shows.
+    const int W = 8, H = 5;
+
+    static readonly TextureFormat[] Formats = {
+        TextureFormat.Alpha8, TextureFormat.ARGB4444, TextureFormat.RGB24, TextureFormat.RGBA32,
+        TextureFormat.ARGB32, TextureFormat.RGB565, TextureFormat.R16, TextureFormat.RGBA4444,
+        TextureFormat.BGRA32, TextureFormat.RHalf, TextureFormat.RGHalf, TextureFormat.RGBAHalf,
+        TextureFormat.RFloat, TextureFormat.RGFloat, TextureFormat.RGBAFloat, TextureFormat.YUY2,
+        TextureFormat.RGB9e5Float,
+    };
+
+    public static void Build()
+    {
+        if (!AssetDatabase.IsValidFolder("Assets/Fixtures")) AssetDatabase.CreateFolder("Assets", "Fixtures");
+        if (!AssetDatabase.IsValidFolder(Dir)) AssetDatabase.CreateFolder("Assets/Fixtures", "plain");
+        var paths = new List<string>();
+        foreach (var format in Formats)
+        {
+            try
+            {
+                var tex = new Texture2D(W, H, format, false) { name = format.ToString() };
+                var size = tex.GetRawTextureData().Length;
+                tex.LoadRawTextureData(Pixels(format, size));
+                tex.Apply(false, false); // stays readable, so the pixels are kept as written
+                var path = Dir + "/" + format + ".asset";
+                AssetDatabase.DeleteAsset(path);
+                AssetDatabase.CreateAsset(tex, path);
+                paths.Add(path);
+                Debug.Log("FIXTURE-TEX " + format + " " + size + " bytes");
+            }
+            catch (Exception e)
+            {
+                Debug.Log("FIXTURE-SKIP " + format + ": " + e.Message);
+            }
+        }
+        AssetDatabase.SaveAssets();
+
+        var dir = Path.Combine("Build", "plain");
+        Directory.CreateDirectory(dir);
+        var builds = new[] { new AssetBundleBuild { assetBundleName = "textures", assetNames = paths.ToArray() } };
+        var m = BuildPipeline.BuildAssetBundles(dir, builds, BuildAssetBundleOptions.UncompressedAssetBundle,
+                                                BuildTarget.StandaloneWindows64);
+        if (m == null) throw new Exception("build failed: plain");
+        Debug.Log("FIXTURE-OK plain -> " + dir);
+    }
+
+    // Values a reader can check by hand: halves and floats are k/16, RGB9e5 has
+    // exponent 14 or 15 (every value below 1), everything else is a byte ramp.
+    static byte[] Pixels(TextureFormat format, int size)
+    {
+        var raw = new byte[size];
+        switch (format)
+        {
+            case TextureFormat.RHalf:
+            case TextureFormat.RGHalf:
+            case TextureFormat.RGBAHalf:
+                for (int j = 0; j < size / 2; j++)
+                {
+                    ushort h = Mathf.FloatToHalf((j % 17) / 16f);
+                    raw[2 * j] = (byte)h;
+                    raw[2 * j + 1] = (byte)(h >> 8);
+                }
+                break;
+            case TextureFormat.RFloat:
+            case TextureFormat.RGFloat:
+            case TextureFormat.RGBAFloat:
+                for (int j = 0; j < size / 4; j++)
+                    Buffer.BlockCopy(BitConverter.GetBytes((j % 17) / 16f), 0, raw, 4 * j, 4);
+                break;
+            case TextureFormat.RGB9e5Float:
+                for (int i = 0; i < size / 4; i++)
+                {
+                    uint e = (uint)(14 + i % 2);
+                    uint r = (uint)(3 * i * 29 % 512), g = (uint)((3 * i + 1) * 29 % 512), b = (uint)((3 * i + 2) * 29 % 512);
+                    Buffer.BlockCopy(BitConverter.GetBytes(e << 27 | b << 18 | g << 9 | r), 0, raw, 4 * i, 4);
+                }
+                break;
+            default:
+                for (int k = 0; k < size; k++) raw[k] = (byte)((k * 37 + 11) & 0xFF);
+                break;
+        }
+        return raw;
+    }
+}
+```
+
+Build with `-executeMethod BuildPlainTextures.Build` (same command as section
+2; `-nographics` is fine). The log must hold 17 `FIXTURE-TEX` lines, no
+`FIXTURE-SKIP` and one `FIXTURE-OK plain`. Copy only `Build/plain/textures` to
+`fixtures/bundles/editor/6000.3.25f1/plain/textures` and rerun
+`make-goldens.py`.
+
+UnityPy 1.25.3 decodes only 8 of the 17 formats, and 2 of those differently
+from AssetStudio; the goldens record which (`oracleError`, `oracleNote`), see
+[`README.md`](README.md#oracle-notes).
