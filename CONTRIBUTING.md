@@ -257,15 +257,15 @@ the jobs by changed paths; skipped jobs report success, so all of them can be re
 | Status check | Runs when | What |
 |---|---|---|
 | `reader (node 20)`, `reader (node 22)` | `packages/{core,texture,node}/**`, `fixtures/**`, `scripts/**`, root config | `npm ci && npm run verify` (build, test, `check:browser`, no-C# guard) |
-| `decoder` | `packages/decoder/**`, lockfile | `build:wasm` (Docker), `build:rollup`, `npm test -w unity-asset-reader-decoder`; checks out submodules |
+| `decoder` | `packages/decoder/**`, lockfile | `build:wasm` (Docker), `build:rollup`, `npm test -w texture2ddecoder-wasm`; checks out submodules |
 
 Run the reader job locally with `npm ci && npm run verify`.
 
 ## Releases
 
-All four packages (`unity-asset-reader`, `-texture`, `-node` and `-decoder`) share one version and
-are released together. User-facing changes go under the `Unreleased` heading in
-[CHANGELOG.md](CHANGELOG.md), in their package's list.
+The reader packages (`unity-asset-reader`, `-texture`, `-node`) share one version and are released
+together; `texture2ddecoder-wasm` versions on its own. User-facing changes go under the
+`Unreleased` heading of their package line in [CHANGELOG.md](CHANGELOG.md).
 The publish procedure is in [RELEASING.md](RELEASING.md).
 
 ## Reporting Issues
@@ -304,7 +304,7 @@ For feature requests, describe:
     ├── core/                     # unity-asset-reader
     ├── texture/                  # unity-asset-reader-texture
     ├── node/                     # unity-asset-reader-node
-    └── decoder/                  # unity-asset-reader-decoder
+    └── decoder/                  # texture2ddecoder-wasm
         ├── src/                  # TypeScript source (index.ts)
         ├── tests/                # index.test.ts, samples.test.ts
         ├── scripts/              # build-wasm.sh, copy-wasm.js

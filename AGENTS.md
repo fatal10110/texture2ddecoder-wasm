@@ -1,15 +1,15 @@
 # AGENTS.md
 
-npm-workspaces monorepo (repo will be renamed to `unity-asset-reader`): a shared parser core, feature packages on top, and the texture decoder as a standalone package. All four packages ship under one version, released together (plan D7). The decoder lives in `packages/decoder/`.
+npm-workspaces monorepo (repo will be renamed to `unity-asset-reader`): a shared parser core, feature packages on top, and the texture decoder as a standalone package. The three reader packages ship under one version, released together; `texture2ddecoder-wasm` keeps its own version line (plan D7). The decoder lives in `packages/decoder/`.
 
 | Package | Path | State | What |
 |---|---|---|---|
 | `unity-asset-reader` | `packages/core/` | in development | **Shared core.** Browser-first Unity AssetBundle parser, isomorphic and sync. TS hand-ported from AssetStudio (MIT). No WASM, no workspace deps. |
-| `unity-asset-reader-texture` | `packages/texture/` | in development | Texture2D / Sprite → RGBA. Depends on core (peer) and `unity-asset-reader-decoder`. |
+| `unity-asset-reader-texture` | `packages/texture/` | in development | Texture2D / Sprite → RGBA. Depends on core (peer) and `texture2ddecoder-wasm`. |
 | `unity-asset-reader-node` | `packages/node/` | in development | Node adapter: `loadPath()`, dir scan, sidecars. Depends on core (peer). |
-| `unity-asset-reader-decoder` | `packages/decoder/` | stable (formerly `texture2ddecoder-wasm`) | WASM bindings (emscripten, C++ submodule `texture2ddecoder/`) decoding BC/ETC/PVRTC/ASTC/ATC/Crunch textures to **BGRA**. Node + browser. |
+| `texture2ddecoder-wasm` | `packages/decoder/` | published, stable | WASM bindings (emscripten, C++ submodule `texture2ddecoder/`) decoding BC/ETC/PVRTC/ASTC/ATC/Crunch textures to **BGRA**. Node + browser. |
 
-Dependencies point one way: feature packages → core. Core and `unity-asset-reader-decoder` import nothing from the repo. Do not change `packages/decoder/` unless the task says so; it must keep its public API and tarball file set, and keep building and passing.
+Dependencies point one way: feature packages → core. Core and `texture2ddecoder-wasm` import nothing from the repo. Do not change `packages/decoder/` unless the task says so; it must keep its npm name, public API and tarball file set, and keep building and passing.
 
 ## Read before you work
 
@@ -48,7 +48,7 @@ One package: `npm run build -w unity-asset-reader`, `npm test -w unity-asset-rea
 Decoder WASM (`build:wasm` needs Docker, skip it unless C++/bindings changed):
 
 ```bash
-npm run build:wasm -w unity-asset-reader-decoder && npm test -w unity-asset-reader-decoder
+npm run build:wasm -w texture2ddecoder-wasm && npm test -w texture2ddecoder-wasm
 ```
 
 Tests: `tsx --test`, no frameworks. Style: TS strict, 2 spaces, double quotes, semicolons, JSDoc on exports.
