@@ -88,6 +88,16 @@ First release. Peer: `unity-asset-reader@^1`.
 
 ## texture2ddecoder-wasm
 
+### 1.2.4 - 2026-09-28
+
+- Bundlers leave the browser `initialize({ wasmPath })` import alone, so it loads the glue from
+  `wasmPath` at run time instead of failing with `Cannot find module ...` (webpack, Turbopack).
+  The `browser` field of `package.json` keeps the Node.js glue out of browser bundles; its
+  `import("module")` failed the build with `Can't resolve 'module'`. Next.js (Turbopack and
+  webpack) bundles the package with no config (#171).
+- A root-relative `wasmPath` (`"/wasm"`) is resolved against the page's or the Worker's location
+  before the import. The Vite dev server failed to load it (#171).
+
 ### 1.2.3 - 2026-09-28
 
 - BC3 (DXT5) colour blocks decode in 4-colour mode, as the S3TC spec requires. Before, blocks with

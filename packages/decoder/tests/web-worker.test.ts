@@ -53,6 +53,18 @@ describe("initialize() in a Web Worker scope", () => {
     assert.match(reply.ok ? "" : reply.message, /requires wasmPath/);
   });
 
+  // #171: `import("/wasm/...")` is left to the bundler or the module's own URL to resolve (the
+  // Vite dev server turns it into a `?import` request it refuses for `public/`). Here the
+  // decoder is a data: module, which cannot resolve a root-relative specifier at all.
+  it("resolves a root-relative wasmPath against the Worker's location", async () => {
+    // The wasm directory as a root-relative path; `location` is the entry's file: URL.
+    const rootRelative = new URL(wasmDir).pathname;
+    assert.ok(rootRelative.startsWith("/") && !rootRelative.startsWith("//"));
+    const reply = await inWebWorker({ wasmPath: rootRelative, bc1 });
+    assert.ok(reply.ok, reply.ok ? "" : reply.message);
+    assert.deepStrictEqual(reply.out, await decode_bc1(bc1, 4, 4));
+  });
+
   it("initializes from wasmPath and decodes like Node does", async () => {
     const reply = await inWebWorker({ wasmPath: wasmDir, bc1 });
     assert.ok(reply.ok, reply.ok ? "" : reply.message);

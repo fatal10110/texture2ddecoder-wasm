@@ -52,7 +52,8 @@ export default {
         passes: 1, // Single pass to avoid hanging
       },
       format: {
-        comments: false,
+        // Only the bundler hints on the wasmPath import() in src/index.ts (#171).
+        comments: /webpackIgnore|turbopackIgnore|@vite-ignore/,
         preserve_annotations: true,
       },
       mangle: {
