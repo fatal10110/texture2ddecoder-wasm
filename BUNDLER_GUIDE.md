@@ -227,17 +227,12 @@ const { loadPath } = require("unity-asset-reader-node");
 In Node.js, `initTexture()` takes no options: the WASM files are found in the installed
 `texture2ddecoder-wasm` package.
 
-Which Node.js versions work
-([#172](https://github.com/fatal10110/texture2ddecoder-wasm/issues/172)):
-
-| | `import` | `require` |
-|---|---|---|
-| `unity-asset-reader`, `unity-asset-reader-node` | 18+ | 20.19+ or 22.12+ |
-| `unity-asset-reader-texture` | 20.19+ or 22.12+ | 20.19+ or 22.12+ |
-
-`require()` needs a Node.js that can `require()` an ES module, because the LZMA decoder `lzma1`
-is published as ES modules only. `initTexture()` needs a Node.js that detects ES-module syntax
-in `texture2ddecoder-wasm`'s glue code.
+All three reader packages need Node.js 20.19+ or 22.12+ (`engines`: `^20.19.0 || >=22.12.0`),
+for both `import` and `require`, and CI tests on 20.19.0 and 22.12.0
+([#172](https://github.com/fatal10110/texture2ddecoder-wasm/issues/172)). `require()` needs a
+Node.js that can `require()` an ES module, because the LZMA decoder `lzma1` is published as ES
+modules only. `initTexture()` needs a Node.js that detects ES-module syntax in
+`texture2ddecoder-wasm`'s glue code.
 
 When you bundle a Node.js app (esbuild, Rollup, webpack with `target: "node"`), keep
 `texture2ddecoder-wasm` external. `initTexture()` finds the WASM files relative to its own

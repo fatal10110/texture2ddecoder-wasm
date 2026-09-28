@@ -208,7 +208,8 @@ confirmed against Unity's packer yet
 ## Requirements
 
 - **Browsers:** WebAssembly and ES2020. No COOP/COEP headers, no `SharedArrayBuffer`.
-- **Node.js:** 20.19+ or 22.12+, for both `import` and `require`. `initTexture()` loads
+- **Node.js:** 20.19+ or 22.12+ (`engines`: `^20.19.0 || >=22.12.0`), for both `import` and
+  `require`; CI tests on 20.19.0 and 22.12.0. `initTexture()` loads
   `texture2ddecoder-wasm`'s ES-module glue code, which older Node.js versions refuse
   ([#172](https://github.com/fatal10110/texture2ddecoder-wasm/issues/172)). Node.js 22 prints a
   `MODULE_TYPELESS_PACKAGE_JSON` warning while loading it. The warning is harmless.
