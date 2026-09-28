@@ -106,6 +106,13 @@ First release. Peer: `unity-asset-reader@^1`.
 
 ## texture2ddecoder-wasm
 
+### 1.2.5 - 2026-09-28
+
+- `initialize()` works in Node.js code that webpack bundles, such as a Next.js route handler built
+  with `next build --webpack`. It failed with `TypeError: a is not a function`: webpack's wrapper
+  around the `module` built-in has no `createRequire`, so the glue now also looks for it on the
+  default export (#202).
+
 ### 1.2.4 - 2026-09-28
 
 - Bundlers leave the browser `initialize({ wasmPath })` import alone, so it loads the glue from
