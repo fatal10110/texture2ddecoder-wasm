@@ -398,6 +398,19 @@ test("only the publish job publishes, in the npm environment, with an OIDC token
   assert.equal(workflow.match(/PACKAGES: \$\{\{ steps\.gate\.outputs\.packages \}\}/g)?.length, 2);
 });
 
+// The first publish authenticates with the repository secret NPM_TOKEN (#194). A repository
+// secret is readable by any job, so only the publish job names it, and ~/.npmrc gets a reference
+// to the variable, never the value.
+test("only the publish job reads NPM_TOKEN, and only as a reference in .npmrc", () => {
+  assert.deepEqual([...workflow.matchAll(/secrets\.(\w+)/g)].map((m) => m[1]), ["NPM_TOKEN"]);
+  assert.doesNotMatch(gate, /secrets\./);
+  assert.match(job("publish"), /\n {10}NPM_TOKEN: \$\{\{ secrets\.NPM_TOKEN \}\}\n/);
+  const npmrc = 'echo "//registry.npmjs.org/:_authToken=\\${NPM_TOKEN}" > "$HOME/.npmrc"';
+  const ifSet = 'if [ -n "$NPM_TOKEN" ]; then';
+  const written = `\\n {10}${escape(ifSet)}\\n.*::warning::.*\\n {12}${escape(npmrc)}\\n {10}fi\\n`;
+  assert.match(job("publish"), new RegExp(written));
+});
+
 test("the tag job alone can write, and tags what the publish job published", () => {
   const tag = job("tag");
   assert.match(tag, /\n {4}needs: publish\n/);

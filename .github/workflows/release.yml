@@ -65,7 +65,7 @@ jobs:
   # Pushes to main and dispatches with `dry_run` unticked. npm's trusted publisher checks the
   # repository, this file's name and the environment, not the ref, so the `npm` environment
   # (deployment rule: branch main) is what keeps any other branch from publishing. Each package's
-  # trusted publisher names it, and NPM_BOOTSTRAP_TOKEN is a secret of it only.
+  # trusted publisher names it. The only job that reads the NPM_TOKEN repository secret.
   publish:
     if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)
     runs-on: ubuntu-latest
@@ -100,19 +100,19 @@ jobs:
 
       # In the plan's order (dependencies first). A name@version already on npm is skipped, so a
       # run that failed halfway can be re-run. No token: npm authenticates with the job's OIDC
-      # token and adds provenance by itself. NPM_BOOTSTRAP_TOKEN exists only for the one-time
-      # bootstrap in RELEASING.md.
+      # token and adds provenance by itself. The NPM_TOKEN secret exists only for the first
+      # publish (the bootstrap in RELEASING.md) and is deleted right after it.
       - name: Publish
         id: publish
         if: steps.gate.outputs.packages != ''
         env:
           PACKAGES: ${{ steps.gate.outputs.packages }}
-          NPM_BOOTSTRAP_TOKEN: ${{ secrets.NPM_BOOTSTRAP_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
         run: |
-          if [ -n "$NPM_BOOTSTRAP_TOKEN" ]; then
-            echo "::warning::NPM_BOOTSTRAP_TOKEN is set; delete it once trusted publishing is set up."
-            echo "//registry.npmjs.org/:_authToken=\${NPM_BOOTSTRAP_TOKEN}" > "$HOME/.npmrc"
+          if [ -n "$NPM_TOKEN" ]; then
+            echo "::warning::NPM_TOKEN is set; delete it once trusted publishing is set up."
+            echo "//registry.npmjs.org/:_authToken=\${NPM_TOKEN}" > "$HOME/.npmrc"
           fi
           published=()
           # Written on any exit, so what got out before a failure is still tagged.
