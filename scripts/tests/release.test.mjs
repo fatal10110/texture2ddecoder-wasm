@@ -319,11 +319,35 @@ test("release plan: base manifests come from the base commit", () => {
   }
 });
 
+// The CLI's whole output: `packages=` then zero or more space-separated `name@x.y.z` specs.
+const packagesLine = /^packages=(\S+@\d+\.\d+\.\d+\S*( \S+@\d+\.\d+\.\d+\S*)*)?\n$/;
+
+test("release plan: the packages-line pattern takes empty and non-empty lists only", () => {
+  for (const line of [
+    "packages=\n",
+    "packages=unity-asset-reader@1.0.2\n",
+    "packages=unity-asset-reader@1.0.2 unity-asset-reader-node@1.0.2 x@2.0.0-rc.1\n",
+  ]) {
+    assert.match(line, packagesLine);
+  }
+  for (const line of [
+    "packages=unity-asset-reader@1.0.2",
+    "packages=unity-asset-reader@1.0.2 \n",
+    "packages= unity-asset-reader@1.0.2\n",
+    "packages=unity-asset-reader\n",
+    "packages=unity-asset-reader@1.0\n",
+    "packages=a@1.0.0\nb@1.0.0\n",
+    "released=unity-asset-reader@1.0.2\n",
+  ]) {
+    assert.doesNotMatch(line, packagesLine);
+  }
+});
+
 test("release plan: the CLI prints the packages line, and exits 1 on a bad base", () => {
-  // This repo against its own HEAD: the committed versions are the ones on disk unless this
-  // very change bumps one, so only the shape is checked (no bump asks npm nothing).
+  // This repo against its own HEAD: the committed versions are the ones on disk unless the
+  // working tree bumps one, so only the shape is checked (no bump asks npm nothing).
   const out = execFileSync("node", [guard, "--base", "HEAD"], { encoding: "utf8" });
-  assert.match(out, /^packages=(\S+@\d+\.\d+\.\d+\S*( |$))*\n$/);
+  assert.match(out, packagesLine);
   for (const args of [["--base", "0".repeat(40)], ["--base"], []]) {
     assert.throws(() => execFileSync("node", [guard, ...args], { stdio: "pipe" }), { status: 1 });
   }
