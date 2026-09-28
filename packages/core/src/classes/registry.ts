@@ -61,30 +61,37 @@ export interface Texture2DData extends Texture2D {
 export type MonoBehaviourData = MonoBehaviour & { [field: string]: unknown };
 
 /**
+ * What `obj.read()` returns for each class with a hardcoded reader, by class
+ * name (the {@link ClassID} key). The keys are the classes `CLASS_READERS`
+ * below reads, the one list of them; the compiler holds the two together.
+ * `Env.assets()` types an asset's `data` by this map (#183).
+ */
+export interface AssetDataMap {
+  Texture2D: Texture2DData;
+  AssetBundle: AssetBundle;
+  TextAsset: TextAsset;
+  MonoScript: MonoScript;
+  MonoBehaviour: MonoBehaviourData;
+  Material: Material;
+  AudioClip: AudioClipData;
+  Font: Font;
+  VideoClip: VideoClipData;
+  MovieTexture: MovieTexture;
+  Sprite: Sprite;
+  SpriteAtlas: SpriteAtlas;
+}
+
+/**
  * What `obj.read()` returns: the result of its class's hardcoded reader when
  * the class has one, and the `readTypeTree()` result for any other class.
  * `MonoBehaviour` is the exception: its hardcoded reader reads only the
  * header, so when the file has a type tree `obj.read()` gives the whole
  * `readTypeTree()` result instead (see {@link MonoBehaviourData}).
  *
- * The classes with a hardcoded reader are the keys of `CLASS_READERS` below,
- * the one list of them. The members of this union are what those readers
- * return, plus `TypeTreeObject`; each documents its own shape.
+ * The members of this union are the values of {@link AssetDataMap}, plus
+ * `TypeTreeObject`; each documents its own shape.
  */
-export type ObjectData =
-  | Texture2DData
-  | AssetBundle
-  | TextAsset
-  | MonoScript
-  | MonoBehaviourData
-  | Material
-  | AudioClipData
-  | Font
-  | VideoClipData
-  | MovieTexture
-  | Sprite
-  | SpriteAtlas
-  | TypeTreeObject;
+export type ObjectData = AssetDataMap[keyof AssetDataMap] | TypeTreeObject;
 
 /**
  * Reads the bytes a {@link ResourceRef} names, for the object it was read
@@ -94,27 +101,46 @@ export type ObjectData =
 export type ResourceReader = (ref: ResourceRef, from: ObjectReader) => Uint8Array;
 
 /** A hardcoded class reader, as the registry calls it. */
-type ClassReader = (reader: ObjectReader, resources: ResourceReader | undefined) => ObjectData;
+type ClassReader<T> = (reader: ObjectReader, resources: ResourceReader | undefined) => T;
 
 /**
- * The hardcoded class readers by class id (upstream `ReadAssets`' switch). A
+ * The hardcoded class readers by class name (upstream `ReadAssets`' switch). A
  * class gets an entry once its reader is ported; everything else goes through
  * its type tree.
  */
-const CLASS_READERS: ReadonlyMap<number, ClassReader> = new Map<number, ClassReader>([
-  [ClassID.Texture2D, readTexture2DData],
-  [ClassID.AssetBundle, readAssetBundle],
-  [ClassID.TextAsset, readTextAsset],
-  [ClassID.MonoScript, readMonoScript],
-  [ClassID.MonoBehaviour, readMonoBehaviourData],
-  [ClassID.Material, readMaterial],
-  [ClassID.AudioClip, readAudioClipData],
-  [ClassID.Font, readFont],
-  [ClassID.VideoClip, readVideoClipData],
-  [ClassID.MovieTexture, readMovieTexture],
-  [ClassID.Sprite, readSprite],
-  [ClassID.SpriteAtlas, readSpriteAtlas],
-]);
+const CLASS_READERS: { readonly [K in keyof AssetDataMap]: ClassReader<AssetDataMap[K]> } = {
+  Texture2D: readTexture2DData,
+  AssetBundle: readAssetBundle,
+  TextAsset: readTextAsset,
+  MonoScript: readMonoScript,
+  MonoBehaviour: readMonoBehaviourData,
+  Material: readMaterial,
+  AudioClip: readAudioClipData,
+  Font: readFont,
+  VideoClip: readVideoClipData,
+  MovieTexture: readMovieTexture,
+  Sprite: readSprite,
+  SpriteAtlas: readSpriteAtlas,
+};
+
+/** {@link CLASS_READERS} by class id, and the class name each id has there. */
+const READERS_BY_ID: ReadonlyMap<number, [keyof AssetDataMap, ClassReader<ObjectData>]> = new Map(
+  (Object.keys(CLASS_READERS) as (keyof AssetDataMap)[]).map((name) => [
+    ClassID[name],
+    [name, CLASS_READERS[name]],
+  ]),
+);
+
+/**
+ * The class name of a class id that has a hardcoded reader. Internal: the
+ * `type` of an `Asset`.
+ *
+ * @returns the {@link AssetDataMap} key, or `undefined` for a class read
+ *   through its type tree
+ */
+export function classReaderName(classId: number): keyof AssetDataMap | undefined {
+  return READERS_BY_ID.get(classId)?.[0];
+}
 
 /**
  * Read an object with the hardcoded reader of its class when there is one,
@@ -143,7 +169,7 @@ export function readObjectData(
   reader: ObjectReader,
   resources: ResourceReader | undefined,
 ): ObjectData {
-  const read = CLASS_READERS.get(reader.type);
+  const read = READERS_BY_ID.get(reader.type)?.[1];
   return read ? read(reader, resources) : readTypeTree(reader);
 }
 

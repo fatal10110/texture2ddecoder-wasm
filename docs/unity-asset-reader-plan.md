@@ -10,8 +10,8 @@ Checkable rules derived from this plan: [unity-asset-reader-rules.md](unity-asse
 |---|---|---|
 | D1 | **Port from AssetStudio (MIT). Do not fork, copy from, or import `@arkntools/unity-js` anywhere — including tests.** | unity-js is **AGPL-3.0**. A fork forces AGPL on the package and on every web app that ships it. AssetStudio, UnityPy and all chosen deps are MIT. This is a derivative port, not clean-room: keep Perfare / RazTools / Razviar (and UnityPy, where consulted) copyright notices in `LICENSE`/`NOTICE`. One exception to MIT-only sources: the texture package's sprite tight-mesh fill is derived from ImageSharp.Drawing (Apache-2.0), shipped with attribution and `LICENSE-APACHE` (#34). |
 | D2 | TS parser, WASM only for leaf **C/C++** codecs. **No C# is ever compiled to WASM** (no Blazor / .NET-wasm / NativeAOT-LLVM / IL2CPP output). AssetStudio C# is a read-only behavior reference, hand-ported to TS. | Parsing is byte shuffling; WASM boundary = copies, no gain. A .NET runtime in WASM = multi-MB download + own GC, kills CDN drop-in. WASM inputs allowed: `texture2ddecoder` (C++), fallback `LzmaDec.c` (C), M6 `acl` (C++), `libvorbis` (C), `spirv-cross` (C++). |
-| D3 | Core is isomorphic: zero `node:*`, zero DOM. Input = `Uint8Array`. | "Works in browser same as the texture decoder". |
-| D4 | Core parse path is **sync**. Only `initialize()` and texture decode are async. | Matches existing lib; avoids async colouring the whole reader. Consequence: big bundles block the calling thread — docs and `examples/cdn.html` run the reader in a **Worker**. |
+| D3 | Core is isomorphic: zero `node:*`, zero DOM. Input = `Uint8Array`; `open()` gets it from a URL, `Request`, `Response` or `Blob` with the WHATWG `fetch` / `Response` / `Blob` / `URL` globals only, which Node has too (2026-09-28b). | "Works in browser same as the texture decoder". |
+| D4 | Core **parsing is sync; `open()` (loading input) and texture decoding are async.** Async is `open()` (fetching / reading the bytes, then a sync `load()`), `initialize()` / `initTexture()` and texture decode; nothing that parses returns a promise (2026-09-28b). | Matches existing lib; avoids async colouring the whole reader. Consequence: big bundles block the calling thread — docs and `examples/cdn.html` run the reader in a **Worker**. |
 | D5 | No image encoding in core. Output `{ data: Uint8Array /*RGBA*/, width, height }`. | Kills Jimp/ImageSharp class of deps. Browser → `ImageData`; Node → caller's choice. |
 | D6 | Single-threaded WASM only. No pthreads/SharedArrayBuffer. | pthreads force COOP/COEP headers → breaks drop-in CDN use. |
 | D7 | **Several npm packages around one shared core.** `unity-asset-reader` (dir `packages/core`) is the isomorphic parser and the only place parsing lives. Feature packages depend on it and never on each other's internals: `unity-asset-reader-texture` (`packages/texture`), `unity-asset-reader-node` (`packages/node`), M6 items each get their own (`-mesh`, `-audio`, ...). `texture2ddecoder-wasm` (`packages/decoder`) is a standalone leaf: it depends on nothing in the repo and keeps its npm name, API and **own 1.x version line** (see the 2026-09-28a revision). **The three reader packages version in lockstep:** one version for `unity-asset-reader`, `-texture` and `-node`, starting at 1.0.0, released together even when only one changed. The decoder is released on its own, only when it changed. | A user who only unpacks bundles does not install WASM; a user who only decodes textures keeps using `texture2ddecoder-wasm` alone. Heavy M6 codecs (ACL, vorbis, spirv-cross) never bloat the core. Separate packages also make the decoder a normal `dependency` of the texture package instead of an optional-peer workaround. The decoder has nothing Unity-specific in it (it is Texture2DDecoder built to WASM), and its published name is what people search for; the texture package's `^` range on it says which decoder goes with which reader. Names are final at first publish (#45); if an npm org is available, `@unity-asset-reader/{core,texture,node}` is the alternative. |
@@ -52,7 +52,9 @@ packages/
       serialized/SerializedFile.ts TypeTree.ts TypeTreeReader.ts CommonString.ts ClassID.ts ObjectReader.ts
       classes/   Object NamedObject PPtr AssetBundle TextAsset Texture2D Sprite SpriteAtlas
                  MonoBehaviour MonoScript AudioClip Material Mesh ...     (field readers only, no pixel work)
-      env.ts     resource resolver (.resS / .resource lookup across loaded files)
+      env.ts     load(), resource resolver (.resS / .resource lookup across loaded files)
+      asset.ts   Asset (plain data + `type` discriminant) for env.assets() / env.get()
+      open.ts    open(): fetch / Blob / Response → load(); the only async in core
       index.ts
     tests/
   texture/              npm: unity-asset-reader-texture  isomorphic; deps: core (peer), texture2ddecoder-wasm
@@ -95,6 +97,37 @@ for (const obj of env.objects) {
 env.files        // unpacked CAB / resS entries: { path, data }  ← pure "unpack" use case
 obj.readTypeTree()  // generic JS object for any class with an embedded typetree; int64 → bigint (D9)
 ```
+
+That is the low-level API, and it stays as it is: `env.objects`, `ObjectReader.read()`, `readTypeTree()`, `env.resolve()`, `env.readResource()` and the `read*` class readers.
+
+### High-level API (2026-09-28b)
+
+A TypeScript-style layer over the same `Env`, for callers who want assets rather than objects. It does not mirror UnityPy's interface.
+
+```ts
+import { load, open } from 'unity-asset-reader'
+
+const env = load(bytes)                                   // Uint8Array | ArrayBuffer; name optional
+const env2 = load([bundleBytes, { name: 'sharedassets0.assets.resS', data: resS }])
+const env3 = await open('https://cdn.example.com/ui.bundle') // URL | string | Request | Response | Blob/File | bytes | { name, data } | array
+
+for (const asset of env.assets()) {            // every object, in env.objects order
+  asset.type      // 'Texture2D' | 'Sprite' | ... (classes with a hand reader) | 'Other'
+  asset.typeName  // class name for every class ('Mesh' when type is 'Other')
+  asset.classId; asset.pathId; asset.file; asset.byteSize
+  asset.name      // m_Name, '' when the class has none; reads only as far as m_Name
+  asset.path      // first m_Container path pointing at it, or undefined
+  asset.data      // obj.read(), on first access, cached; narrowed by `switch (asset.type)`
+}
+env.assets('Texture2D', 'Sprite')              // filtered and narrowed
+env.get('Assets/UI/Icon.png')                  // by container path, case-insensitive, or undefined
+```
+
+- **Data plus free functions, no per-class methods.** An `Asset` is plain data with a discriminant (`type`); its `data` is what `obj.read()` returns. Whatever an asset can be turned into is a free function taking it (#185: texture `isImage` / `decodeImage`), never a method on an asset class.
+- `type` is the class name for the classes with a hand reader and `'Other'` for the rest (a `string` fallback would stop `switch` from narrowing `data`); `typeName` names every class.
+- `load()` takes one input or an array; an input is bytes or `{ name?, data }`, a missing name becomes `input <index>`. Loose files still need their real names (resource and externals lookup).
+- `open()` is the async way in: it only gets the bytes (global `fetch` or `options.fetch`, `Blob.arrayBuffer()`), names each file after its URL's last path segment or `File.name`, throws on a non-OK response, then calls `load()`. Parsing stays sync (D4).
+- #184 gives `data` TypeScript-style field names; #185 adds the texture functions on top of `Asset`.
 
 ## 4. Milestones
 
@@ -221,5 +254,7 @@ Revision 2026-09-27 (#35, PR #151): M3's `examples/cdn.html` criterion no longer
 Revision 2026-09-27b (#34, PR #156): the texture package's optional sprite tight-mesh fill is derived from ImageSharp.Drawing v1.0.0-beta15 (Apache-2.0, Six Labors), kept by maintainer decision because it makes the mask match AssetStudio pixel-for-pixel. `unity-asset-reader-texture` therefore declares `"license": "MIT AND Apache-2.0"` and ships `LICENSE-APACHE` plus a `NOTICE` stanza; the derived code carries a per-file Apache-2.0 header. Core, node and `texture2ddecoder-wasm` stay MIT. D1 notes the exception.
 
 Revision 2026-09-27c (#174, maintainer decision): every package ships under **one version**, and the decoder is renamed so the family starts together at **1.0.0**. `texture2ddecoder-wasm` becomes `unity-asset-reader-decoder` (folder `packages/decoder`) at 1.0.0 with its public API unchanged; only the npm name and version change. The reader packages are 1.0.0 too, and all four are released together from now on. `texture2ddecoder-wasm` stays at 1.2.2 on npm; after the first publish the maintainer deprecates it with a pointer to the new name (not done from the repo). Reverses D7's "keeps its npm name, API and 1.x version line" and "versions independently", D8's `packages/texture2ddecoder-wasm/` path, and R13's "keeps its npm name". D7, D8, §1, §2, M0, M3 and M5 now name the new package.
+
+Revision 2026-09-28b (#183, maintainer decision): the reader gets a TypeScript-style high-level API before 1.0 (§3 "High-level API"): `load()` takes bare bytes and single inputs, `open()` fetches or reads input asynchronously and then calls `load()`, `env.assets()` yields every object as an `Asset` (plain data with a `type` discriminant and a lazy `data`), `env.get(path)` looks assets up by container path. The design is data plus free functions, with no per-class methods; the low-level API stays alongside. D4 and R5 now read "parsing is sync; `open()` (loading input) and texture decoding are async", and D3 / R4 name the WHATWG globals `open()` uses. §2 lists `asset.ts` and `open.ts`.
 
 Revision 2026-09-28a (#182, maintainer decision): reverses the naming and versioning half of 2026-09-27c. The decoder goes back to its published name **`texture2ddecoder-wasm`** and keeps **its own version line**; its next release is 1.2.3 (#137, #149). `unity-asset-reader-decoder` was never published and is dropped; there is no migration and no `npm deprecate`. The three reader packages stay in lockstep and start at 1.0.0; `unity-asset-reader-texture` depends on `texture2ddecoder-wasm@^1.2.3`, so decoder 1.2.3 is published before the readers' 1.0.0. The folder stays `packages/decoder`. Releases use two tag families, `unity-asset-reader@<v>` and `texture2ddecoder-wasm@<v>`, because the decoder's old `v1.x` tags exist. D7, D8, §1, §2, §3, M3, M5 and R13 name `texture2ddecoder-wasm` again.

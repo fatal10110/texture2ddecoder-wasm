@@ -67,6 +67,20 @@ export interface GoldenSerialized {
   rawData?: Record<string, GoldenRawData>;
   /** pathId -> Sprite golden; only files holding a Sprite have it (#34). */
   sprites?: Record<string, GoldenSprite>;
+  /** pathId -> the object's name as UnityPy's `peek_name()` reads it; `""` for none (#183). */
+  names: Record<string, string>;
+}
+
+/**
+ * One `m_Container` entry, as UnityPy's `env.container` lists it (#183): the
+ * path, and the object its pointer resolves to. `file` is `null` (and the raw
+ * `fileId` given) when the oracle could not resolve it.
+ */
+export interface GoldenContainerEntry {
+  path: string;
+  file: string | null;
+  pathId: string;
+  fileId?: number;
 }
 
 /**
@@ -142,6 +156,11 @@ export interface Golden {
   objects: Record<string, { pathId: string; classId: number; byteSize: number }[]>;
   /** Node path -> SerializedFile golden; only editor-built fixtures have these. */
   serialized?: Record<string, GoldenSerialized>;
+  /**
+   * Every AssetBundle's `m_Container`, in order (UnityPy's `env.container`);
+   * present exactly when `serialized` is (#183).
+   */
+  container?: GoldenContainerEntry[];
   oracleNote?: string;
 }
 

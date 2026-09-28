@@ -4,9 +4,11 @@ A browser-first reader for Unity AssetBundles and SerializedFiles. It unpacks co
 (UnityFS, UnityWeb, UnityRaw, `UnityWebData`, gzip) and reads the objects inside them, and it
 runs the same way in browsers, Web Workers and Node.js.
 
-- **Isomorphic.** It has no `node:*` import and no DOM. Input is a `Uint8Array`.
-- **Synchronous.** `load()` returns the unpacked files straight away. Nothing in the parse path is
-  `async` (see [Run it in a Worker](#run-it-in-a-worker)).
+- **Isomorphic.** It has no `node:*` import and no DOM. Input is a `Uint8Array`, or anything
+  `open()` can fetch or read (a URL, a `Response`, a `Blob`).
+- **Synchronous parsing.** `load()` returns the unpacked files straight away. Only `open()`, which
+  fetches or reads the bytes first, is `async`; nothing in the parse path is (see
+  [Run it in a Worker](#run-it-in-a-worker)).
 - **No WASM.** Its only dependencies are two small, pure-JS decompressors,
   [`fflate`](https://www.npmjs.com/package/fflate) and [`lzma1`](https://www.npmjs.com/package/lzma1).
 - **64-bit values are always `bigint`**, whatever their size (see
@@ -31,6 +33,61 @@ Types are included. For Node.js versions, CommonJS and bundlers, see
 [Requirements](#requirements) and the [Bundler Guide](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/BUNDLER_GUIDE.md).
 
 ## Usage
+
+```ts
+import { load, open, textAssetString } from "unity-asset-reader";
+
+const env = load(bundleBytes);                          // a Uint8Array or an ArrayBuffer
+const web = await open("https://cdn.example.com/ui.bundle"); // or a URL, Request, Response, Blob / File
+
+for (const asset of env.assets()) {
+  console.log(asset.type, asset.name, asset.path); // "TextAsset" "hello" "assets/text/hello.txt"
+
+  switch (asset.type) {
+    case "TextAsset":
+      console.log(textAssetString(asset.data)); // `data` is a TextAsset here
+      break;
+    case "Texture2D":
+      console.log(asset.data.m_Width, asset.data.imageData.length); // and a Texture2D here
+      break;
+    case "Other":
+      console.log(asset.typeName, asset.data); // "Mesh" { m_Name: "tri", ... } from the type tree
+  }
+}
+
+const icon = env.get("Assets/UI/Icon.png"); // by the path the asset had in the project
+for (const sprite of env.assets("Sprite")) sprite.data.m_Rect; // filtered and typed
+```
+
+- **`load(input)`** takes one file or an array of files. Each is bytes or `{ name, data }`. A file
+  without a name is called `input 0`, `input 1`, ... after its place. That is fine for a bundle,
+  whose contents carry their own names, but give loose files (a `.resS`, a `sharedassets0.assets`)
+  their real names: resources and pointers between files are found by name.
+- **`await open(source)`** gets the bytes first, then calls `load()`. A `string` or `URL` is
+  fetched, a `Request` is fetched as it is, a `Response` or `Blob` / `File` is read, and bytes or
+  `{ name, data }` pass through; an array mixes them. A file is named after the last segment of
+  its URL's path (decoded, without the query) or its `File.name`. A response that is not OK throws
+  an `Error` naming the URL and the status. Pass `{ fetch }` to fetch with your own headers or
+  credentials: `open(url, { fetch: (input) => fetch(input, { headers }) })`.
+- **`env.assets(...types)`** yields every object as an `Asset`: plain data with `type`, `typeName`,
+  `classId`, `name`, `path`, `pathId`, `file`, `byteSize`, `data` and the low-level `reader`.
+  `type` is the class name for the classes with a class reader (see [Classes](#classes)) and
+  `"Other"` for the rest, whose name is in `typeName`. A `switch (asset.type)` narrows `data`;
+  `env.assets("Texture2D", "Sprite")` keeps only those types and narrows too. Assets have no
+  methods: what you can turn one into is a function that takes it.
+- **`name`, `path` and `data` are read when you first use them, then kept.** `name` is `m_Name`,
+  read only as far as that field (`""` for a class without one, or for a `GameObject` in a bundle
+  without type trees). `path` is the first `m_Container` path of any loaded `AssetBundle` that
+  points at the asset, or `undefined`. `data` is what `obj.read()` returns (below). A read that
+  fails throws when you access it, with the file, class and path id in the message, and is tried
+  again on the next access.
+- **`env.get(path)`** finds the asset a container path names. Unity stores those paths in lower
+  case, and the lookup ignores case. A path that lists several assets (a texture and its sprites)
+  gives the first one; filter `env.assets()` by `path` for the rest.
+
+### Low-level API
+
+The objects themselves, as `env.assets()` sees them:
 
 ```ts
 import { load, ClassID, classIdName, textAssetString, type TextAsset } from "unity-asset-reader";
@@ -147,7 +204,9 @@ or `-0`: `JSON.stringify` writes `null`, `null` and `0` for float fields that ho
 ## Errors
 
 An error from `load()` or `env.objects` names the path down to the bad bytes
-(`a.bundle: CAB-1a2b…: ...`). Three classes let you tell the cases apart:
+(`a.bundle: CAB-1a2b…: ...`); an asset's `name` or `data` adds the class and path id
+(`a.bundle: CAB-1a2b…: Texture2D -2966962111441417370: ...`). Three classes let you tell the cases
+apart:
 
 | Class | Meaning | Useful fields |
 |---|---|---|
@@ -224,7 +283,8 @@ image encoding (PNG, JPEG). Texture and sprite pixels are in
 
 - **Browsers:** any browser with ES2020 (`bigint`) and `TextDecoder`. Every current browser has
   both.
-- **Node.js, ESM (`import`):** 18 or later.
+- **Node.js, ESM (`import`):** 18 or later. `open()` uses the global `fetch`, which Node.js has
+  from 18.
 - **Node.js, CommonJS (`require`):** 20.19+ or 22.12+. `lzma1` is published as ES modules only,
   so `require("unity-asset-reader")` needs a Node.js that can `require()` an ES module
   ([#172](https://github.com/fatal10110/texture2ddecoder-wasm/issues/172)).
@@ -238,9 +298,13 @@ bundled `index.d.ts`, so your editor shows it on hover.
 
 | Export | What |
 |---|---|
-| `load(inputs)` | Unpack files and index their objects. Returns an `Env` |
-| `Env` | `files`, `objects`, `resolve(pptr, from)`, `readResource(ref, from)` |
-| `LoadInput` | `{ name, data }`: one file for `load()`; `data` is a `Uint8Array` or `ArrayBuffer` |
+| `load(inputs)` | Unpack one file or several and index their objects. Returns an `Env` |
+| `open(sources, options?)` | Fetch or read files (URL, `Request`, `Response`, `Blob` / `File`, bytes), then `load()` them. Returns a promise of the `Env` |
+| `OpenSource`, `OpenOptions` | What `open()` takes; `options.fetch` replaces the global `fetch` |
+| `ResponseLike`, `RequestLike`, `BlobLike`, `URLLike` | The parts of the WHATWG types `open()` uses, which `Response`, `Request`, `Blob`, `File` and `URL` fit |
+| `Env` | `files`, `objects`, `assets(...types)`, `get(path)`, `resolve(pptr, from)`, `readResource(ref, from)` |
+| `LoadSource` | One input of `load()`: bytes, a `LoadInput`, or `{ data }` without a name (called `input <index>`) |
+| `LoadInput` | `{ name, data }`: one named file for `load()`; `data` is a `Uint8Array` or `ArrayBuffer` |
 | `LoadedFile` | `{ path, data }`: one unpacked file |
 | `ResourceRef` | `{ path, offset, size }`: a byte range of a resource file (a `StreamingInfo`) |
 | `PPtr` | `{ m_FileID, m_PathID }`: a pointer as a type tree holds it |
@@ -250,6 +314,8 @@ bundled `index.d.ts`, so your editor shows it on hover.
 
 | Export | What |
 |---|---|
+| `Asset`, `AssetType`, `KnownAssetType` | One object as `env.assets()` yields it; `Asset<"Texture2D">` is one of that type. `AssetType` is `KnownAssetType` (the classes with a class reader) or `"Other"` |
+| `AssetDataMap` | Class name to the type of `asset.data` (and `obj.read()`), for the classes with a class reader |
 | `ObjectReader` | One object: `pathId`, `type` (class id), `byteSize`, `version`, `platform`, `read()`, `readTypeTree()`, and the binary read methods of `BinaryReader` |
 | `ObjectData` | The union `obj.read()` returns |
 | `readTypeTree(reader)` | Read an object into a plain JS object by walking its type tree |

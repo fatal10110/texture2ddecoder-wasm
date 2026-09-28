@@ -33,7 +33,12 @@ First release of `unity-asset-reader`, `unity-asset-reader-texture` and `unity-a
   sidecars. `detectFileType()` and `detectContainer()` tell them apart; brotli, zip and
   UnityArchive are detected and refused with `UnsupportedError`.
 - `load()` returns an `Env` over every file given; `env.files` lists the SerializedFiles and
-  resources, and PPtrs resolve across files.
+  resources, and PPtrs resolve across files. It takes one input or an array, each as bytes or
+  `{ name, data }`.
+- High-level API: `open()` fetches URLs or reads `Blob`/`File`/`Response` input, then calls
+  `load()`. `env.assets(...types)` yields every object as an `Asset`, plain data with a `type`
+  that narrows its lazily read `data`, plus its `name` and container `path`. `env.get(path)` finds
+  an asset by container path (#183).
 - SerializedFile header, metadata, type trees and object table. Fixtures cover Unity 2019.4,
   2020.3 and 6000.3 builds. `readTypeTree()` turns any object with a type tree into a plain JS
   object.

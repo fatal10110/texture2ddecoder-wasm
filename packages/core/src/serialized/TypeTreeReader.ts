@@ -1,5 +1,6 @@
 // Ported from AssetStudio/TypeTreeHelper.cs (MIT, © Perfare / RazTools / Razviar)
 // Ported from UnityPy/helpers/TypeTreeHelper.py (MIT, © K0lb3)
+// Ported from UnityPy/files/ObjectReader.py (MIT, © K0lb3)
 
 import { CorruptError, UnsupportedError } from "../errors.js";
 import type { ObjectReader } from "./ObjectReader.js";
@@ -115,6 +116,57 @@ export function readTypeTree(reader: ObjectReader): TypeTreeObject {
   }
   return value;
 }
+
+/**
+ * The object's `m_Name`, read by walking its type tree only as far as that
+ * field (UnityPy's `peek_name`), so a big object is not read whole to be named.
+ *
+ * Reads from the object's first byte whatever the reader's position, and
+ * leaves the reader just past `m_Name`.
+ *
+ * @param reader the object to read
+ * @returns the name; `undefined` when the file has no type tree for the
+ *   object, or its type tree has no top-level `m_Name` string, and then
+ *   nothing is read
+ * @throws {CorruptError} as {@link readTypeTree} does, for the fields before
+ *   `m_Name` and `m_Name` itself
+ */
+export function readTypeTreeName(reader: ObjectReader): string | undefined {
+  const nodes = reader.serializedType?.nodes ?? null;
+  if (nodes === null || nodes.length === 0) return undefined;
+  let t = trees.get(nodes);
+  if (!t) {
+    t = tree(nodes);
+    trees.set(nodes, t);
+  }
+  let at = -1;
+  for (let c = 1; c < t.end[0]!; c = t.end[c]!) {
+    if (t.nodes[c]!.name === "m_Name" && t.nodes[c]!.type === "string") {
+      at = c;
+      break;
+    }
+  }
+  if (at < 0) return undefined;
+
+  const walk: Walk = { reader, refTrees: new Map(), classHasRegistry: false };
+  reader.position = 0;
+  // The fields before it as `readClass` reads them; only their bytes matter.
+  for (let c = 1; c < at; c = t.end[c]!) {
+    const child = t.nodes[c]!;
+    if (child.type === "ManagedReferencesRegistry") {
+      if (walk.classHasRegistry) continue;
+      walk.classHasRegistry = true;
+    }
+    readValue(walk, t, c);
+  }
+  return readValue(walk, t, at) as string;
+}
+
+/**
+ * {@link Tree}s {@link readTypeTreeName} built, by node list. Every object of
+ * one type shares its node list, so naming many objects indexes it once.
+ */
+const trees = new WeakMap<TypeTreeNode[], Tree>();
 
 /** Index a node list: `end[i]` is the first node after node `i`'s subtree. */
 function tree(nodes: TypeTreeNode[]): Tree {

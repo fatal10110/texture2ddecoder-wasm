@@ -10,7 +10,17 @@ export { gunzip, unzlib } from "./codec/inflate.js";
 export { decompressLz4 } from "./codec/lz4.js";
 export { lzmaDecompress } from "./codec/lzma.js";
 export { load } from "./env.js";
-export type { Env, LoadedFile, LoadInput } from "./env.js";
+export type { Env, LoadedFile, LoadInput, LoadSource } from "./env.js";
+export { open } from "./open.js";
+export type {
+  BlobLike,
+  OpenOptions,
+  OpenSource,
+  RequestLike,
+  ResponseLike,
+  URLLike,
+} from "./open.js";
+export type { Asset, AssetDataMap, AssetType, KnownAssetType } from "./asset.js";
 export { CorruptError, ResourceNotFoundError, UnsupportedError } from "./errors.js";
 export { BinaryReader, type Endian } from "./io/BinaryReader.js";
 export { BuildTarget } from "./serialized/BuildTarget.js";
