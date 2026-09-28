@@ -88,7 +88,7 @@ First release. Peer: `unity-asset-reader@^1`.
 
 ## texture2ddecoder-wasm
 
-### 1.2.4 - Unreleased
+### 1.2.4 - 2026-09-28
 
 - Bundlers leave the browser `initialize({ wasmPath })` import alone, so it loads the glue from
   `wasmPath` at run time instead of failing with `Cannot find module ...` (webpack, Turbopack).
