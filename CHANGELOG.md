@@ -106,7 +106,7 @@ First release. Peer: `unity-asset-reader@^1`.
 
 ## texture2ddecoder-wasm
 
-### 1.2.5 - 2026-09-28
+### 1.2.5 - 2026-09-29
 
 - `initialize()` works in Node.js code that webpack bundles, such as a Next.js route handler built
   with `next build --webpack`. It failed with `TypeError: a is not a function`: webpack's wrapper
