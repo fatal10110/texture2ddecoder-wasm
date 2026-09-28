@@ -53,7 +53,46 @@ export type { Texture } from "./classes/Texture.js";
 export { readTexture2D } from "./classes/Texture2D.js";
 export type { GLTextureSettings, StreamingInfo, Texture2D } from "./classes/Texture2D.js";
 export { TextureFormat } from "./classes/TextureFormat.js";
-export type { ObjectData, Texture2DData } from "./classes/registry.js";
+export type { ObjectData, ObjectDataMap, Texture2DData } from "./classes/registry.js";
+export {
+  toAssetBundleFields,
+  toAudioClipFields,
+  toFontFields,
+  toMaterialFields,
+  toMonoBehaviourFields,
+  toMonoScriptFields,
+  toMovieTextureFields,
+  toSpriteAtlasFields,
+  toSpriteFields,
+  toTextAssetFields,
+  toTexture2DFields,
+  toVideoClipFields,
+} from "./classes/fields.js";
+export type {
+  AABBFields,
+  AssetBundleFields,
+  AudioClipFields,
+  EditorExtensionFields,
+  FontFields,
+  GLTextureSettingsFields,
+  MaterialFields,
+  MonoBehaviourFields,
+  MonoScriptFields,
+  MovieTextureFields,
+  NamedObjectFields,
+  SpriteAtlasFields,
+  SpriteFields,
+  SpriteRenderDataFields,
+  StreamedResourceFields,
+  SubMeshFields,
+  TextAssetFields,
+  Texture2DFields,
+  TextureFields,
+  UnityPropertySheetFields,
+  UnityTexEnvFields,
+  VertexDataFields,
+  VideoClipFields,
+} from "./classes/fields.js";
 export { readAssetBundle } from "./classes/AssetBundle.js";
 export type { AssetBundle, AssetBundleScriptInfo, AssetInfo } from "./classes/AssetBundle.js";
 export { readTextAsset, textAssetString } from "./classes/TextAsset.js";
