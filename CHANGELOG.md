@@ -21,7 +21,7 @@ to release is in [RELEASING.md](RELEASING.md).
 
 ## unity-asset-reader
 
-### 1.0.1 - Unreleased
+### 1.0.1 - 2026-09-28
 
 - `engines` is `^20.19.0 || >=22.12.0`, was `>=18.0.0`. `require("unity-asset-reader")` needs a
   Node.js that can `require()` an ES module, because the LZMA decoder `lzma1` is published as ES
@@ -66,7 +66,7 @@ First release. The core: isomorphic, synchronous, no WASM.
 
 ## unity-asset-reader-texture
 
-### 1.0.1 - Unreleased
+### 1.0.1 - 2026-09-28
 
 - `engines` is `^20.19.0 || >=22.12.0`, was `>=18.0.0`. In Node.js, `initTexture()` loads
   `texture2ddecoder-wasm`'s ES-module glue code, which Node.js below 20.19 refuses (`Cannot use
@@ -92,7 +92,7 @@ First release. Peer: `unity-asset-reader@^1`; depends on `texture2ddecoder-wasm@
 
 ## unity-asset-reader-node
 
-### 1.0.1 - Unreleased
+### 1.0.1 - 2026-09-28
 
 - `engines` is `^20.19.0 || >=22.12.0`, was `>=18.0.0`, the same as `unity-asset-reader`, which
   `require()` needs. CI tests on 20.19.0 and 22.12.0 (#172).
