@@ -1,6 +1,7 @@
 import { readMonoBehaviour } from "./classes/MonoBehaviour.js";
 import { readNamedObject } from "./classes/NamedObject.js";
 import type { PPtr, PPtrResolution } from "./classes/PPtr.js";
+import type { Env } from "./env.js";
 import { classReaderName, type AssetDataMap } from "./classes/registry.js";
 import { ClassID, classIdName } from "./serialized/ClassID.js";
 import type { ObjectReader } from "./serialized/ObjectReader.js";
@@ -62,6 +63,12 @@ interface AssetOf<T extends AssetType, D> {
   readonly data: D;
   /** The low-level reader, for `readTypeTree()`, `Env.resolve` and `Env.readResource`. */
   readonly reader: ObjectReader;
+  /**
+   * The env that loaded it, whose `resolve` and `readResource` take its
+   * {@link reader}: what a free function over assets needs to follow the
+   * asset's pointers (a Sprite's texture, #185).
+   */
+  readonly env: Env;
 }
 
 /**
@@ -122,11 +129,13 @@ export interface ContainerIndex {
  * @param source the containers the object's file was found under, outermost
  *   first, then the file, for error messages
  * @param containers the env's container index, built on first call
+ * @param env the env building it
  */
 export function makeAsset(
   reader: ObjectReader,
   source: string,
   containers: () => ContainerIndex,
+  env: Env,
 ): Asset {
   const typeName = classIdName(reader.type) ?? `class ${reader.type}`;
   let name: string | undefined;
@@ -154,6 +163,7 @@ export function makeAsset(
       return data;
     },
     reader,
+    env,
   };
   // `type` and `data` are paired by `classReaderName` and `reader.read()`,
   // which dispatch on the same list (`CLASS_READERS`).

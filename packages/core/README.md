@@ -70,7 +70,8 @@ for (const sprite of env.assets("Sprite")) sprite.data.m_Rect; // filtered and t
   an `Error` naming the URL and the status. Pass `{ fetch }` to fetch with your own headers or
   credentials: `open(url, { fetch: (input) => fetch(input, { headers }) })`.
 - **`env.assets(...types)`** yields every object as an `Asset`: plain data with `type`, `typeName`,
-  `classId`, `name`, `path`, `pathId`, `file`, `byteSize`, `data` and the low-level `reader`.
+  `classId`, `name`, `path`, `pathId`, `file`, `byteSize`, `data`, the low-level `reader` and the
+  `env` that loaded it.
   `type` is the class name for the classes with a class reader (see [Classes](#classes)) and
   `"Other"` for the rest, whose name is in `typeName`. A `switch (asset.type)` narrows `data`;
   `env.assets("Texture2D", "Sprite")` keeps only those types and narrows too. Assets have no

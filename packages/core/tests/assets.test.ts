@@ -71,6 +71,7 @@ for (const name of EDITOR) {
     for (const [i, asset] of assets.entries()) {
       const object = env.objects[i]!;
       assert.equal(asset.reader, object);
+      assert.equal(asset.env, env);
       const where = `${asset.file} ${asset.pathId}`;
       const row = g.objects[asset.file]?.find((o) => o.pathId === String(asset.pathId));
       assert.ok(row, `${where} is in the golden object table`);
