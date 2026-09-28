@@ -1,6 +1,6 @@
 {
   "name": "unity-asset-reader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Browser-first Unity AssetBundle parser: isomorphic, synchronous, zero platform dependencies.",
   "license": "MIT",
   "main": "dist/index.cjs",
