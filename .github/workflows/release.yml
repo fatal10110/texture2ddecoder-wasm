@@ -36,7 +36,8 @@ concurrency:
   queue: max
 
 jobs:
-  # Pull requests and dry-run dispatches: no environment (so no npm secret), no id-token.
+  # Pull requests and dry-run dispatches: no environment, no secret referenced (NPM_TOKEN is a
+  # repository secret, readable by any job that names it), no id-token.
   dry-run:
     if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.dry_run)
     runs-on: ubuntu-latest
