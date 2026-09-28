@@ -49,9 +49,10 @@ by itself. The only exception is the first publish, authenticated by a token, be
    ```bash
    gh release create <name>@<version> --title "<name> <version>" --notes-file <file with that section>
    ```
-6. **After the publish.** `examples/cdn-worker.js`: `CORE_VERSION` and `TEXTURE_VERSION` match
-   published readers, and `DECODER_VERSION` (`1`) resolves to a decoder the texture package's
-   range allows; check the live jsDelivr path (#150). The next change to a package opens a new
+6. **After the publish.** `examples/cdn-worker.js`: `TEXTURE_VERSION` is the published texture
+   package, and `CORE_VERSION` and `DECODER_VERSION` are the exact versions its jsDelivr `/+esm`
+   build imports (`curl https://cdn.jsdelivr.net/npm/unity-asset-reader-texture@<v>/+esm`).
+   Then check the live jsDelivr path: `CDN_LIVE=1 npm run test:smoke` (#150). The next change to a package opens a new
    `### <next version> - Unreleased` heading in its section of `CHANGELOG.md`, without touching
    the `version`: that would publish it.
 
