@@ -113,11 +113,11 @@
       <h3>💡 How This Works</h3>
       <pre><code>// Import from jsDelivr CDN
 import { initialize, decode_bc1 } from
-  'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs';
+  'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.3/dist/index.mjs';
 
 // Point to WASM files on CDN
 await initialize({
-  wasmPath: 'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm'
+  wasmPath: 'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.3/wasm'
 });
 
 // Now decode!
@@ -146,13 +146,13 @@ const decoded = await decode_bc1(data, width, height);</code></pre>
         <li>
           Specific version:
           <code
-            >https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs</code
+            >https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.3/dist/index.mjs</code
           >
         </li>
         <li>
           WASM files:
           <code
-            >https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm/</code
+            >https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.3/wasm/</code
           >
         </li>
       </ul>
@@ -192,7 +192,7 @@ const decoded = await decode_bc1(data, width, height);</code></pre>
         decode_etc1,
         decode_astc,
         decode_etc2a8,
-      } from "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs";
+      } from "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.3/dist/index.mjs";
 
       const statusDiv = document.getElementById("status");
       const controlsDiv = document.getElementById("controls");
@@ -208,7 +208,7 @@ const decoded = await decode_bc1(data, width, height);</code></pre>
           // Point to WASM files on jsDelivr CDN
           await initialize({
             wasmPath:
-              "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
+              "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.3/wasm",
           });
 
           statusDiv.className = "status success";

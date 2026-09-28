@@ -127,8 +127,8 @@
 const { load, ClassID } = await import(`${CDN}/unity-asset-reader@1.0.0/+esm`);
 const { initTexture, decodeTexture2D } =
   await import(`${CDN}/unity-asset-reader-texture@1.0.0/+esm`);
-// In a Worker this needs texture2ddecoder-wasm 1.2.3 or later (#149).
-await initTexture({ wasmPath: `${CDN}/texture2ddecoder-wasm@1/wasm` });
+// The decoder release the texture package imports; a Worker needs 1.2.3 or later (#149).
+await initTexture({ wasmPath: `${CDN}/texture2ddecoder-wasm@1.2.3/wasm` });
 
 const env = load([{ name: file.name, data: new Uint8Array(await file.arrayBuffer()) }]);
 for (const obj of env.objects) {

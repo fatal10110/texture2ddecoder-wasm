@@ -2,16 +2,20 @@
 // is read in a Worker and its Texture2D drawn to the canvas, from plain static
 // hosting with no COOP/COEP.
 //
-// The packages come from serve.mjs (`?local`), this repo's builds behind a
-// stand-in for jsDelivr's `/+esm`: the reader packages are not on npm until
-// #45, so the jsDelivr URLs themselves cannot be tested yet.
-import { expect, test, type Page } from "@playwright/test";
+// By default the packages come from serve.mjs (`?local`), this repo's builds
+// behind a stand-in for jsDelivr's `/+esm`, so CI tests the code of the
+// commit. `CDN_LIVE=1` opens the page without `?local` instead: the Worker
+// then imports the published packages from jsDelivr (#150). That needs the
+// network and checks what is on npm, not this commit, so CI does not run it.
+import { expect, test, type Page, type Worker } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 // Types only: Playwright loads fixtures/helpers.ts as CommonJS (the root
 // package.json has no "type"), where its `import.meta.url` does not parse.
 import type { Golden, GoldenTexture } from "../../fixtures/helpers.ts";
+
+const LIVE = process.env.CDN_LIVE === "1";
 
 const FIXTURES = new URL("../../fixtures/", import.meta.url);
 const GOLDENS: Record<string, Golden> = JSON.parse(
@@ -81,10 +85,10 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("cdn.html reads a bundle in a Worker and draws its Texture2D", async ({ page }) => {
-  const workers: string[] = [];
-  page.on("worker", (worker) => workers.push(worker.url()));
+  const workers: Worker[] = [];
+  page.on("worker", (worker) => workers.push(worker));
 
-  const response = await page.goto("/examples/cdn.html?local");
+  const response = await page.goto(LIVE ? "/examples/cdn.html" : "/examples/cdn.html?local");
   expect(response?.ok()).toBe(true);
 
   await test.step("static hosting: no COOP/COEP, not cross-origin isolated (D6)", async () => {
@@ -99,7 +103,10 @@ test("cdn.html reads a bundle in a Worker and draws its Texture2D", async ({ pag
   const lz4 = "editor/6000.3.25f1/lz4/texture";
   const checker = goldenTexture(lz4, "checker");
   await page.setInputFiles("#file", fixturePath(lz4));
-  await expect(page.locator("#caption")).toHaveText("checker: 4 x 4");
+  // The first load fetches the packages and the WASM; a cold jsDelivr cache takes seconds.
+  await expect(page.locator("#caption")).toHaveText("checker: 4 x 4", {
+    timeout: LIVE ? 30_000 : undefined,
+  });
 
   await test.step("the objects are listed", async () => {
     const objects = Object.values(GOLDENS[lz4]!.objects).flat();
@@ -122,12 +129,26 @@ test("cdn.html reads a bundle in a Worker and draws its Texture2D", async ({ pag
   // fixtures this small a frame-timing check could not fail either way, so
   // the proof is structural: a Worker ran, and the page loaded no package.
   await test.step("the reader runs in the Worker, not on the page (D4)", async () => {
-    expect(workers.some((url) => new URL(url).pathname === "/examples/cdn-worker.js")).toBe(true);
+    const worker = workers.find((w) => new URL(w.url()).pathname === "/examples/cdn-worker.js");
+    expect(worker).toBeDefined();
     // The page's own resource timeline: nothing of the packages is loaded on the main thread.
     const mainThread = await page.evaluate(() =>
       performance.getEntriesByType("resource").map((entry) => entry.name),
     );
     expect(mainThread.filter((url) => new URL(url).pathname.startsWith("/npm/"))).toEqual([]);
+
+    // One core instance: the Worker's own import of unity-asset-reader and the
+    // texture package's peer import of it are the same module URL. On jsDelivr
+    // that fails when CORE_VERSION is not the exact version the texture
+    // package's `/+esm` build imports.
+    const inWorker = await worker!.evaluate(() =>
+      performance.getEntriesByType("resource").map((entry) => entry.name),
+    );
+    const core = inWorker.filter((url) =>
+      /^\/npm\/unity-asset-reader(@[^/]*)?\//.test(new URL(url).pathname),
+    );
+    expect(core, "unity-asset-reader modules loaded in the Worker").toHaveLength(1);
+    expect(new URL(core[0]!).pathname).toMatch(/\/\+esm$/);
   });
 
   await test.step("block formats decode through the WASM in the Worker", async () => {

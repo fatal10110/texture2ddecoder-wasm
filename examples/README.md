@@ -24,14 +24,17 @@ imports nothing.
 - **No special headers.** Everything is single-threaded (D6), so the page works
   from any static host without COOP/COEP. It has to be served over HTTP, not
   opened as `file://`.
-- **The WASM** comes from `texture2ddecoder-wasm@1/wasm` on the same CDN.
+- **One exact version per package.** jsDelivr's `/+esm` build of
+  `unity-asset-reader-texture@1.0.0` imports `unity-asset-reader@1.0.0/+esm`
+  and `texture2ddecoder-wasm@1.2.3/+esm`, exact versions, not ranges. The
+  Worker imports core at that same version, so core is loaded once, and takes
+  the WASM from that same decoder release.
+- **The WASM** comes from `texture2ddecoder-wasm@1.2.3/wasm` on the same CDN.
   The decoder has its own version line, separate from the reader packages.
   `initTexture({ wasmPath })` loads it, even when the textures are plain
   formats decoded in TS.
 - **`texture2ddecoder-wasm` 1.2.3 or later.** Earlier versions refuse to
-  `initialize()` in a Worker (#149). `?local` uses the workspace build, which
-  has the fix. On jsDelivr, `@1` resolves to 1.2.2 until 1.2.3 is published;
-  #150 verifies the jsDelivr path.
+  `initialize()` in a Worker (#149).
 
 ### Where the packages come from
 
@@ -39,7 +42,8 @@ imports nothing.
 with `?local` switches** it to the builds of this repo instead, served by
 `serve.mjs` under `/npm/<name>/+esm`.
 
-Until the reader packages are published (#45), only `?local` works:
+Without `?local` the page needs nothing built; any static server will do,
+`node examples/serve.mjs` included. With `?local`:
 
 ```bash
 npm ci
@@ -78,5 +82,17 @@ Chromium (`npx playwright install chromium`). It checks:
   starts, and the page's own resource timeline has no `/npm/` module. That is
   the responsiveness proof (D4); the fixtures are too small for a timing check
   to tell a Worker from the main thread.
+- The Worker loads exactly one `unity-asset-reader` module: its own import and
+  the texture package's peer import are the same URL.
 
 CI runs it in the `decoder` job, the only job that builds the WASM.
+
+After a release, check the published packages on jsDelivr with the same test
+(needs the network, not the builds):
+
+```bash
+CDN_LIVE=1 npm run test:smoke        # cdn.html without ?local
+```
+
+If core is loaded twice, `CORE_VERSION` in `cdn-worker.js` is not the version
+the texture package's `/+esm` build imports.
