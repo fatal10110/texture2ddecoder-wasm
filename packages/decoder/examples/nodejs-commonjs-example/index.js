@@ -1,5 +1,5 @@
-// Pure Node.js CommonJS Example for unity-asset-reader-decoder
-// This example demonstrates how to use unity-asset-reader-decoder in a traditional Node.js environment
+// Pure Node.js CommonJS Example for texture2ddecoder-wasm
+// This example demonstrates how to use texture2ddecoder-wasm in a traditional Node.js environment
 
 const fs = require("fs");
 const path = require("path");
@@ -8,10 +8,10 @@ const {
   decode_bc3,
   decode_etc2a8,
   initialize,
-} = require("unity-asset-reader-decoder");
+} = require("texture2ddecoder-wasm");
 
 async function main() {
-  console.log("unity-asset-reader-decoder - Pure Node.js CommonJS Example\n");
+  console.log("texture2ddecoder-wasm - Pure Node.js CommonJS Example\n");
 
   try {
     // In Node.js, initialize() is called automatically on first decode,

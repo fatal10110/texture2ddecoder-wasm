@@ -29,8 +29,8 @@ test("serves the packages cdn-worker.js loads, and their dependencies", async ()
   assert.deepEqual([...SERVED].sort(), [
     "fflate",
     "lzma1",
+    "texture2ddecoder-wasm",
     "unity-asset-reader",
-    "unity-asset-reader-decoder",
     "unity-asset-reader-texture",
   ]);
   assert.deepEqual(await get("/npm/unity-asset-reader@1.0.0/+esm"), {
@@ -68,7 +68,7 @@ test("import statements and literal import() are rewritten, other lines are not"
     `export { c } from "unity-asset-reader";`,
     `import "side-effect";`,
     `import { d } from "./local.js";`,
-    `const e = await import("unity-asset-reader-decoder");`,
+    `const e = await import("texture2ddecoder-wasm");`,
     ` * we just cannot read it" from "this file is broken`,
     `const f = 'not supported" from "corrupt';`,
   ].join("\n");
@@ -82,7 +82,7 @@ test("import statements and literal import() are rewritten, other lines are not"
       `export { c } from "/npm/unity-asset-reader/+esm";`,
       `import "/npm/side-effect/+esm";`,
       `import { d } from "./local.js";`,
-      `const e = await import("/npm/unity-asset-reader-decoder/+esm");`,
+      `const e = await import("/npm/texture2ddecoder-wasm/+esm");`,
       ` * we just cannot read it" from "this file is broken`,
       `const f = 'not supported" from "corrupt';`,
     ].join("\n"),

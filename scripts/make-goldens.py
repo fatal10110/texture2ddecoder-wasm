@@ -192,7 +192,7 @@ SYNTHETIC = [
 #     but Unity's DXT1 has no alpha.
 #   DXT5 colour: Pillow is right. The spec decodes it as though c0 > c1
 #     always, and Texture2DDecoder's 3-colour mode is a defect, fixed in
-#     the decoder by #137 (unity-asset-reader-decoder 1.0.0), which the
+#     the decoder by #137 (texture2ddecoder-wasm 1.2.3), which the
 #     texture package depends on. So the DXT5 inputs are the random bytes
 #     unmodified, c0 <= c1 blocks included (#147).
 # The fixtures' DXT data has no such block (#32), random bytes do. So the DXT1

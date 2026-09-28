@@ -19,16 +19,19 @@ imports nothing.
 
 - **No import map.** Import maps do not apply inside Workers. So the Worker
   imports jsDelivr's `/+esm` builds, which also rewrite the packages' own bare
-  imports (`fflate`, `lzma1`, `unity-asset-reader`, `unity-asset-reader-decoder`) to
+  imports (`fflate`, `lzma1`, `unity-asset-reader`, `texture2ddecoder-wasm`) to
   CDN URLs.
 - **No special headers.** Everything is single-threaded (D6), so the page works
   from any static host without COOP/COEP. It has to be served over HTTP, not
   opened as `file://`.
-- **The WASM** comes from `unity-asset-reader-decoder@1.0.0/wasm` on the same
-  CDN, the decoder release that goes with the reader packages (all four share
-  one version). `initTexture({ wasmPath })` loads it, even when the textures
-  are plain formats decoded in TS. Its `initialize()` works in a Worker
-  (#149). #150 verifies the jsDelivr path after the 1.0.0 publish.
+- **The WASM** comes from `texture2ddecoder-wasm@1/wasm` on the same CDN.
+  The decoder has its own version line, separate from the reader packages.
+  `initTexture({ wasmPath })` loads it, even when the textures are plain
+  formats decoded in TS.
+- **`texture2ddecoder-wasm` 1.2.3 or later.** Earlier versions refuse to
+  `initialize()` in a Worker (#149). `?local` uses the workspace build, which
+  has the fix. On jsDelivr, `@1` resolves to 1.2.2 until 1.2.3 is published;
+  #150 verifies the jsDelivr path.
 
 ### Where the packages come from
 
@@ -36,7 +39,7 @@ imports nothing.
 with `?local` switches** it to the builds of this repo instead, served by
 `serve.mjs` under `/npm/<name>/+esm`.
 
-Until the 1.0.0 packages are published (#45), only `?local` works:
+Until the reader packages are published (#45), only `?local` works:
 
 ```bash
 npm ci

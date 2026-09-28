@@ -1,15 +1,24 @@
 name: Release
 
-# Publishes all four packages at one version with npm trusted publishing (#175). The procedure,
-# the one-time npm setup and the bootstrap of the first publish are in RELEASING.md. npm matches
+# Publishes one release family with npm trusted publishing (#175, #182). There are two, each
+# with its own version line and tag:
+#   unity-asset-reader@<version>     unity-asset-reader, -texture, -node (lockstep)
+#   texture2ddecoder-wasm@<version>  the decoder
+# The procedure, the one-time npm setup and the bootstrap of the first publish are in
+# RELEASING.md. npm matches
 # the trusted publisher on this file's name: renaming release.yml breaks publishing until each
 # package's trusted-publisher entry on npmjs.com is updated to the new name.
 
 on:
   push:
-    tags: ["v*.*.*"]
+    tags: ["unity-asset-reader@*.*.*", "texture2ddecoder-wasm@*.*.*"]
   workflow_dispatch:
     inputs:
+      family:
+        description: "Which release family (on a tag, it must be the tag's)"
+        type: choice
+        options: ["unity-asset-reader", "texture2ddecoder-wasm"]
+        default: "unity-asset-reader"
       dry_run:
         description: "Run everything but publish with `npm publish --dry-run`"
         type: boolean
@@ -29,8 +38,8 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
-    # A real publish runs in the `npm` environment, whose deployment rule admits only `v*.*.*`
-    # tags. Each package's trusted publisher on npm names this environment, so an OIDC token from
+    # A real publish runs in the `npm` environment, whose deployment rule admits only the two
+    # release tag patterns above. Each package's trusted publisher on npm names this environment, so an OIDC token from
     # any other ref (a branch that edits its own copy of this file, a PR run) is refused by npm,
     # and NPM_BOOTSTRAP_TOKEN is a secret of this environment only. Dry runs use no environment,
     # so they still run on any branch. Must stay in step with DRY_RUN below.
@@ -59,34 +68,37 @@ jobs:
             if (a < 22 || (a === 22 && b < 14)) throw new Error("Node " + process.version + " < 22.14.0");'
           echo "node $(node --version), npm $(npm --version)"
 
-      # Before anything is built: a wrong tag or a half-bumped release stops here. A real publish
-      # needs a tag; a dry run off a branch checks only that the four versions agree.
+      # Before anything is built: a wrong tag, a half-bumped release, or readers whose decoder
+      # range is not on npm yet stop here. A real publish needs a tag; a dry run off a branch
+      # checks the chosen family's versions. Outputs family, version and packages (publish order).
       - name: Version guard
         id: guard
         env:
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
+          EVENT: ${{ github.event_name }}
+          FAMILY: ${{ inputs.family }}
         run: |
           if [ "$DRY_RUN" != "true" ] && [ "$REF_TYPE" != "tag" ]; then
-            echo "::error::A real publish runs only from a v<version> tag; this is $REF_TYPE $REF_NAME."
+            echo "::error::A real publish runs only from a release tag; this is $REF_TYPE $REF_NAME."
             exit 1
           fi
-          if [ "$REF_TYPE" = "tag" ]; then
-            version=$(node scripts/check-release.mjs "$REF_NAME")
-          else
-            version=$(node scripts/check-release.mjs)
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "Releasing $version (dry run: $DRY_RUN)"
+          args=()
+          if [ "$REF_TYPE" = "tag" ]; then args+=("$REF_NAME"); fi
+          if [ "$EVENT" = "workflow_dispatch" ]; then args+=(--family "$FAMILY"); fi
+          release=$(node scripts/check-release.mjs "${args[@]}")
+          echo "$release" >> "$GITHUB_OUTPUT"
+          echo "$release"
+          echo "Dry run: $DRY_RUN"
 
       # The gate: the same checks as CI's reader and decoder jobs, with the WASM built from the
       # pinned emsdk (#57), since the decoder tarball ships it.
       - run: npm ci
       - run: npm run build:wasm
       - run: npm run verify
-      - run: npm test -w unity-asset-reader-decoder
+      - run: npm test -w texture2ddecoder-wasm
 
-      # Dependencies first: decoder, then core, then the packages that depend or peer on them.
+      # The family's packages in dependency order (core, then the packages that peer on it).
       # A name@version already on npm is skipped, so a run that failed halfway can be re-run.
       # No token: npm authenticates with the job's OIDC token and adds provenance by itself.
       # NPM_BOOTSTRAP_TOKEN (a secret of the `npm` environment) exists only for the one-time
@@ -94,6 +106,7 @@ jobs:
       - name: Publish
         env:
           VERSION: ${{ steps.guard.outputs.version }}
+          PACKAGES: ${{ steps.guard.outputs.packages }}
           NPM_BOOTSTRAP_TOKEN: ${{ secrets.NPM_BOOTSTRAP_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
         run: |
@@ -103,7 +116,7 @@ jobs:
           fi
           dry=()
           if [ "$DRY_RUN" = "true" ]; then dry=(--dry-run); fi
-          for pkg in unity-asset-reader-decoder unity-asset-reader unity-asset-reader-texture unity-asset-reader-node; do
+          for pkg in $PACKAGES; do
             published=$(npm view "$pkg@$VERSION" version 2>/dev/null || true)
             if [ "$published" = "$VERSION" ]; then
               echo "::notice::$pkg@$VERSION is already on npm, skipping."

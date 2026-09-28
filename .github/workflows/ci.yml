@@ -89,7 +89,7 @@ jobs:
       - run: npm ci
       - run: npm run build:wasm
       - run: npm run build:rollup
-      - run: npm test -w unity-asset-reader-decoder
+      - run: npm test -w texture2ddecoder-wasm
       - run: npm run build -w unity-asset-reader
       # REQUIRE_WASM=1: a missing WASM fails decode.test.ts instead of skipping it.
       - run: npm test -w unity-asset-reader-texture

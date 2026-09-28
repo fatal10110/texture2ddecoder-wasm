@@ -1,6 +1,6 @@
 # Node.js ESM Example
 
-This example demonstrates how to use `unity-asset-reader-decoder` in a modern Node.js environment using ES6 modules (`import/export`).
+This example demonstrates how to use `texture2ddecoder-wasm` in a modern Node.js environment using ES6 modules (`import/export`).
 
 ## Features
 
@@ -33,7 +33,7 @@ The example includes five demonstrations:
 
 ### 1. BC1 (DXT1) Decoding
 ```javascript
-import { decode_bc1 } from 'unity-asset-reader-decoder';
+import { decode_bc1 } from 'texture2ddecoder-wasm';
 
 const bc1Data = new Uint8Array([...]);
 const decoded = await decode_bc1(bc1Data, width, height);
@@ -41,7 +41,7 @@ const decoded = await decode_bc1(bc1Data, width, height);
 
 ### 2. BC3 (DXT5) Decoding
 ```javascript
-import { decode_bc3 } from 'unity-asset-reader-decoder';
+import { decode_bc3 } from 'texture2ddecoder-wasm';
 
 const bc3Data = new Uint8Array([...]);
 const decoded = await decode_bc3(bc3Data, width, height);
@@ -49,7 +49,7 @@ const decoded = await decode_bc3(bc3Data, width, height);
 
 ### 3. ETC2 Decoding
 ```javascript
-import { decode_etc2 } from 'unity-asset-reader-decoder';
+import { decode_etc2 } from 'texture2ddecoder-wasm';
 
 const etc2Data = new Uint8Array([...]);
 const decoded = await decode_etc2(etc2Data, width, height);
@@ -57,7 +57,7 @@ const decoded = await decode_etc2(etc2Data, width, height);
 
 ### 4. ASTC Decoding
 ```javascript
-import { decode_astc } from 'unity-asset-reader-decoder';
+import { decode_astc } from 'texture2ddecoder-wasm';
 
 const astcData = new Uint8Array([...]);
 const decoded = await decode_astc(astcData, width, height, blockWidth, blockHeight);

@@ -1,6 +1,6 @@
 # Pure Node.js CommonJS Example
 
-This example demonstrates how to use `unity-asset-reader-decoder` in a traditional Node.js environment using CommonJS (`require`).
+This example demonstrates how to use `texture2ddecoder-wasm` in a traditional Node.js environment using CommonJS (`require`).
 
 ## Features
 
@@ -33,7 +33,7 @@ The example includes three demonstrations:
 
 ### 1. BC1 (DXT1) Decoding
 ```javascript
-const { decode_bc1 } = require('unity-asset-reader-decoder');
+const { decode_bc1 } = require('texture2ddecoder-wasm');
 
 const bc1Data = new Uint8Array([...]);
 const decoded = await decode_bc1(bc1Data, width, height);
@@ -41,7 +41,7 @@ const decoded = await decode_bc1(bc1Data, width, height);
 
 ### 2. BC3 (DXT5) Decoding
 ```javascript
-const { decode_bc3 } = require('unity-asset-reader-decoder');
+const { decode_bc3 } = require('texture2ddecoder-wasm');
 
 const bc3Data = new Uint8Array([...]);
 const decoded = await decode_bc3(bc3Data, width, height);

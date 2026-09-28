@@ -48,7 +48,7 @@ test("ArrayBuffer and property names are not node globals", async () => {
 for (const spec of [
   "unity-asset-reader",
   "unity-asset-reader-texture",
-  "unity-asset-reader-decoder",
+  "texture2ddecoder-wasm",
   "unity-asset-reader/x",
 ]) {
   test(`core importing "${spec}" fails (R14)`, async () => {

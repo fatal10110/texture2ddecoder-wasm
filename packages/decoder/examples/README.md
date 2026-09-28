@@ -1,4 +1,4 @@
-# unity-asset-reader-decoder Examples
+# texture2ddecoder-wasm Examples
 
 This directory contains example configurations for popular bundlers and frameworks.
 
@@ -95,7 +95,7 @@ Uses jsDelivr CDN to load the library without any installation or build tools.
 
 ```bash
 npm install vite @vitejs/plugin-react
-npm install unity-asset-reader-decoder
+npm install texture2ddecoder-wasm
 ```
 
 **Note:** This example uses CDN - no WASM file copying needed!
@@ -110,7 +110,7 @@ npm install unity-asset-reader-decoder
 **Setup:**
 
 ```bash
-npm install unity-asset-reader-decoder
+npm install texture2ddecoder-wasm
 ```
 
 **Note:** This example uses CDN - no WASM file copying needed!
@@ -124,16 +124,16 @@ All examples now use CDN by default - no WASM file copying needed!
 1. **Install the package** via npm
 
    ```bash
-   npm install unity-asset-reader-decoder
+   npm install texture2ddecoder-wasm
    ```
 
 2. **Initialize with CDN:**
 
    ```typescript
-   import { initialize } from "unity-asset-reader-decoder";
+   import { initialize } from "texture2ddecoder-wasm";
 
    await initialize({
-     wasmPath: "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/wasm",
+     wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
    });
    ```
 
@@ -151,7 +151,7 @@ If you prefer to serve WASM files locally:
 3. **Initialize with local path:**
 
    ```typescript
-   import { initialize } from "unity-asset-reader-decoder";
+   import { initialize } from "texture2ddecoder-wasm";
 
    await initialize({ wasmPath: "/wasm" });
    ```
@@ -176,7 +176,7 @@ If you prefer to serve WASM files locally:
 
 - [Complete Bundler Guide](../BUNDLER_GUIDE.md) - Comprehensive setup for all bundlers
 - [Main README](../README.md) - API documentation and usage guide
-- [npm package](https://www.npmjs.com/package/unity-asset-reader-decoder)
+- [npm package](https://www.npmjs.com/package/texture2ddecoder-wasm)
 
 ## Contributing Examples
 

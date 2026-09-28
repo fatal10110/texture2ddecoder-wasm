@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>unity-asset-reader-decoder - Vite CDN Example</title>
+    <title>texture2ddecoder-wasm - Vite CDN Example</title>
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
     <div id="app">
-      <h1>🎨 unity-asset-reader-decoder - Vite CDN Example</h1>
+      <h1>🎨 texture2ddecoder-wasm - Vite CDN Example</h1>
 
       <div class="info">
         <strong>📦 Loading from jsDelivr CDN via Vite</strong><br />
@@ -38,11 +38,11 @@
         <h3>💡 How This Works</h3>
         <pre><code>// Import from jsDelivr CDN
 import { initialize, decode_bc1 } from
-  'https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/dist/index.mjs';
+  'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs';
 
 // Point to WASM files on CDN
 await initialize({
-  wasmPath: 'https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/wasm'
+  wasmPath: 'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm'
 });
 
 // Now decode!
@@ -60,15 +60,15 @@ const decoded = await decode_bc1(data, width, height);</code></pre>
         <ul>
           <li>
             Latest:
-            <code>https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder/dist/index.mjs</code>
+            <code>https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm/dist/index.mjs</code>
           </li>
           <li>
             Specific version:
-            <code>https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/dist/index.mjs</code>
+            <code>https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs</code>
           </li>
           <li>
             WASM files:
-            <code>https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/wasm/</code>
+            <code>https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm/</code>
           </li>
         </ul>
 
@@ -76,14 +76,14 @@ const decoded = await decode_bc1(data, width, height);</code></pre>
         <ul>
           <li>
             <a
-              href="https://www.jsdelivr.com/package/npm/unity-asset-reader-decoder"
+              href="https://www.jsdelivr.com/package/npm/texture2ddecoder-wasm"
               target="_blank"
               >jsDelivr Package Page</a
             >
           </li>
           <li>
             <a
-              href="https://www.npmjs.com/package/unity-asset-reader-decoder"
+              href="https://www.npmjs.com/package/texture2ddecoder-wasm"
               target="_blank"
               >npm Package</a
             >

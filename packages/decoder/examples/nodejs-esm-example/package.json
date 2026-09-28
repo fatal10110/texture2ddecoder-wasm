@@ -1,14 +1,14 @@
 {
   "name": "texture2ddecoder-nodejs-esm-example",
   "version": "1.0.0",
-  "description": "Node.js ESM example for unity-asset-reader-decoder",
+  "description": "Node.js ESM example for texture2ddecoder-wasm",
   "type": "module",
   "main": "index.mjs",
   "scripts": {
     "start": "node index.mjs"
   },
   "dependencies": {
-    "unity-asset-reader-decoder": "^1.0.0"
+    "texture2ddecoder-wasm": "^1.2.2"
   },
   "optionalDependencies": {
     "sharp": "^0.33.0"

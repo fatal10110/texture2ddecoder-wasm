@@ -2,11 +2,11 @@
 
 /**
  * Helper script to copy WASM files to your project's public directory
- * Usage: node node_modules/unity-asset-reader-decoder/scripts/copy-wasm.js [destination]
+ * Usage: node node_modules/texture2ddecoder-wasm/scripts/copy-wasm.js [destination]
  * 
  * Examples:
- *   node node_modules/unity-asset-reader-decoder/scripts/copy-wasm.js public/wasm
- *   node node_modules/unity-asset-reader-decoder/scripts/copy-wasm.js static/wasm
+ *   node node_modules/texture2ddecoder-wasm/scripts/copy-wasm.js public/wasm
+ *   node node_modules/texture2ddecoder-wasm/scripts/copy-wasm.js static/wasm
  *   npx texture2ddecoder-copy-wasm public/wasm
  */
 
@@ -59,14 +59,14 @@ function copyDirectory(src, dest) {
 }
 
 function main() {
-  log('\n📦 unity-asset-reader-decoder - WASM File Copy Utility\n', 'yellow');
+  log('\n📦 texture2ddecoder-wasm - WASM File Copy Utility\n', 'yellow');
 
   // Check if source directory exists
   if (!fs.existsSync(sourceDir)) {
     log('❌ Error: Source WASM directory not found!', 'red');
     log(`   Expected: ${sourceDir}`, 'red');
-    log('\n   Make sure unity-asset-reader-decoder is installed:', 'yellow');
-    log('   npm install unity-asset-reader-decoder\n', 'yellow');
+    log('\n   Make sure texture2ddecoder-wasm is installed:', 'yellow');
+    log('   npm install texture2ddecoder-wasm\n', 'yellow');
     process.exit(1);
   }
 

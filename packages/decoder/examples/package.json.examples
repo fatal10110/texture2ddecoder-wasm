@@ -22,7 +22,7 @@
     "start": "vite preview"
   },
   "dependencies": {
-    "unity-asset-reader-decoder": "^1.0.0"
+    "texture2ddecoder-wasm": "^1.2.0"
   },
   "devDependencies": {
     "vite": "^5.0.0"

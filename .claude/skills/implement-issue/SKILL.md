@@ -71,7 +71,7 @@ Run the verification block from the rules doc and read the output, do not assume
 npm ci && npm run verify
 ```
 
-From the repo root; it includes the no-C# guard. If you touched `packages/decoder/`, also run its tests with `wasm/` built (`npm test -w unity-asset-reader-decoder`).
+From the repo root; it includes the no-C# guard. If you touched `packages/decoder/`, also run its tests with `wasm/` built (`npm test -w texture2ddecoder-wasm`).
 
 Then self-review the diff (`git diff main...`) against the Hard rules table, one ID at a time. It takes a minute and catches most of what the reviewer would.
 

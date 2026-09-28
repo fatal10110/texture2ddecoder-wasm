@@ -1,6 +1,6 @@
 # Vite CDN Example
 
-This example demonstrates how to use `unity-asset-reader-decoder` with Vite, loading the library from jsDelivr CDN.
+This example demonstrates how to use `texture2ddecoder-wasm` with Vite, loading the library from jsDelivr CDN.
 
 ## Features
 
@@ -28,7 +28,7 @@ npm run preview
 
 ## How It Works
 
-This example uses Vite as the development server and build tool, while loading the `unity-asset-reader-decoder` library and WASM files directly from jsDelivr CDN.
+This example uses Vite as the development server and build tool, while loading the `texture2ddecoder-wasm` library and WASM files directly from jsDelivr CDN.
 
 ### Main Features
 
@@ -58,11 +58,11 @@ vite-cdn-example/
 import {
   initialize,
   decode_etc2a8,
-} from "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/dist/index.mjs";
+} from "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs";
 
 // Initialize with CDN path
 await initialize({
-  wasmPath: "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/wasm",
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
 });
 
 // Load and decode texture

@@ -28,7 +28,7 @@ import { convertPlain, type RgbaImage } from "../src/convert.js";
 import { initTexture } from "../src/decode.js";
 import { cutSprite, decodeSprite, findSpriteSource, type SpriteRect } from "../src/sprite.js";
 
-// As in decode.test.ts: the WASM half of unity-asset-reader-decoder needs Docker to
+// As in decode.test.ts: the WASM half of texture2ddecoder-wasm needs Docker to
 // build, so without it only the tests that need no decoder run, and the CI job
 // that builds it sets REQUIRE_WASM=1 so that nothing skips there (#119). The
 // fixture textures are RGBA32, so every test but the decodeSprite ones works

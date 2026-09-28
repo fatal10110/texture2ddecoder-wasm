@@ -1,4 +1,4 @@
-# Recommended .gitignore entries for unity-asset-reader-decoder
+# Recommended .gitignore entries for texture2ddecoder-wasm
 
 # If you're copying WASM files to your public directory,
 # you may want to ignore them in git since they're built artifacts

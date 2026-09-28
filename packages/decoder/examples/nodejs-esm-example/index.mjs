@@ -1,17 +1,17 @@
-// Node.js ESM Example for unity-asset-reader-decoder
-// This example demonstrates how to use unity-asset-reader-decoder with ES6 modules
+// Node.js ESM Example for texture2ddecoder-wasm
+// This example demonstrates how to use texture2ddecoder-wasm with ES6 modules
 
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { decode_bc1, decode_bc3, decode_astc, decode_etc2, decode_etc2a8, initialize } from 'unity-asset-reader-decoder';
+import { decode_bc1, decode_bc3, decode_astc, decode_etc2, decode_etc2a8, initialize } from 'texture2ddecoder-wasm';
 
 // Get __dirname equivalent in ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function main() {
-  console.log('unity-asset-reader-decoder - Node.js ESM Example\n');
+  console.log('texture2ddecoder-wasm - Node.js ESM Example\n');
 
   try {
     // In Node.js, initialize() is called automatically on first decode,

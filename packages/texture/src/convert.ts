@@ -8,7 +8,7 @@ import { CorruptError, TextureFormat, UnsupportedError } from "unity-asset-reade
  * The row order is the producer's, since the two public producers differ:
  * - `decodeTexture2D`: top row first, ready for `ImageData` or an image file.
  * - `convertPlain`: as Unity stores it, bottom row first, like the
- *   `unity-asset-reader-decoder` block decoders. Reverse the rows before display.
+ *   `texture2ddecoder-wasm` block decoders. Reverse the rows before display.
  */
 export interface RgbaImage {
   /** The pixels, row after row, in the producer's row order (see above). */
@@ -19,7 +19,7 @@ export interface RgbaImage {
 
 /**
  * The plain formats: Unity `TextureFormat` value -> bytes per pixel.
- * Block and Crunch formats go through `unity-asset-reader-decoder` instead (#32).
+ * Block and Crunch formats go through `texture2ddecoder-wasm` instead (#32).
  */
 const BYTES_PER_PIXEL: ReadonlyMap<number, number> = new Map([
   [TextureFormat.Alpha8, 1],
@@ -51,7 +51,7 @@ const BYTES_PER_PIXEL: ReadonlyMap<number, number> = new Map([
  * white. Half and float channels are scaled by 255, rounded half to even and
  * clamped to 0..255, so HDR values saturate and NaN becomes 0.
  *
- * A converter for linear pixel data, like `unity-asset-reader-decoder`'s block
+ * A converter for linear pixel data, like `texture2ddecoder-wasm`'s block
  * decoders: rows stay in the order Unity stores them, bottom row first, and
  * no console layout (Xbox 360 byte order, Switch swizzle) is undone.
  * `decodeTexture2D` does both, and returns the top row first.

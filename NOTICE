@@ -9,7 +9,7 @@ that package's tarball:
   packages/core/NOTICE       unity-asset-reader
   packages/texture/NOTICE    unity-asset-reader-texture
   packages/node/NOTICE       unity-asset-reader-node
-  packages/decoder/LICENSE   unity-asset-reader-decoder
+  packages/decoder/LICENSE   texture2ddecoder-wasm
 
 They say which package uses which upstream, and for what. Runtime npm
 dependencies are not inlined into any package's dist/ (plan section 2, #71),
