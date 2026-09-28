@@ -21,7 +21,7 @@ to release is in [RELEASING.md](RELEASING.md).
 
 ## unity-asset-reader
 
-### 1.0.0 - Unreleased
+### 1.0.0 - 2026-09-28
 
 First release. The core: isomorphic, synchronous, no WASM.
 
@@ -29,9 +29,10 @@ First release. The core: isomorphic, synchronous, no WASM.
   `UnityWebData` files, gzip-wrapped inputs, loose SerializedFiles, and `.resS`/`.resource`
   sidecars. `detectFileType()` and `detectContainer()` tell them apart; brotli, zip and
   UnityArchive are detected and refused with `UnsupportedError`.
-- `load()` returns an `Env` over every file given; `env.files` lists the SerializedFiles and
-  resources, and PPtrs resolve across files. It takes one input or an array, each as bytes or
-  `{ name, data }`.
+- `load()` returns an `Env` over every file given: `env.files` lists every unpacked file,
+  `env.objects` every object as an `ObjectReader`, `env.resolve()` follows a PPtr across files
+  and `env.readResource()` reads a `.resS`/`.resource` range. It takes one input or an array,
+  each as bytes or `{ name, data }`.
 - High-level API: `open()` fetches URLs or reads `Blob`/`File`/`Response` input, then calls
   `load()`. `env.assets(...types)` yields every object as an `Asset`, plain data with a `type`
   that narrows its lazily read `data`, plus its `name` and container `path`. `env.get(path)` finds
@@ -45,15 +46,21 @@ First release. The core: isomorphic, synchronous, no WASM.
   2020.3 and 6000.3 builds. `readTypeTree()` turns any object with a type tree into a plain JS
   object.
 - Hardcoded readers for typetree-stripped files: `Object`, `EditorExtension`, `NamedObject`,
-  `AssetBundle` (container map), `TextAsset`, `MonoScript`, `MonoBehaviour` (header), `Material`,
-  `Texture2D` (+ `StreamingInfo`), `Sprite`, `SpriteAtlas`, `AudioClip`, `Font`, `VideoClip` and
-  `MovieTexture` (metadata and raw bytes out).
+  `AssetBundle` (container map), `TextAsset` (with `textAssetString()` for its text),
+  `MonoScript`, `MonoBehaviour` (header), `Material`, `Texture`, `Texture2D` (+ `StreamingInfo`),
+  `Sprite`, `SpriteAtlas`, `AudioClip`, `Font`, `VideoClip` and `MovieTexture` (metadata and raw
+  bytes out).
+- Low-level building blocks: `readBundle()`, `readWebFile()` and `readSerializedFile()` for
+  one container or file, `ObjectReader` and `BinaryReader`, the codecs (`decompressLz4()`,
+  `lzmaDecompress()`, `gunzip()`, `unzlib()`), and the value tables `ClassID` (with
+  `classIdName()`), `TextureFormat`, `BuildTarget`, `SerializedFileFormatVersion`, `NodeFlags` and
+  `SpritePackingRotation`.
 - 64-bit fields and path IDs are `bigint`. Unsupported input throws `UnsupportedError`, damaged
   input `CorruptError`, a missing sidecar `ResourceNotFoundError`.
 
 ## unity-asset-reader-texture
 
-### 1.0.0 - Unreleased
+### 1.0.0 - 2026-09-28
 
 First release. Peer: `unity-asset-reader@^1`; depends on `texture2ddecoder-wasm@^1.2.3`.
 
@@ -62,10 +69,17 @@ First release. Peer: `unity-asset-reader@^1`; depends on `texture2ddecoder-wasm@
   the vertical flip.
 - `decodeSprite()`: crops a Sprite out of its texture or atlas, with optional tight-mesh masking.
 - `convertPlain()` for the uncompressed formats without the decoder.
+- Image API over `env.assets()`: `isImage()` narrows an asset to a Texture2D or Sprite;
+  `imageInfo()` describes one without decoding it (size, format name and compression family,
+  mips, colour space, filter and wrap modes, platform, whether its data is streamed, and for a
+  Sprite its rects, pivot, border, packing, atlas and texture); `decodeImage()` decodes one to
+  RGBA with that info, loading the WASM on first use, so `initTexture()` is optional; `images()`
+  is an async iterator decoding every image of an env, and with `onError: "skip"` leaves out the
+  ones that fail instead of stopping (#185).
 
 ## unity-asset-reader-node
 
-### 1.0.0 - Unreleased
+### 1.0.0 - 2026-09-28
 
 First release. Peer: `unity-asset-reader@^1`.
 
@@ -74,7 +88,7 @@ First release. Peer: `unity-asset-reader@^1`.
 
 ## texture2ddecoder-wasm
 
-### 1.2.3 - Unreleased
+### 1.2.3 - 2026-09-28
 
 - BC3 (DXT5) colour blocks decode in 4-colour mode, as the S3TC spec requires. Before, blocks with
   `c0 <= c1` came out with index 3 black (#137).
