@@ -263,10 +263,10 @@ Run the reader job locally with `npm ci && npm run verify`.
 
 ## Releases
 
-The reader packages (`unity-asset-reader`, `-texture`, `-node`) share one version and are released
-together; `texture2ddecoder-wasm` versions on its own. User-facing changes go under the
-`Unreleased` heading of their package line in [CHANGELOG.md](CHANGELOG.md).
-The publish procedure is in [RELEASING.md](RELEASING.md).
+Every package (`unity-asset-reader`, `-texture`, `-node`, `texture2ddecoder-wasm`) has its own
+version. User-facing changes go under the `Unreleased` heading of their package's section in
+[CHANGELOG.md](CHANGELOG.md). Do not change a `version` in a feature PR: merging a version change
+to `main` publishes that package. The release procedure is in [RELEASING.md](RELEASING.md).
 
 ## Reporting Issues
 

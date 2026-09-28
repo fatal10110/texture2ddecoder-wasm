@@ -1,0 +1,59 @@
+name: Release plan and gate
+description: >-
+  Picks the packages a Release run publishes (scripts/check-release.mjs) and, when there are any,
+  runs the full gate. Shared by the dry-run and publish jobs of release.yml (#192), so a pull
+  request's dry run plans and gates exactly as the push to main that publishes it. Needs a
+  checkout with the submodule and the base commit (fetch-depth 0).
+
+outputs:
+  packages:
+    description: "`name@version`s to publish, space-separated, dependencies first; empty for none"
+    value: ${{ steps.plan.outputs.packages }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: npm
+
+    # Before anything is built. A push compares each package.json with the commit before the
+    # push, a pull request with its base; a dispatch takes every package whose version is not on
+    # npm. Fails when a package needs a range of another package of this repo that npm does not
+    # have and that this run does not publish first.
+    - name: Plan
+      id: plan
+      shell: bash
+      env:
+        EVENT: ${{ github.event_name }}
+        BEFORE: ${{ github.event.before }}
+        PR_BASE: ${{ github.event.pull_request.base.sha }}
+      run: |
+        case "$EVENT" in
+          push) args=(--base "$BEFORE") ;;
+          pull_request) args=(--base "$PR_BASE") ;;
+          *) args=(--unpublished) ;;
+        esac
+        plan=$(node scripts/check-release.mjs "${args[@]}")
+        echo "$plan" >> "$GITHUB_OUTPUT"
+        if [ "$plan" = "packages=" ]; then
+          echo "::notice::Nothing to release: no package version changed, or it is on npm already."
+        else
+          echo "::notice::To release: ${plan#packages=}"
+        fi
+
+    # The gate: the same checks as CI's reader and decoder jobs, with the WASM built from the
+    # pinned emsdk (#57), since the decoder tarball ships it.
+    - if: steps.plan.outputs.packages != ''
+      shell: bash
+      run: npm ci
+    - if: steps.plan.outputs.packages != ''
+      shell: bash
+      run: npm run build:wasm
+    - if: steps.plan.outputs.packages != ''
+      shell: bash
+      run: npm run verify
+    - if: steps.plan.outputs.packages != ''
+      shell: bash
+      run: npm test -w texture2ddecoder-wasm

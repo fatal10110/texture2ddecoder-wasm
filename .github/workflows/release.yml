@@ -1,112 +1,112 @@
 name: Release
 
-# Publishes one release family with npm trusted publishing (#175, #182). There are two, each
-# with its own version line and tag:
-#   unity-asset-reader@<version>     unity-asset-reader, -texture, -node (lockstep)
-#   texture2ddecoder-wasm@<version>  the decoder
-# The procedure, the one-time npm setup and the bootstrap of the first publish are in
-# RELEASING.md. npm matches
-# the trusted publisher on this file's name: renaming release.yml breaks publishing until each
-# package's trusted-publisher entry on npmjs.com is updated to the new name.
+# Publishes to npm, with trusted publishing, each package whose `version` changed (#192). Every
+# package versions on its own; a release is a merged version bump:
+#   push to main           the packages whose version differs from the commit before the push
+#   pull_request           the same packages the merge would publish, with `npm publish --dry-run`
+#   workflow_dispatch      every package whose version is not on npm (first release, recovery);
+#                          a dry run unless `dry_run` is unticked
+# A `name@version` already on npm is never a candidate. After a publish, the `tag` job pushes a
+# `<name>@<version>` tag for the record; nothing runs on tags. The procedure and the one-time
+# npm setup are in RELEASING.md. npm matches the trusted publisher on this file's name: renaming
+# release.yml breaks publishing until each package's trusted-publisher entry on npmjs.com is
+# updated to the new name.
 
 on:
   push:
-    tags: ["unity-asset-reader@*.*.*", "texture2ddecoder-wasm@*.*.*"]
+    branches: [main]
+    paths: ["packages/*/package.json"]
+  pull_request:
+    paths: ["packages/*/package.json"]
   workflow_dispatch:
     inputs:
-      family:
-        description: "Which release family (on a tag, it must be the tag's)"
-        type: choice
-        options: ["unity-asset-reader", "texture2ddecoder-wasm"]
-        default: "unity-asset-reader"
       dry_run:
         description: "Run everything but publish with `npm publish --dry-run`"
         type: boolean
         default: true
 
-# id-token: write lets npm exchange the job's OIDC token for a publish token and sign the
-# provenance. contents: read only: the GitHub release is created by hand (RELEASING.md).
 permissions:
   contents: read
-  id-token: write
 
-# Never two publishes of one ref at a time; never cancel one halfway.
+# One run per ref at a time, never cancelled halfway. `queue: max` keeps every waiting run: the
+# default keeps only the newest, which would drop the version bump of a push in between.
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
+  queue: max
 
 jobs:
-  release:
+  # Pull requests and dry-run dispatches: no environment (so no npm secret), no id-token.
+  dry-run:
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.dry_run)
     runs-on: ubuntu-latest
-    # A real publish runs in the `npm` environment, whose deployment rule admits only the two
-    # release tag patterns above. Each package's trusted publisher on npm names this environment, so an OIDC token from
-    # any other ref (a branch that edits its own copy of this file, a PR run) is refused by npm,
-    # and NPM_BOOTSTRAP_TOKEN is a secret of this environment only. Dry runs use no environment,
-    # so they still run on any branch. Must stay in step with DRY_RUN below.
-    environment: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) && 'npm' || '' }}
     env:
-      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
       # The texture decode tests fail instead of skipping when the WASM is missing. Also set for
       # the full verify that each reader package's prepublishOnly reruns.
       REQUIRE_WASM: "1"
     steps:
-      - name: Check out
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
+          # The plan reads the package.json files at the base commit.
+          fetch-depth: 0
+      - name: Plan and gate
+        id: gate
+        uses: ./.github/actions/release-gate
+      - name: Publish (dry run)
+        if: steps.gate.outputs.packages != ''
+        env:
+          PACKAGES: ${{ steps.gate.outputs.packages }}
+        run: |
+          for spec in $PACKAGES; do
+            npm publish -w "${spec%@*}" --access public --dry-run
+          done
+
+  # Pushes to main and dispatches with `dry_run` unticked. npm's trusted publisher checks the
+  # repository, this file's name and the environment, not the ref, so the `npm` environment
+  # (deployment rule: branch main) is what keeps any other branch from publishing. Each package's
+  # trusted publisher names it, and NPM_BOOTSTRAP_TOKEN is a secret of it only.
+  publish:
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && !inputs.dry_run)
+    runs-on: ubuntu-latest
+    environment: npm
+    # id-token: write lets npm exchange the job's OIDC token for a publish token and sign the
+    # provenance.
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      published: ${{ steps.publish.outputs.published }}
+    env:
+      REQUIRE_WASM: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Plan and gate
+        id: gate
+        uses: ./.github/actions/release-gate
 
       # Trusted publishing needs npm >= 11.5.1 and Node >= 22.14.0
       # (https://docs.npmjs.com/trusted-publishers). setup-node's `22` is the latest 22.x.
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
       - name: Install npm 11
+        if: steps.gate.outputs.packages != ''
         run: |
           npm install -g npm@^11.5.1
           node -e 'const [a, b] = process.versions.node.split(".").map(Number);
             if (a < 22 || (a === 22 && b < 14)) throw new Error("Node " + process.version + " < 22.14.0");'
           echo "node $(node --version), npm $(npm --version)"
 
-      # Before anything is built: a wrong tag, a half-bumped release, or readers whose decoder
-      # range is not on npm yet stop here. A real publish needs a tag; a dry run off a branch
-      # checks the chosen family's versions. Outputs family, version and packages (publish order).
-      - name: Version guard
-        id: guard
-        env:
-          REF_TYPE: ${{ github.ref_type }}
-          REF_NAME: ${{ github.ref_name }}
-          EVENT: ${{ github.event_name }}
-          FAMILY: ${{ inputs.family }}
-        run: |
-          if [ "$DRY_RUN" != "true" ] && [ "$REF_TYPE" != "tag" ]; then
-            echo "::error::A real publish runs only from a release tag; this is $REF_TYPE $REF_NAME."
-            exit 1
-          fi
-          args=()
-          if [ "$REF_TYPE" = "tag" ]; then args+=("$REF_NAME"); fi
-          if [ "$EVENT" = "workflow_dispatch" ]; then args+=(--family "$FAMILY"); fi
-          release=$(node scripts/check-release.mjs "${args[@]}")
-          echo "$release" >> "$GITHUB_OUTPUT"
-          echo "$release"
-          echo "Dry run: $DRY_RUN"
-
-      # The gate: the same checks as CI's reader and decoder jobs, with the WASM built from the
-      # pinned emsdk (#57), since the decoder tarball ships it.
-      - run: npm ci
-      - run: npm run build:wasm
-      - run: npm run verify
-      - run: npm test -w texture2ddecoder-wasm
-
-      # The family's packages in dependency order (core, then the packages that peer on it).
-      # A name@version already on npm is skipped, so a run that failed halfway can be re-run.
-      # No token: npm authenticates with the job's OIDC token and adds provenance by itself.
-      # NPM_BOOTSTRAP_TOKEN (a secret of the `npm` environment) exists only for the one-time
+      # In the plan's order (dependencies first). A name@version already on npm is skipped, so a
+      # run that failed halfway can be re-run. No token: npm authenticates with the job's OIDC
+      # token and adds provenance by itself. NPM_BOOTSTRAP_TOKEN exists only for the one-time
       # bootstrap in RELEASING.md.
       - name: Publish
+        id: publish
+        if: steps.gate.outputs.packages != ''
         env:
-          VERSION: ${{ steps.guard.outputs.version }}
-          PACKAGES: ${{ steps.guard.outputs.packages }}
+          PACKAGES: ${{ steps.gate.outputs.packages }}
           NPM_BOOTSTRAP_TOKEN: ${{ secrets.NPM_BOOTSTRAP_TOKEN }}
           NPM_CONFIG_PROVENANCE: "true"
         run: |
@@ -114,13 +114,42 @@ jobs:
             echo "::warning::NPM_BOOTSTRAP_TOKEN is set; delete it once trusted publishing is set up."
             echo "//registry.npmjs.org/:_authToken=\${NPM_BOOTSTRAP_TOKEN}" > "$HOME/.npmrc"
           fi
-          dry=()
-          if [ "$DRY_RUN" = "true" ]; then dry=(--dry-run); fi
-          for pkg in $PACKAGES; do
-            published=$(npm view "$pkg@$VERSION" version 2>/dev/null || true)
-            if [ "$published" = "$VERSION" ]; then
-              echo "::notice::$pkg@$VERSION is already on npm, skipping."
+          published=()
+          # Written on any exit, so what got out before a failure is still tagged.
+          trap 'echo "published=${published[*]}" >> "$GITHUB_OUTPUT"' EXIT
+          for spec in $PACKAGES; do
+            version="${spec##*@}"
+            if [ "$(npm view "$spec" version 2>/dev/null || true)" = "$version" ]; then
+              echo "::notice::$spec is already on npm, skipping."
               continue
             fi
-            npm publish -w "$pkg" --access public "${dry[@]}"
+            npm publish -w "${spec%@*}" --access public
+            published+=("$spec")
+          done
+
+  # A `<name>@<version>` tag on the released commit for each package the publish job got out,
+  # also when a later one failed. Tags are records only: nothing triggers on them, and a tag
+  # pushed with GITHUB_TOKEN starts no workflow anyway. The only job that can write to the repo,
+  # and it runs no npm code.
+  tag:
+    needs: publish
+    if: always() && needs.publish.outputs.published != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag
+        env:
+          PUBLISHED: ${{ needs.publish.outputs.published }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for spec in $PUBLISHED; do
+            if [ -n "$(git ls-remote --tags origin "refs/tags/$spec")" ]; then
+              echo "::notice::Tag $spec exists already, skipping."
+              continue
+            fi
+            git tag -a "$spec" -m "$spec" "$GITHUB_SHA"
+            git push origin "refs/tags/$spec"
           done

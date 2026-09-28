@@ -10,10 +10,11 @@
 // serves this repo's own builds under /npm/<name>/+esm.
 const LOCAL = new URL(import.meta.url).searchParams.has("local");
 const CDN = "https://cdn.jsdelivr.net/npm";
-// unity-asset-reader and unity-asset-reader-texture are published in lockstep (#45).
-const READER_VERSION = "1.0.0";
-// The decoder keeps its own version line (#182). The texture package depends on
-// texture2ddecoder-wasm ^1.2.3, and the WASM comes from the same line.
+// Each package has its own version (#192). The texture package peers on
+// unity-asset-reader ^1 and depends on texture2ddecoder-wasm ^1.2.3, and the
+// WASM comes from the same decoder line.
+const CORE_VERSION = "1.0.0";
+const TEXTURE_VERSION = "1.0.0";
 const DECODER_VERSION = "1";
 
 /** Base URL of a package: jsDelivr, or the local stand-in (which ignores versions). */
@@ -23,8 +24,8 @@ const packageUrl = (name, version) => (LOCAL ? `/npm/${name}` : `${CDN}/${name}@
 // run in a Worker (#149).
 const ready = (async () => {
   const [reader, texture] = await Promise.all([
-    import(`${packageUrl("unity-asset-reader", READER_VERSION)}/+esm`),
-    import(`${packageUrl("unity-asset-reader-texture", READER_VERSION)}/+esm`),
+    import(`${packageUrl("unity-asset-reader", CORE_VERSION)}/+esm`),
+    import(`${packageUrl("unity-asset-reader-texture", TEXTURE_VERSION)}/+esm`),
   ]);
   await texture.initTexture({
     wasmPath: `${packageUrl("texture2ddecoder-wasm", DECODER_VERSION)}/wasm`,
