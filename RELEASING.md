@@ -29,7 +29,7 @@ by itself. The only exception is the first publish, authenticated by a token, be
    ```
    - `CHANGELOG.md`: in the package's section, `### <version> - Unreleased` becomes
      `### <version> - <YYYY-MM-DD>`. `scripts/tests/release.test.mjs` fails when the section has
-     no heading for the version on disk.
+     no dated heading for the version on disk.
    - When a package needs a new version of another package of this repo, raise its range too
      (the texture package's `texture2ddecoder-wasm` range, a feature package's peer range on
      `unity-asset-reader` after a new core major). Bump both in the same PR; the workflow

@@ -37,7 +37,7 @@ fine for small files.
 
 ## Vite
 
-Tested with Vite 7, in `vite` (dev) and `vite build`.
+Tested with Vite 7 and 8, in `vite` (dev) and `vite build`.
 
 1. Install, and copy the WASM files into `public/`:
 
@@ -46,9 +46,9 @@ Tested with Vite 7, in `vite` (dev) and `vite build`.
    npx texture2ddecoder-copy-wasm public/wasm
    ```
 
-2. Build Workers as ES modules. The WASM loader uses a dynamic `import()`. Vite's default
-   Worker format (`iife`) cannot hold one, and `vite build` stops with
-   `Invalid value "iife" for option "worker.format"`.
+2. On Vite 7, build Workers as ES modules. The WASM loader uses a dynamic `import()`. Vite 7's
+   default Worker format (`iife`) cannot hold one, and `vite build` stops with
+   `Invalid value "iife" for option "worker.format"`. Vite 8 needs no config.
 
    ```js
    // vite.config.js
@@ -66,8 +66,7 @@ Tested with Vite 7, in `vite` (dev) and `vite build`.
    import { load, ClassID } from "unity-asset-reader";
    import { initTexture, decodeTexture2D } from "unity-asset-reader-texture";
 
-   // An absolute URL: the Vite dev server cannot load a root-relative "/wasm".
-   const ready = initTexture({ wasmPath: new URL("/wasm/", self.location.href).href });
+   const ready = initTexture({ wasmPath: "/wasm" });
 
    self.onmessage = async ({ data: { name, bytes } }) => {
      await ready;
@@ -100,88 +99,66 @@ Tested with Vite 7, in `vite` (dev) and `vite build`.
    };
    ```
 
-`vite build` may log `Module "module" has been externalized for browser compatibility` for
-`texture2ddecoder.js`. That is the Node.js branch of the WASM loader, which never runs in a
-browser.
-
 ## Next.js
 
-Tested with Next.js 16 (Turbopack, and `next build --webpack`).
+Tested with Next.js 16 (Turbopack, and `next build --webpack`), with `next build && next start`.
 
-**`unity-asset-reader` works as is.** Import it in a module Worker started from a client
-component. No `next.config.js` change is needed:
+Import the packages in a module Worker started from a client component. No `next.config.js`
+change is needed. `unity-asset-reader-texture` needs `texture2ddecoder-wasm` 1.2.4 or later
+here: with 1.2.3 and earlier, the build fails with `Can't resolve 'module'`
+([#171](https://github.com/fatal10110/texture2ddecoder-wasm/issues/171)).
 
-```js
-// app/reader.worker.js
-import { load, classIdName } from "unity-asset-reader";
+1. Install, and copy the WASM files into `public/`:
 
-self.onmessage = ({ data: { name, bytes } }) => {
-  const env = load([{ name, data: new Uint8Array(bytes) }]);
-  self.postMessage(env.objects.map((obj) => ({ className: classIdName(obj.type), pathId: String(obj.pathId) })));
-};
-```
+   ```bash
+   npm install unity-asset-reader unity-asset-reader-texture
+   npx texture2ddecoder-copy-wasm public/wasm
+   ```
 
-```jsx
-// app/page.jsx
-"use client";
+2. The Worker:
 
-import { useEffect, useRef } from "react";
+   ```js
+   // app/reader.worker.js
+   import { load, ClassID } from "unity-asset-reader";
+   import { initTexture, decodeTexture2D } from "unity-asset-reader-texture";
 
-export default function Page() {
-  const worker = useRef(null);
-  useEffect(() => {
-    worker.current = new Worker(new URL("./reader.worker.js", import.meta.url), { type: "module" });
-    worker.current.onmessage = ({ data }) => console.log(data);
-    return () => worker.current.terminate();
-  }, []);
+   const ready = initTexture({ wasmPath: "/wasm" });
 
-  const pick = async (event) => {
-    const file = event.target.files[0];
-    const bytes = await file.arrayBuffer();
-    worker.current.postMessage({ name: file.name, bytes }, [bytes]);
-  };
-  return <input type="file" onChange={pick} />;
-}
-```
+   self.onmessage = async ({ data: { name, bytes } }) => {
+     await ready;
+     const env = load([{ name, data: new Uint8Array(bytes) }]);
+     for (const obj of env.objects) {
+       if (obj.type !== ClassID.Texture2D) continue;
+       const { data, width, height } = await decodeTexture2D(obj.read());
+       self.postMessage({ width, height, rgba: data.buffer }, [data.buffer]);
+     }
+   };
+   ```
 
-**`unity-asset-reader-texture` cannot be bundled by Next.js yet**
-([#171](https://github.com/fatal10110/texture2ddecoder-wasm/issues/171)). The WASM loader of
-`texture2ddecoder-wasm` imports its glue code from a URL at run time, and Next.js rewrites
-that import in both Turbopack and webpack builds. The build succeeds, but `initTexture()` fails with
-`Cannot find module ...`.
+3. The client component:
 
-Until that is fixed, keep the texture decoding out of the Next.js bundle. Put the Worker in
-`public/`, so Next.js serves it untouched, and have it import the packages from a CDN, as
-described in [CDN, no bundler](#cdn-no-bundler):
+   ```jsx
+   // app/page.jsx
+   "use client";
 
-```js
-// public/texture-worker.js: served as is, never bundled
-const CDN = "https://cdn.jsdelivr.net/npm";
+   import { useEffect, useRef } from "react";
 
-// Load and initialize once. onmessage is set right away and waits for this,
-// so a message posted before the imports finish is not lost.
-const ready = (async () => {
-  const reader = await import(`${CDN}/unity-asset-reader@1/+esm`);
-  const texture = await import(`${CDN}/unity-asset-reader-texture@1/+esm`);
-  await texture.initTexture({ wasmPath: `${CDN}/texture2ddecoder-wasm@1/wasm` });
-  return { ...reader, ...texture };
-})();
+   export default function Page() {
+     const worker = useRef(null);
+     useEffect(() => {
+       worker.current = new Worker(new URL("./reader.worker.js", import.meta.url), { type: "module" });
+       worker.current.onmessage = ({ data }) => console.log(data);
+       return () => worker.current.terminate();
+     }, []);
 
-self.onmessage = async ({ data: { name, bytes } }) => {
-  const { load, ClassID, decodeTexture2D } = await ready;
-  const env = load([{ name, data: new Uint8Array(bytes) }]);
-  for (const obj of env.objects) {
-    if (obj.type !== ClassID.Texture2D) continue;
-    const { data, width, height } = await decodeTexture2D(obj.read());
-    self.postMessage({ width, height, rgba: data.buffer }, [data.buffer]);
-  }
-};
-```
-
-```js
-// in the client component
-new Worker("/texture-worker.js", { type: "module" });
-```
+     const pick = async (event) => {
+       const file = event.target.files[0];
+       const bytes = await file.arrayBuffer();
+       worker.current.postMessage({ name: file.name, bytes }, [bytes]);
+     };
+     return <input type="file" onChange={pick} />;
+   }
+   ```
 
 ## CDN, no bundler
 
@@ -243,10 +220,10 @@ installed location.
 | Symptom | Cause and fix |
 |---|---|
 | `Invalid value "iife" for option "worker.format"` (Vite build) | Set `worker: { format: "es" }` in `vite.config.js`. |
-| `Failed to fetch dynamically imported module: .../wasm/texture2ddecoder.js?import` (Vite dev) | Pass an absolute URL: `wasmPath: new URL("/wasm/", location.href).href`. |
+| `Failed to fetch dynamically imported module: .../wasm/texture2ddecoder.js?import` (Vite dev) | `texture2ddecoder-wasm` 1.2.3 or earlier with a root-relative `wasmPath` ([#171](https://github.com/fatal10110/texture2ddecoder-wasm/issues/171)). Update it to 1.2.4 or later, or pass an absolute URL: `wasmPath: new URL("/wasm/", location.href).href`. |
 | `Failed to load WASM module from ...` | The two files are not at that URL. Run `npx texture2ddecoder-copy-wasm public/wasm`, and check that `<wasmPath>/texture2ddecoder.js` opens in the browser. |
 | `Browser environment requires wasmPath parameter` | `initTexture()` without options only works in Node.js. |
-| `Cannot find module 'unknown'` or `Cannot find module 'http://…/texture2ddecoder.js'` (Next.js) | [#171](https://github.com/fatal10110/texture2ddecoder-wasm/issues/171): keep the texture Worker out of the bundle, see [Next.js](#nextjs). |
+| `Can't resolve 'module'`, `Cannot find module 'unknown'` or `Cannot find module 'http://…/texture2ddecoder.js'` (Next.js) | `texture2ddecoder-wasm` 1.2.3 or earlier ([#171](https://github.com/fatal10110/texture2ddecoder-wasm/issues/171)). Update it to 1.2.4 or later: `npm update texture2ddecoder-wasm`. |
 | `decodeTexture2D: the texture decoder is not initialized` | Await `initTexture()` before the first decode. Plain formats need it too. |
 | `ERR_REQUIRE_ESM` on `lzma1` | Node.js below 20.19 / 22.12 cannot `require()` it. Use `import`, or a newer Node.js. |
 | `Cannot use 'import.meta' outside a module` from `initTexture()` | Node.js below 20.19. Upgrade. |

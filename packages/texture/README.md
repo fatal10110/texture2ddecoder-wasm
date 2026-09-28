@@ -120,11 +120,10 @@ the plain ones too.
   ```
 
   ```js
-  await initTexture({ wasmPath: new URL("/wasm/", location.href).href });
+  await initTexture({ wasmPath: "/wasm" });
   ```
 
-  Pass an absolute URL. In the Vite dev server, a root-relative `"/wasm"` fails to load.
-  In a Worker, use `self.location.href` in place of `location.href`.
+  A root-relative path is resolved against the page's or the Worker's location.
 - **Browser, CDN:**
   `await initTexture({ wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1/wasm" })`.
 
@@ -133,9 +132,9 @@ initialize in a Worker ([#149](https://github.com/fatal10110/texture2ddecoder-wa
 This package depends on `^1.2.3`; a CDN `wasmPath` should point at 1.2.3 or later too.
 
 The [Bundler Guide](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/BUNDLER_GUIDE.md)
-has the setup for Vite, Next.js and CDN pages. **Next.js cannot bundle the WASM loader yet**
-([#171](https://github.com/fatal10110/texture2ddecoder-wasm/issues/171)); the guide shows how to
-keep it out of the Next.js bundle.
+has the setup for Vite, Next.js and CDN pages. Next.js, and a root-relative `wasmPath` in the
+Vite dev server, need `texture2ddecoder-wasm` 1.2.4 or later
+([#171](https://github.com/fatal10110/texture2ddecoder-wasm/issues/171)).
 
 ### Sprites
 

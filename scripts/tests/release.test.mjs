@@ -15,7 +15,7 @@ import {
 // Release invariants of #45 and #192: every package versions on its own and is published when
 // its `version` changes. The feature packages peer on core's major, the texture package depends
 // on a decoder range the workspace decoder satisfies, every reader package gates `npm publish`
-// on the root verify, and CHANGELOG.md has an entry for each package's version on disk. The
+// on the root verify, and CHANGELOG.md has a dated entry for each package's version on disk. The
 // release plan (scripts/check-release.mjs) picks the packages whose version changed and is not
 // on npm, and refuses one whose range on another package of this repo nothing satisfies yet.
 
@@ -26,14 +26,14 @@ const manifest = (dir) => JSON.parse(read(`packages/${dir}/package.json`));
 const READERS = ["core", "texture", "node"];
 const FEATURES = ["texture", "node"];
 
-/** `### <version>` headings under the `## <section>` heading of CHANGELOG.md. */
-function changelogVersions(section) {
+/** `### <version> - <date>` headings under the `## <section>` heading of CHANGELOG.md. */
+function changelogHeadings(section) {
   const text = read("CHANGELOG.md");
   const start = text.indexOf(`\n## ${section}\n`);
   assert.notEqual(start, -1, `CHANGELOG.md has no "## ${section}" section`);
   const next = text.indexOf("\n## ", start + 1);
   const body = text.slice(start, next === -1 ? undefined : next);
-  return [...body.matchAll(/^### (\d+\.\d+\.\d+\S*) - /gm)].map((m) => m[1]);
+  return new Map([...body.matchAll(/^### (\d+\.\d+\.\d+\S*) - (.*)$/gm)].map((m) => [m[1], m[2]]));
 }
 
 test("the decoder keeps its npm name and its own version line", () => {
@@ -76,10 +76,13 @@ test("every reader package gates npm publish on the root verify", () => {
   assert.ok(rootScripts.verify, "root package.json has no verify script");
 });
 
-test("CHANGELOG.md has an entry for each package's version", () => {
+test("CHANGELOG.md has a dated entry for each package's version", () => {
   for (const dir of PACKAGE_DIRS) {
     const { name, version } = manifest(dir);
-    assert.ok(changelogVersions(name).includes(version), `## ${name}: no "### ${version} - "`);
+    const date = changelogHeadings(name).get(version);
+    assert.ok(date !== undefined, `## ${name}: no "### ${version} - "`);
+    // The version on disk is published on merge, so its entry is not "Unreleased" (RELEASING.md).
+    assert.match(date, /^\d{4}-\d{2}-\d{2}$/, `## ${name}: "### ${version} - ${date}"`);
   }
 });
 
