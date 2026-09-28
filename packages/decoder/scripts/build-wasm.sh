@@ -82,6 +82,11 @@ docker run --rm \
             echo "✗ Build failed!"
             exit 1
         fi
+
+        # The createRequire lookup of the glue fails in a webpack server bundle; see the
+        # script (#202). It runs in the container, with the Node.js of the emsdk image,
+        # because the files the container wrote belong to its user.
+        node /project/scripts/patch-glue.mjs
     '
 
 if [ $? -eq 0 ]; then
