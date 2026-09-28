@@ -35,7 +35,7 @@ Types are included. For Node.js versions, CommonJS and bundlers, see
 ## Usage
 
 ```ts
-import { load, open, textAssetString } from "unity-asset-reader";
+import { load, open } from "unity-asset-reader";
 
 const env = load(bundleBytes);                          // a Uint8Array or an ArrayBuffer
 const web = await open("https://cdn.example.com/ui.bundle"); // or a URL, Request, Response, Blob / File
@@ -45,10 +45,13 @@ for (const asset of env.assets()) {
 
   switch (asset.type) {
     case "TextAsset":
-      console.log(textAssetString(asset.data)); // `data` is a TextAsset here
+      console.log(asset.data.text, asset.data.bytes.length); // `data` is a TextAssetFields here
       break;
     case "Texture2D":
-      console.log(asset.data.m_Width, asset.data.imageData.length); // and a Texture2D here
+      console.log(asset.data.format, asset.data.width, asset.data.mipCount); // a Texture2DFields
+      break;
+    case "MonoBehaviour":
+      console.log(asset.data.script, asset.data.fields); // the MonoScript pointer, the script's fields
       break;
     case "Other":
       console.log(asset.typeName, asset.data); // "Mesh" { m_Name: "tri", ... } from the type tree
@@ -56,7 +59,7 @@ for (const asset of env.assets()) {
 }
 
 const icon = env.get("Assets/UI/Icon.png"); // by the path the asset had in the project
-for (const sprite of env.assets("Sprite")) sprite.data.m_Rect; // filtered and typed
+for (const sprite of env.assets("Sprite")) sprite.data.rect; // filtered and typed
 ```
 
 - **`load(input)`** takes one file or an array of files. Each is bytes or `{ name, data }`. A file
@@ -79,9 +82,16 @@ for (const sprite of env.assets("Sprite")) sprite.data.m_Rect; // filtered and t
 - **`name`, `path` and `data` are read when you first use them, then kept.** `name` is `m_Name`,
   read only as far as that field (`""` for a class without one, or for a `GameObject` in a bundle
   without type trees). `path` is the first `m_Container` path of any loaded `AssetBundle` that
-  points at the asset, or `undefined`. `data` is what `obj.read()` returns (below). A read that
-  fails throws when you access it, with the file, class and path id in the message, and is tried
-  again on the next access.
+  points at the asset, or `undefined`. `data` is what `obj.read()` returns (below), in the
+  TypeScript-style shape of [Classes](#classes) for a class with a class reader, and as its type
+  tree reads it (under Unity's names) for `"Other"`. A read that fails throws when you access it,
+  with the file, class and path id in the message, and is tried again on the next access.
+- **`asset.data` field names are camelCase without Unity's `m_` prefix**: `width` for
+  `m_Width`, `format` for `m_TextureFormat`. Each field's JSDoc names the Unity field it comes
+  from, so the Unity documentation still applies. Pointers stay `PPtr`s (`{ m_FileID, m_PathID }`,
+  follow them with `env.resolve`), 64-bit values stay `bigint`, and a field that only some Unity
+  versions have is optional. The low-level `obj.read()` keeps Unity's names; the `toXFields`
+  functions (`toTexture2DFields(obj.read())`, ...) turn its result into the same shape.
 - **`env.get(path)`** finds the asset a container path names. Unity stores those paths in lower
   case, and the lookup ignores case. A path that lists several assets (a texture and its sprites)
   gives the first one; filter `env.assets()` by `path` for the rest.
@@ -234,21 +244,22 @@ Nothing returns partial or garbage data without an error.
 
 `obj.readTypeTree()` reads **any class** from a file with type trees. `obj.read()` uses a
 hand-written reader for the classes below. Those readers also work on bundles built without type
-trees (`BuildAssetBundleOptions.DisableWriteTypeTree`):
+trees (`BuildAssetBundleOptions.DisableWriteTypeTree`). The table lists the main fields of
+`asset.data` (the type in brackets); the JSDoc of each type has every field, with its Unity name.
 
-| Class | What `obj.read()` gives you |
+| Class | Main fields of `asset.data` |
 |---|---|
-| `AssetBundle` | `m_Container`: asset path to object, the bundle's table of contents |
-| `TextAsset` | `m_Script` bytes; `textAssetString()` decodes them as UTF-8 |
-| `MonoBehaviour` | With a type tree: every field of the script. Without one: the header only (`m_GameObject`, `m_Enabled`, `m_Script`, `m_Name`) |
-| `MonoScript` | `m_ClassName`, `m_Namespace`, `m_AssemblyName` |
-| `Material` | `m_Shader` pointer, keywords, and `m_SavedProperties`: texture slots, floats, ints, colors |
-| `Texture2D` | Header fields and `imageData`, still encoded (inline or from the `.resS`). Decode it with [`unity-asset-reader-texture`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/texture/README.md) |
-| `Sprite`, `SpriteAtlas` | Rectangles, pivots, mesh, atlas entries. Cut them out with `unity-asset-reader-texture` |
-| `AudioClip` | Header fields and `audioData`: the sound bank as stored (usually FSB5), not decoded |
-| `VideoClip` | Header fields and `videoData`: the video file as imported (e.g. WebM, MP4), not decoded |
-| `Font` | `m_FontData`: the TrueType/OpenType file |
-| `MovieTexture` | Header fields and `m_MovieData` (the Ogg Theora file); no fixture covers it yet |
+| `AssetBundle` (`AssetBundleFields`) | `container`: asset path to object, the bundle's table of contents; `preloadTable`, `dependencies` |
+| `TextAsset` (`TextAssetFields`) | `bytes`: the file as stored; `text`: those bytes decoded as UTF-8 (on first use) |
+| `MonoBehaviour` (`MonoBehaviourFields`) | `script` (the `MonoScript` pointer), `gameObject`, `enabled`, `name`, and `fields`: every field of the script, with a type tree only |
+| `MonoScript` (`MonoScriptFields`) | `className`, `namespace`, `assemblyName` |
+| `Material` (`MaterialFields`) | `shader` pointer, keywords, and `savedProperties`: `texEnvs` (texture slots), `floats`, `ints`, `colors` |
+| `Texture2D` (`Texture2DFields`) | `width`, `height`, `format` (a `TextureFormat`), `mipCount`, `textureSettings`, `platform` and `imageData`, still encoded (inline or from the `.resS`). Decode it with [`unity-asset-reader-texture`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/texture/README.md) |
+| `Sprite` (`SpriteFields`), `SpriteAtlas` (`SpriteAtlasFields`) | `rect`, `pivot`, `border`, `pixelsToUnits`, `renderData` (texture area and mesh); an atlas' `packedSprites` and `renderDataMap`. Cut them out with `unity-asset-reader-texture` |
+| `AudioClip` (`AudioClipFields`) | `channels`, `frequency`, `length`, `compressionFormat` and `audioData`: the sound bank as stored (usually FSB5), not decoded |
+| `VideoClip` (`VideoClipFields`) | `width`, `height`, `frameRate`, `frameCount` and `videoData`: the video file as imported (e.g. WebM, MP4), not decoded |
+| `Font` (`FontFields`) | `fontData`: the TrueType/OpenType file; `fontNames`, `fontSize`, `characterRects` |
+| `MovieTexture` (`MovieTextureFields`) | `movieData` (the Ogg Theora file), `loop`, `audioClip`; no fixture covers it yet |
 
 Every other class (`GameObject`, `Transform`, `Mesh`, `AnimationClip`, ...) comes from its type
 tree. In a bundle without type trees, `obj.read()` throws `UnsupportedError` for them.
@@ -316,7 +327,8 @@ bundled `index.d.ts`, so your editor shows it on hover.
 | Export | What |
 |---|---|
 | `Asset`, `AssetType`, `KnownAssetType` | One object as `env.assets()` yields it; `Asset<"Texture2D">` is one of that type. `AssetType` is `KnownAssetType` (the classes with a class reader) or `"Other"` |
-| `AssetDataMap` | Class name to the type of `asset.data` (and `obj.read()`), for the classes with a class reader |
+| `AssetDataMap` | Class name to the type of `asset.data` (`Texture2DFields`, ...), for the classes with a class reader |
+| `ObjectDataMap` | Class name to what `obj.read()` returns (`Texture2DData`, ...), under Unity's names |
 | `ObjectReader` | One object: `pathId`, `type` (class id), `byteSize`, `version`, `platform`, `read()`, `readTypeTree()`, and the binary read methods of `BinaryReader` |
 | `ObjectData` | The union `obj.read()` returns |
 | `readTypeTree(reader)` | Read an object into a plain JS object by walking its type tree |
@@ -344,6 +356,17 @@ Call one yourself only to read an object as a specific class.
 | `readVideoClip` | `VideoClip`, `StreamedResource`; `VideoClipData` is what `obj.read()` returns |
 | `readFont` | `Font`, `CharacterInfo`, `Rectf` |
 | `readMovieTexture` | `MovieTexture` |
+
+### `asset.data` shapes
+
+Each `toXFields(data)` turns what `obj.read()` returns for class `X` into what `asset.data` is for
+it; `env.assets()` calls them for you.
+
+| Export | Result types |
+|---|---|
+| `toAssetBundleFields`, `toTextAssetFields`, `toMonoScriptFields`, `toMaterialFields`, `toTexture2DFields`, `toSpriteFields`, `toSpriteAtlasFields`, `toAudioClipFields`, `toVideoClipFields`, `toFontFields`, `toMovieTextureFields` | `AssetBundleFields`, `TextAssetFields`, `MonoScriptFields`, `MaterialFields` (`UnityPropertySheetFields`, `UnityTexEnvFields`), `Texture2DFields` (`GLTextureSettingsFields`), `SpriteFields` (`SpriteRenderDataFields`, `VertexDataFields`, `SubMeshFields`, `AABBFields`), `SpriteAtlasFields`, `AudioClipFields` and `VideoClipFields` (`StreamedResourceFields`), `FontFields`, `MovieTextureFields` |
+| `toMonoBehaviourFields(data, obj)` | `MonoBehaviourFields`; it takes the object too, whose type tree tells whether `data` holds the script's fields |
+| `EditorExtensionFields`, `NamedObjectFields`, `TextureFields` | The fields every class, every named class and every texture starts with |
 
 ### Lower layers
 

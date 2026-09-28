@@ -73,10 +73,12 @@ What happens here:
   SerializedFile among them, with its `type`, `name` and container `path` (the path the asset had
   in the Unity project).
 - `asset.data` is read when you first use it. For the common classes it comes from a hand-written
-  reader, which also works without type trees; `asset.type` is then the class name, and checking
-  it types `data`. Any other class (`asset.type === "Other"`, `asset.typeName === "Mesh"`) is read
-  through its type tree, which includes your own scripts' fields when the bundle was built with
-  type trees (the Unity default).
+  reader, which also works without type trees; `asset.type` is then the class name, checking it
+  types `data`, and its fields have TypeScript-style names (`width`, `format`, `text`; each one's
+  JSDoc names its Unity field, `m_Width`, ...). The low-level `asset.reader.read()` keeps Unity's
+  names. Any other class (`asset.type === "Other"`, `asset.typeName === "Mesh"`) is read through
+  its type tree, which includes your own scripts' fields when the bundle was built with type trees
+  (the Unity default).
 - `isImage(asset)` is true for a Texture2D or a Sprite. `decodeImage(asset)` gives its pixels
   (a Sprite cut out of its texture or atlas) together with `imageInfo(asset)`: size, format,
   mip count, color space and the rest, which `imageInfo` also gives on its own, without decoding.

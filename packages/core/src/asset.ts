@@ -2,7 +2,7 @@ import { readMonoBehaviour } from "./classes/MonoBehaviour.js";
 import { readNamedObject } from "./classes/NamedObject.js";
 import type { PPtr, PPtrResolution } from "./classes/PPtr.js";
 import type { Env } from "./env.js";
-import { classReaderName, type AssetDataMap } from "./classes/registry.js";
+import { classReaderName, readAssetData, type AssetDataMap } from "./classes/registry.js";
 import { ClassID, classIdName } from "./serialized/ClassID.js";
 import type { ObjectReader } from "./serialized/ObjectReader.js";
 import { readTypeTreeName, type TypeTreeObject } from "./serialized/TypeTreeReader.js";
@@ -56,9 +56,12 @@ interface AssetOf<T extends AssetType, D> {
   /** Size of the object's data in bytes. */
   readonly byteSize: number;
   /**
-   * The object's data: what `reader.read()` returns, typed by {@link type}.
-   * Read on first access and kept; a failed read is not kept, and throws
-   * again on the next access.
+   * The object's data, typed by {@link type}: for a class with a hardcoded
+   * reader, what `reader.read()` returns under camelCase names without the
+   * `m_` prefix ({@link AssetDataMap}; each field's JSDoc names its Unity
+   * field), and for `"Other"` the `readTypeTree()` result, under Unity's
+   * names. Read on first access and kept; a failed read is not kept, and
+   * throws again on the next access.
    */
   readonly data: D;
   /** The low-level reader, for `readTypeTree()`, `Env.resolve` and `Env.readResource`. */
@@ -74,7 +77,7 @@ interface AssetOf<T extends AssetType, D> {
 /**
  * One object of an {@link Env}, as `env.assets()` yields it: plain data with a
  * discriminant, {@link AssetOf.type}. A `switch (asset.type)` narrows
- * `data` to what that class's reader returns ({@link AssetDataMap}), and to
+ * `data` to that class's shape ({@link AssetDataMap}), and to
  * `TypeTreeObject` for `"Other"`.
  *
  * There are no methods: what an asset can be turned into is a free function
@@ -157,7 +160,7 @@ export function makeAsset(
     byteSize: reader.byteSize,
     get data(): unknown {
       if (!read) {
-        data = inContext(source, reader, () => reader.read());
+        data = inContext(source, reader, () => readAssetData(reader));
         read = true;
       }
       return data;
@@ -165,7 +168,7 @@ export function makeAsset(
     reader,
     env,
   };
-  // `type` and `data` are paired by `classReaderName` and `reader.read()`,
+  // `type` and `data` are paired by `classReaderName` and `readAssetData`,
   // which dispatch on the same list (`CLASS_READERS`).
   return asset as Asset;
 }
@@ -186,7 +189,7 @@ function readName(reader: ObjectReader): string {
 }
 
 /**
- * Map every `m_Container` entry of every `AssetBundle` object to the asset it
+ * Map every `m_Container` (`container`) entry of every `AssetBundle` object to the asset it
  * points at (upstream's `AssetBundle` container handling, UnityPy's
  * `env.container`). An asset listed under several paths gets the first; a
  * path listing several assets (a texture and its sprite) gives the first;
@@ -205,7 +208,7 @@ export function indexContainers(
   const byPath = new Map<string, ObjectReader>();
   for (const bundle of assets) {
     if (bundle.type !== "AssetBundle") continue;
-    for (const [path, info] of bundle.data.m_Container) {
+    for (const [path, info] of bundle.data.container) {
       const target = resolve(info.asset, bundle.reader);
       if (target.status !== "found") continue;
       if (!pathOf.has(target.object)) pathOf.set(target.object, path);

@@ -37,7 +37,7 @@ Used by humans and by the `.claude/skills/` workflows (`implement-issue`, `revie
 
 - TypeScript, `strict` plus `noUncheckedIndexedAccess`, `noUnusedLocals`, `noUnusedParameters`. No `any` unless commented why. No `// @ts-ignore`.
 - 2 spaces, LF, final newline, double quotes, semicolons, lines ≤ 100 when practical.
-- `camelCase` functions/variables, `PascalCase` classes/types, `UPPER_SNAKE_CASE` constants. Unity field names read from data keep Unity's spelling (`m_Name`, `m_PathID`).
+- `camelCase` functions/variables, `PascalCase` classes/types, `UPPER_SNAKE_CASE` constants. Unity field names read from data keep Unity's spelling (`m_Name`, `m_PathID`) in the class readers and `obj.read()`; only the `asset.data` shapes (`src/classes/fields.ts`, #184) rename them, citing the Unity name in each field's JSDoc.
 - JSDoc on every exported symbol: what it does, params, what it throws.
 - Comment density like the surrounding code: explain *why* and format quirks (version gates, alignment), not what the next line does. Version gates cite the Unity version: `// 2019.4+: blocksInfo padded to 16`.
 
