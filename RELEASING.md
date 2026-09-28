@@ -18,7 +18,7 @@ Releases are published by the workflow, never from a laptop. It publishes with
 [trusted publishing](https://docs.npmjs.com/trusted-publishers): npm authenticates the job by its
 GitHub OIDC token, so the repo holds no npm token, and npm attaches a
 [provenance statement](https://docs.npmjs.com/generating-provenance-statements) to every package
-by itself. The only exception is the one-time bootstrap of the three reader names, below.
+by itself. The only exception is the first publish, authenticated by a token, below.
 
 ## Steps
 
@@ -122,8 +122,11 @@ are; the `<name>@<version>` tags never collide with them.
 
 Settings → Environments → *New environment* `npm` (or edit the existing one), then under
 *Deployment branches and tags* choose *Selected branches and tags* and have exactly one rule: type
-**branch**, pattern `main`. No tag rules. The bootstrap token below is a secret of this
-environment, never a repository secret: jobs outside the environment cannot read it.
+**branch**, pattern `main`. No tag rules.
+
+GitHub creates the `npm` environment by itself the first time a job names it, but then with no
+branch rule, so any branch could deploy to it. Create it, or add the `main` rule to it, before the
+first run of the workflow.
 
 ### Protect `main`
 
@@ -143,10 +146,11 @@ publishing), and the `npm trust` command (npm 11.15.0 or later) requires that "t
 configuring must already exist on the npm registry"
 ([npm trust](https://docs.npmjs.com/cli/v11/commands/npm-trust/), checked 2026-09-27).
 
-- `texture2ddecoder-wasm` is on npm already (1.2.2), so its trusted publisher can be linked
-  **now**, before its 1.2.3 release. It needs no token.
 - `unity-asset-reader`, `unity-asset-reader-texture` and `unity-asset-reader-node` are new names,
-  so they are linked right after the bootstrap publish below, not before.
+  so they can only be linked after the bootstrap publish below.
+- `texture2ddecoder-wasm` is on npm already (1.2.2). Its trusted publisher can be linked before
+  the bootstrap (it then publishes by OIDC, which npm tries before the token) or with the other
+  three right after it.
 
 For each package, on npmjs.com as a maintainer with 2FA:
 
@@ -168,15 +172,14 @@ npm does not validate the entry when it is saved; a typo shows up as `ENEEDAUTH`
 Then, per package, Settings → Publishing access → *Require two-factor authentication and disallow
 tokens*: trusted publishing keeps working, and no leaked token can publish.
 
-### Bootstrap: the first publish of the three reader names
+### Bootstrap: the first publish, with a token
 
 None of the three reader names is on npm yet, so none can have a trusted publisher yet, and the
-first publish needs a token. The decoder does not: link its trusted publisher (above). The ways to
-do it for the readers, least bad first:
+first publish needs a token. The ways to do it, least bad first:
 
 | Option | Cost |
 |---|---|
-| **Token in the workflow, once.** Publish the readers' 1.0.0 through this workflow, authenticated by a short-lived token in the `npm` environment's secret `NPM_BOOTSTRAP_TOKEN`. | For about an hour a write token sits in the environment's secrets, readable only by a job in the `npm` environment, which runs only on `main`. npm's token page selects from packages and scopes that exist, so for three new names it has to be an *All packages* token, which can publish every package of the account; keep its expiry at the minimum (1 day). In return 1.0.0 is built and gated exactly like every later release and still gets provenance (token publishes from GitHub Actions with `id-token: write` support it; the job sets `NPM_CONFIG_PROVENANCE=true`). |
+| **Token in the workflow, once.** Publish the first release through this workflow, authenticated by a token in the **repository** secret `NPM_TOKEN` (maintainer decision 2026-09-28, #194; the secret is added already). | A repository secret is readable by every workflow job of the repo, not only by the `npm` environment's: only the `publish` job references it today, but a workflow on any branch of this repo could (a push, or a pull request from a branch of this repo, including this workflow's own `pull_request` trigger, which runs the PR's copy of `release.yml`; not a fork), without being merged. So it lives for the first publish only and is deleted right after it. npm's token page selects from packages and scopes that exist, so for three new names it has to be an *All packages* token, which can publish every package of the account; keep its expiry short. In return the first release is built and gated exactly like every later one and still gets provenance (token publishes from GitHub Actions with `id-token: write` support it; the job sets `NPM_CONFIG_PROVENANCE=true`). |
 | Placeholder publish from a laptop (for example a `0.0.0` of each name), then link the publishers, then release 1.0.0 through the workflow. | Three empty versions stay on npm for good (unpublishing one blocks reusing that version number), and each name's first version is junk. |
 | `npm publish` of 1.0.0 from a laptop. | 1.0.0 has no provenance (npm generates it only in a supported CI runner), is built on one machine outside the gate, and needs Docker locally for the WASM. |
 
@@ -189,26 +192,29 @@ push will release them: the first release is a manual run. It publishes all four
 order: `texture2ddecoder-wasm@1.2.3` first (it carries the BC3 fix #137 and the Worker fix #149,
 which the texture package's `^1.2.3` range and goldens rely on), then the readers.
 
-1. Set up the `npm` environment and protect `main` (above).
-2. Link the trusted publisher of `texture2ddecoder-wasm` (above).
-3. Create a granular access token on npmjs.com: *Read and write*, *All packages*, expiry 1 day,
-   *Bypass 2FA* ticked (a CI job cannot answer a 2FA prompt).
-4. Add it as the secret `NPM_BOOTSTRAP_TOKEN` of the `npm` environment (Settings →
-   Environments → `npm` → *Environment secrets*; not a repository secret). The publish step
-   writes it to the job's `~/.npmrc` only when it is set, and warns. The decoder still publishes
-   through its trusted publisher, because npm tries the OIDC token before any configured token.
-5. Actions → Release → *Run workflow* on `main`, `dry_run` ticked. Its notice must list
+Before it: set up the `npm` environment with its `main` branch rule and protect `main` (above).
+If the environment does not exist yet, the first run creates it, without the rule. The repository
+secret `NPM_TOKEN` is added already. It must hold a granular access token that can publish all
+four names: *Read and write*, *All packages* (three names are new), *Bypass 2FA* ticked (a CI job
+cannot answer a 2FA prompt). The publish step writes it to the job's `~/.npmrc` as a reference to
+the environment variable, never the value, only when the secret is set, and warns. The `dry-run`
+job never reads it.
+
+1. **`NPM_TOKEN` repository secret** (already added). Optionally, a dry run first: Actions →
+   Release → *Run workflow* on `main`, `dry_run` ticked. Its notice must list
    `texture2ddecoder-wasm@1.2.3 unity-asset-reader@1.0.0 unity-asset-reader-texture@1.0.0
    unity-asset-reader-node@1.0.0`, and the gate and every `npm publish --dry-run` must pass.
-6. The same with `dry_run` unticked. It publishes the four and tags them.
-7. Set up the trusted publisher of each of the three reader packages (above).
-8. Delete the `NPM_BOOTSTRAP_TOKEN` secret and revoke the token on npmjs.com. With the secret
-   gone the publish step passes no token and npm uses OIDC. Then set *disallow tokens* per
-   package (above).
+2. **Run the Release workflow by hand** on `main` with `dry_run` unticked. It publishes the four
+   with the token and tags them.
+3. **Link the trusted publisher of each of the four packages** (above).
+4. **Delete the `NPM_TOKEN` secret** (Settings → Secrets and variables → Actions) and revoke the
+   token on npmjs.com, right away: a repository secret is readable by every workflow job in the
+   repo, not only the `npm` environment's. With the secret gone the publish step passes no token
+   and npm uses OIDC. Then set *disallow tokens* per package (above).
 
-Do step 7 before step 8. The other way round, a release in between has neither a token nor a
-matching trusted publisher and fails with `ENEEDAUTH`. Once step 7 is done, a release works
-whether or not the secret is still set.
+Do step 3 before step 4. The other way round, a release in between has neither a token nor a
+matching trusted publisher and fails with `ENEEDAUTH`. Once step 3 is done, a release works
+whether or not the secret is still set, because npm tries the OIDC token before a configured one.
 
 ## After the repo rename
 
