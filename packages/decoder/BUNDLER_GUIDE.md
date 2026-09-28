@@ -1,13 +1,13 @@
 # Bundler Configuration Guide
 
-This guide provides comprehensive setup instructions for using `unity-asset-reader-decoder` with various JavaScript bundlers and frameworks.
+This guide provides comprehensive setup instructions for using `texture2ddecoder-wasm` with various JavaScript bundlers and frameworks.
 
 ## 🆕 Recommended Approach
 
-The library uses a simple URL-based API inspired by ffmpeg.wasm:
+**Starting with v1.2.0**, the library uses a simple URL-based API inspired by ffmpeg.wasm:
 
 ```typescript
-import { initialize } from "unity-asset-reader-decoder";
+import { initialize } from "texture2ddecoder-wasm";
 
 // Copy WASM files to your public directory first
 // npx texture2ddecoder-copy-wasm public/wasm
@@ -61,12 +61,12 @@ The fastest way to get started - no installation or build tools required!
       import {
         initialize,
         decode_bc1,
-      } from "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/dist/index.mjs";
+      } from "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs";
 
       // Point to WASM files on CDN
       await initialize({
         wasmPath:
-          "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/wasm",
+          "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
       });
 
       // Ready to decode!
@@ -81,22 +81,22 @@ The fastest way to get started - no installation or build tools required!
 **Specific version (recommended for production):**
 
 ```
-https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/dist/index.mjs
-https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/wasm/
+https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs
+https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm/
 ```
 
 **Latest version (good for development):**
 
 ```
-https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder/dist/index.mjs
-https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder/wasm/
+https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm/dist/index.mjs
+https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm/wasm/
 ```
 
 **Version range:**
 
 ```
-https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1/dist/index.mjs  // Latest 1.x.x
-https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0/dist/index.mjs  // Latest 1.0.x
+https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1/dist/index.mjs  // Latest 1.x.x
+https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2/dist/index.mjs  // Latest 1.2.x
 ```
 
 ### Benefits
@@ -128,9 +128,9 @@ You can also use other npm-based CDNs:
 import {
   initialize,
   decode_bc1,
-} from "https://unpkg.com/unity-asset-reader-decoder@1.0.0/dist/index.mjs";
+} from "https://unpkg.com/texture2ddecoder-wasm@1.2.1/dist/index.mjs";
 await initialize({
-  wasmPath: "https://unpkg.com/unity-asset-reader-decoder@1.0.0/wasm",
+  wasmPath: "https://unpkg.com/texture2ddecoder-wasm@1.2.1/wasm",
 });
 ```
 
@@ -140,9 +140,9 @@ await initialize({
 import {
   initialize,
   decode_bc1,
-} from "https://esm.sh/unity-asset-reader-decoder@1.0.0";
+} from "https://esm.sh/texture2ddecoder-wasm@1.2.1";
 await initialize({
-  wasmPath: "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/wasm",
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
 });
 ```
 
@@ -195,7 +195,7 @@ external: ["path", "fs", "crypto", "module"];
 1. **Install dependencies:**
 
 ```bash
-npm install unity-asset-reader-decoder
+npm install texture2ddecoder-wasm
 ```
 
 2. **Copy WASM files:**
@@ -208,7 +208,7 @@ npx texture2ddecoder-copy-wasm public/wasm
 
 ```typescript
 // src/main.ts
-import { initialize, decode_bc1 } from "unity-asset-reader-decoder";
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 // Initialize with path to WASM files
 await initialize({ wasmPath: "/wasm" });
@@ -234,7 +234,7 @@ export default defineConfig({
     viteStaticCopy({
       targets: [
         {
-          src: "node_modules/unity-asset-reader-decoder/wasm/*",
+          src: "node_modules/texture2ddecoder-wasm/wasm/*",
           dest: "wasm",
         },
       ],
@@ -253,7 +253,7 @@ await initialize({ wasmPath: "/wasm" });
 ```tsx
 // src/App.tsx
 import { useEffect, useState } from "react";
-import { initialize } from "unity-asset-reader-decoder";
+import { initialize } from "texture2ddecoder-wasm";
 
 function App() {
   const [ready, setReady] = useState(false);
@@ -272,7 +272,7 @@ function App() {
 <!-- src/App.vue -->
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { initialize } from "unity-asset-reader-decoder";
+import { initialize } from "texture2ddecoder-wasm";
 
 const ready = ref(false);
 
@@ -350,7 +350,7 @@ module.exports = {
         {
           from: path.resolve(
             __dirname,
-            "node_modules/unity-asset-reader-decoder/wasm"
+            "node_modules/texture2ddecoder-wasm/wasm"
           ),
           to: path.resolve(__dirname, "dist/wasm"),
           noErrorOnMissing: false,
@@ -439,7 +439,7 @@ module.exports = nextConfig;
 ```bash
 # Copy WASM files to public
 mkdir -p public/wasm
-cp node_modules/unity-asset-reader-decoder/wasm/* public/wasm/
+cp node_modules/texture2ddecoder-wasm/wasm/* public/wasm/
 ```
 
 ```typescript
@@ -447,7 +447,7 @@ cp node_modules/unity-asset-reader-decoder/wasm/* public/wasm/
 "use client";
 
 import { useEffect, useState } from "react";
-import { initialize, decode_bc1 } from "unity-asset-reader-decoder";
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 export default function TextureViewer() {
   const [isReady, setIsReady] = useState(false);
@@ -497,7 +497,7 @@ export default Home;
 ```typescript
 // components/TextureDecoder.tsx
 import { useEffect, useState } from "react";
-import { initialize } from "unity-asset-reader-decoder";
+import { initialize } from "texture2ddecoder-wasm";
 
 export default function TextureDecoder() {
   const [ready, setReady] = useState(false);
@@ -519,7 +519,7 @@ export default function TextureDecoder() {
 1. **Install dependencies:**
 
 ```bash
-npm install unity-asset-reader-decoder
+npm install texture2ddecoder-wasm
 npm install react-app-rewired copy-webpack-plugin --save-dev
 ```
 
@@ -544,7 +544,7 @@ module.exports = function override(config, env) {
         {
           from: path.resolve(
             __dirname,
-            "node_modules/unity-asset-reader-decoder/wasm"
+            "node_modules/texture2ddecoder-wasm/wasm"
           ),
           to: path.resolve(
             __dirname,
@@ -575,7 +575,7 @@ module.exports = function override(config, env) {
 
 ```bash
 # Simply copy WASM files to public
-cp -r node_modules/unity-asset-reader-decoder/wasm public/
+cp -r node_modules/texture2ddecoder-wasm/wasm public/
 
 # Add to .gitignore
 echo "public/wasm/" >> .gitignore
@@ -586,7 +586,7 @@ Add a postinstall script:
 ```json
 {
   "scripts": {
-    "postinstall": "cp -r node_modules/unity-asset-reader-decoder/wasm public/"
+    "postinstall": "cp -r node_modules/texture2ddecoder-wasm/wasm public/"
   }
 }
 ```
@@ -635,7 +635,7 @@ export default {
     copy({
       targets: [
         {
-          src: "node_modules/unity-asset-reader-decoder/wasm/*",
+          src: "node_modules/texture2ddecoder-wasm/wasm/*",
           dest: "dist/wasm",
         },
       ],
@@ -651,7 +651,7 @@ export default {
 
 ```bash
 # Install dependencies
-npm install unity-asset-reader-decoder
+npm install texture2ddecoder-wasm
 npm install parcel-reporter-static-files-copy --save-dev
 ```
 
@@ -669,7 +669,7 @@ npm install parcel-reporter-static-files-copy --save-dev
   "staticFiles": {
     "staticPath": [
       {
-        "staticPath": "node_modules/unity-asset-reader-decoder/wasm",
+        "staticPath": "node_modules/texture2ddecoder-wasm/wasm",
         "staticOutPath": "wasm"
       }
     ]
@@ -707,7 +707,7 @@ esbuild
           build.onEnd(() => {
             const wasmSrc = path.join(
               __dirname,
-              "node_modules/unity-asset-reader-decoder/wasm"
+              "node_modules/texture2ddecoder-wasm/wasm"
             );
             const wasmDest = path.join(__dirname, "dist/wasm");
 
@@ -737,7 +737,7 @@ esbuild
 
 ```bash
 # Copy WASM to static
-cp -r node_modules/unity-asset-reader-decoder/wasm static/
+cp -r node_modules/texture2ddecoder-wasm/wasm static/
 ```
 
 ```javascript
@@ -751,7 +751,7 @@ const config = {
 
     vite: {
       optimizeDeps: {
-        exclude: ["unity-asset-reader-decoder"],
+        exclude: ["texture2ddecoder-wasm"],
       },
 
       server: {
@@ -770,7 +770,7 @@ export default config;
 <!-- src/routes/+page.svelte -->
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { initialize, decode_bc1, type Uint8Array } from 'unity-asset-reader-decoder';
+  import { initialize, decode_bc1, type Uint8Array } from 'texture2ddecoder-wasm';
 
   let isReady = false;
   let error: string | null = null;
@@ -801,7 +801,7 @@ export default config;
 ```bash
 # Copy WASM to assets
 mkdir -p src/assets/wasm
-cp node_modules/unity-asset-reader-decoder/wasm/* src/assets/wasm/
+cp node_modules/texture2ddecoder-wasm/wasm/* src/assets/wasm/
 ```
 
 ```json
@@ -817,7 +817,7 @@ cp node_modules/unity-asset-reader-decoder/wasm/* src/assets/wasm/
               "src/assets",
               {
                 "glob": "**/*",
-                "input": "node_modules/unity-asset-reader-decoder/wasm",
+                "input": "node_modules/texture2ddecoder-wasm/wasm",
                 "output": "/wasm"
               }
             ],
@@ -831,7 +831,7 @@ cp node_modules/unity-asset-reader-decoder/wasm/* src/assets/wasm/
               "src/assets",
               {
                 "glob": "**/*",
-                "input": "node_modules/unity-asset-reader-decoder/wasm",
+                "input": "node_modules/texture2ddecoder-wasm/wasm",
                 "output": "/wasm"
               }
             ]
@@ -846,7 +846,7 @@ cp node_modules/unity-asset-reader-decoder/wasm/* src/assets/wasm/
 ```typescript
 // src/app/services/texture-decoder.service.ts
 import { Injectable } from "@angular/core";
-import { initialize } from "unity-asset-reader-decoder";
+import { initialize } from "texture2ddecoder-wasm";
 
 @Injectable({
   providedIn: "root",
@@ -897,7 +897,7 @@ export class TextureViewerComponent implements OnInit {
 
 ```bash
 # Copy WASM to public
-cp -r node_modules/unity-asset-reader-decoder/wasm public/
+cp -r node_modules/texture2ddecoder-wasm/wasm public/
 ```
 
 ```astro
@@ -915,7 +915,7 @@ cp -r node_modules/unity-asset-reader-decoder/wasm public/
     </div>
 
     <script>
-      import { initialize, decode_bc1 } from 'unity-asset-reader-decoder';
+      import { initialize, decode_bc1 } from 'texture2ddecoder-wasm';
 
       const statusEl = document.getElementById('status');
 
@@ -936,7 +936,7 @@ cp -r node_modules/unity-asset-reader-decoder/wasm public/
 
 ```bash
 # Copy WASM to public
-cp -r node_modules/unity-asset-reader-decoder/wasm public/
+cp -r node_modules/texture2ddecoder-wasm/wasm public/
 ```
 
 ```typescript
@@ -944,13 +944,13 @@ cp -r node_modules/unity-asset-reader-decoder/wasm public/
 export default defineNuxtConfig({
   vite: {
     optimizeDeps: {
-      exclude: ["unity-asset-reader-decoder"],
+      exclude: ["texture2ddecoder-wasm"],
     },
   },
 
   nitro: {
     externals: {
-      inline: ["unity-asset-reader-decoder"],
+      inline: ["texture2ddecoder-wasm"],
     },
   },
 });
@@ -964,7 +964,7 @@ const error = ref<string | null>(null);
 
 onMounted(async () => {
   try {
-    const { initialize } = await import("unity-asset-reader-decoder");
+    const { initialize } = await import("texture2ddecoder-wasm");
     await initialize("/wasm");
     isReady.value = true;
   } catch (err) {
@@ -988,7 +988,7 @@ onMounted(async () => {
 
 ```bash
 # Copy WASM to public
-cp -r node_modules/unity-asset-reader-decoder/wasm public/
+cp -r node_modules/texture2ddecoder-wasm/wasm public/
 ```
 
 ```typescript
@@ -1000,7 +1000,7 @@ export default function Index() {
 
   useEffect(() => {
     // Dynamic import to avoid SSR issues
-    import("unity-asset-reader-decoder").then(async ({ initialize }) => {
+    import("texture2ddecoder-wasm").then(async ({ initialize }) => {
       await initialize("/wasm");
       setIsReady(true);
     });
@@ -1016,16 +1016,16 @@ export default function Index() {
 
 ## Troubleshooting
 
-### Issue: "Cannot find module 'unity-asset-reader-decoder'"
+### Issue: "Cannot find module 'texture2ddecoder-wasm'"
 
 **Cause:** Package not installed or not in node_modules
 
 **Solution:**
 
 ```bash
-npm install unity-asset-reader-decoder
+npm install texture2ddecoder-wasm
 # or
-yarn add unity-asset-reader-decoder
+yarn add texture2ddecoder-wasm
 ```
 
 ### Issue: "Failed to load WASM file"
@@ -1114,7 +1114,7 @@ Ensure you're using the correct Node.js import and not bundling for browser:
 
 ```typescript
 // Node.js - this should work without bundler config
-import { initialize, decode_bc1 } from "unity-asset-reader-decoder";
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 await initialize(); // No path needed in Node.js
 ```
@@ -1131,7 +1131,7 @@ await initialize(); // No path needed in Node.js
 ```typescript
 // Lazy load only when needed
 const loadDecoder = async () => {
-  const decoder = await import("unity-asset-reader-decoder");
+  const decoder = await import("texture2ddecoder-wasm");
   await decoder.initialize({ wasmPath: "/wasm" });
   return decoder;
 };
@@ -1191,7 +1191,7 @@ Only load WASM when actually needed:
 // Don't initialize on app start
 // Initialize when user loads texture viewer
 const handleViewTexture = async () => {
-  const decoder = await import("unity-asset-reader-decoder");
+  const decoder = await import("texture2ddecoder-wasm");
   await decoder.initialize({ wasmPath: "/wasm" });
   // Now decode...
 };
@@ -1203,7 +1203,7 @@ Initialize once and reuse:
 
 ```typescript
 // src/utils/texture-decoder.ts
-import { initialize } from "unity-asset-reader-decoder";
+import { initialize } from "texture2ddecoder-wasm";
 
 let initialized = false;
 
@@ -1245,7 +1245,7 @@ app.use(
 
 - [Emscripten Documentation](https://emscripten.org/docs/)
 - [WebAssembly MDN](https://developer.mozilla.org/en-US/docs/WebAssembly)
-- [unity-asset-reader-decoder GitHub](https://github.com/fatal10110/texture2ddecoder-wasm)
+- [texture2ddecoder-wasm GitHub](https://github.com/fatal10110/texture2ddecoder-wasm)
 
 ---
 

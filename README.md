@@ -7,10 +7,8 @@ platform dependencies. Only texture decoding uses a small WASM module.
 This repository holds four npm packages. It will be renamed from `texture2ddecoder-wasm` to
 `unity-asset-reader`.
 
-**Status:** the packages are not on npm yet; their first release will be 1.0.0. The decoder was
-published as `texture2ddecoder-wasm` up to 1.2.2; its
-[README](packages/decoder/README.md#migrating-from-texture2ddecoder-wasm) says how to move to the
-new name.
+**Status:** the three `unity-asset-reader*` packages are not on npm yet; their first release will
+be 1.0.0. `texture2ddecoder-wasm` is on npm (1.2.2); its next release is 1.2.3.
 
 ## Which packages do I need?
 
@@ -21,10 +19,10 @@ Most apps need one or two. Pick the row that matches what you do:
 | Read bundles in a browser, a Worker or Node.js: unpack them, list their objects, read text, your scripts' data, and raw audio, video and font bytes | `unity-asset-reader` |
 | Do that, and also get textures and sprites as pixels | `unity-asset-reader` + `unity-asset-reader-texture` |
 | Do either of the above in Node.js, on files and folders on disk | add `unity-asset-reader-node` |
-| Decode raw compressed texture blocks you already have, with no Unity files around them | `unity-asset-reader-decoder` alone |
+| Decode raw compressed texture blocks you already have, with no Unity files around them | `texture2ddecoder-wasm` alone |
 
-`unity-asset-reader-decoder` is a dependency of `unity-asset-reader-texture` and is installed with
-it, so you never add it next to `-texture` yourself.
+`texture2ddecoder-wasm` is a dependency of `unity-asset-reader-texture` and is installed with it,
+so you never add it next to `-texture` yourself.
 
 ### What each package does
 
@@ -41,11 +39,11 @@ it, so you never add it next to `-texture` yourself.
   `loadPath()` reads a file or a whole folder, merges split files (`.split0`, `.split1`, ...),
   picks up `.resS` / `.resource` sidecars, and hands everything to the parser's `load()`. It
   returns the same `Env` as `load()`, so everything after that works the same.
-- **[`unity-asset-reader-decoder`](packages/decoder/README.md)** is the WASM decoder for
-  compressed texture blocks, formerly `texture2ddecoder-wasm`. It knows nothing about Unity files:
-  you call the function for a format (`decode_bc1`, `decode_astc`, ...) with raw block data, a
-  width and a height, and it gives back BGRA. Use it on its
-  own only when you already have that raw data.
+- **[`texture2ddecoder-wasm`](packages/decoder/README.md)** is the WASM decoder for compressed
+  texture blocks: [Texture2DDecoder](https://github.com/K0lb3/texture2ddecoder) built to WASM. It
+  knows nothing about Unity files: you call the function for a format (`decode_bc1`,
+  `decode_astc`, ...) with raw block data, a width and a height, and it gives back BGRA. Use it on
+  its own only when you already have that raw data.
 
 ### Why they are separate
 
@@ -60,7 +58,9 @@ it, so you never add it next to `-texture` yourself.
   its own before the reader existed, and it depends on nothing else here.
 - **There is one copy of the parser.** `unity-asset-reader-texture` and `-node` take
   `unity-asset-reader` as a peer dependency, so they share the copy your app installs instead of
-  bringing their own. All four packages are released together, on one version number.
+  bringing their own. The three `unity-asset-reader*` packages are released together, on one
+  version number. `texture2ddecoder-wasm` has its own version line; the texture package's range
+  on it says which versions work.
 
 ## Usage
 
@@ -104,7 +104,7 @@ import { initTexture, decodeTexture2D } from "unity-asset-reader-texture";
 
 // A browser has no package folder to read from, so tell it where the two WASM files are:
 // a CDN, as here, or your own static folder (`npx texture2ddecoder-copy-wasm public/wasm`).
-await initTexture({ wasmPath: "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1/wasm" });
+await initTexture({ wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1/wasm" });
 
 const bytes = new Uint8Array(await (await fetch("a.bundle")).arrayBuffer());
 const env = load([{ name: "a.bundle", data: bytes }]);
