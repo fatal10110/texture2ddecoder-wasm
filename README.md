@@ -7,16 +7,55 @@ platform dependencies. Only texture decoding uses a small WASM module.
 This repository holds four npm packages. It will be renamed from `texture2ddecoder-wasm` to
 `unity-asset-reader`.
 
-| Package | Install it to | Docs |
-|---|---|---|
-| [`unity-asset-reader`](packages/core/) | Unpack bundles and read objects: text, your scripts' data, raw audio, video and font bytes. Browser, Worker and Node.js. | [README](packages/core/README.md) |
-| [`unity-asset-reader-texture`](packages/texture/) | Also get `Texture2D` and `Sprite` pixels as RGBA. Adds the WASM decoder. | [README](packages/texture/README.md) |
-| [`unity-asset-reader-node`](packages/node/) | Load files and whole folders from disk in Node.js, with `.resS` sidecars and split files. | [README](packages/node/README.md) |
-| [`unity-asset-reader-decoder`](packages/decoder/) | Decode raw BC / ETC / PVRTC / ASTC / ATC / Crunch blocks to BGRA, without Unity files around them. Stable; formerly `texture2ddecoder-wasm`. | [README](packages/decoder/README.md) |
+## Which packages do I need?
 
-All four packages are released together, on one version number.
-`unity-asset-reader-texture` and `-node` use `unity-asset-reader` as a peer dependency, so an app
-always has one copy of the parser. `unity-asset-reader-decoder` depends on nothing here.
+Most apps need one or two. Pick the row that matches what you do:
+
+| You want to | Install |
+|---|---|
+| Read bundles in a browser, a Worker or Node.js: unpack them, list their objects, read text, your scripts' data, and raw audio, video and font bytes | `unity-asset-reader` |
+| Do that, and also get textures and sprites as pixels | `unity-asset-reader` + `unity-asset-reader-texture` |
+| Do either of the above in Node.js, on files and folders on disk | add `unity-asset-reader-node` |
+| Decode raw compressed texture blocks you already have, with no Unity files around them | `unity-asset-reader-decoder` alone |
+
+`unity-asset-reader-decoder` is a dependency of `unity-asset-reader-texture` and is installed with
+it, so you never add it next to `-texture` yourself.
+
+### What each package does
+
+- **[`unity-asset-reader`](packages/core/README.md)**, the parser. It takes bytes
+  (`Uint8Array`) and gives back the unpacked files and the objects in them. It is plain
+  TypeScript: synchronous, with no WASM and no Node.js APIs, so it runs the same everywhere. For a
+  `Texture2D` it reads the header fields and the still-encoded `imageData`, but it never decodes
+  pixels.
+- **[`unity-asset-reader-texture`](packages/texture/README.md)** turns the `Texture2D` and
+  `Sprite` objects that the parser reads into RGBA pixels. It parses nothing itself: you pass it
+  `obj.read()` from `unity-asset-reader`. It decodes plain formats (RGBA32, RGB565, ...) in
+  TypeScript and block-compressed ones (BC, ETC, ASTC, PVRTC, ...) through the decoder's WASM.
+- **[`unity-asset-reader-node`](packages/node/README.md)** gets Unity files off the disk.
+  `loadPath()` reads a file or a whole folder, merges split files (`.split0`, `.split1`, ...),
+  picks up `.resS` / `.resource` sidecars, and hands everything to the parser's `load()`. It
+  returns the same `Env` as `load()`, so everything after that works the same.
+- **[`unity-asset-reader-decoder`](packages/decoder/README.md)** is the WASM decoder for
+  compressed texture blocks, formerly `texture2ddecoder-wasm`. It knows nothing about Unity files:
+  you call the function for a format (`decode_bc1`, `decode_astc`, ...) with raw block data, a
+  width and a height, and it gives back BGRA. Use it on its
+  own only when you already have that raw data.
+
+### Why they are separate
+
+- **Only textures need WASM.** The parser is about 64 KB gzipped. Decoding textures adds about
+  19 KB of JavaScript plus a 147 KB WASM module (50 KB gzipped), which has to be loaded and
+  initialized first (`await initTexture()`). An app that only reads text or script data never
+  downloads any of that.
+- **Only disk access needs Node.js.** Reading files needs `fs`, which a browser bundle cannot
+  include. Keeping it in `unity-asset-reader-node` means the parser and the texture package never
+  import Node.js APIs and bundle cleanly for the browser.
+- **The decoder stands on its own.** It is useful without any Unity parsing, it was published on
+  its own before the reader existed, and it depends on nothing else here.
+- **There is one copy of the parser.** `unity-asset-reader-texture` and `-node` take
+  `unity-asset-reader` as a peer dependency, so they share the copy your app installs instead of
+  bringing their own. All four packages are released together, on one version number.
 
 **Status:** the packages are not on npm yet; their first release will be 1.0.0. The decoder was
 published as `texture2ddecoder-wasm` up to 1.2.2; its
