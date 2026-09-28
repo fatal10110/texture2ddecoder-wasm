@@ -395,6 +395,13 @@
               }
             }
           },
+          "names": {
+            "-1058491516086694304": "31_PVRTC_RGBA2",
+            "-3655230868143389888": "33_PVRTC_RGBA4",
+            "1": "ios",
+            "6197440607491571507": "30_PVRTC_RGB2",
+            "7874140374693733573": "32_PVRTC_RGB4"
+          },
           "textures": {
             "-1058491516086694304": {
               "name": "31_PVRTC_RGBA2",
@@ -434,7 +441,29 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/mobile/30_pvrtc_rgb2.asset",
+          "file": "CAB-cf6ce423c5ed600a7090d754f4181250",
+          "pathId": "6197440607491571507"
+        },
+        {
+          "path": "assets/fixtures/mobile/31_pvrtc_rgba2.asset",
+          "file": "CAB-cf6ce423c5ed600a7090d754f4181250",
+          "pathId": "-1058491516086694304"
+        },
+        {
+          "path": "assets/fixtures/mobile/32_pvrtc_rgb4.asset",
+          "file": "CAB-cf6ce423c5ed600a7090d754f4181250",
+          "pathId": "7874140374693733573"
+        },
+        {
+          "path": "assets/fixtures/mobile/33_pvrtc_rgba4.asset",
+          "file": "CAB-cf6ce423c5ed600a7090d754f4181250",
+          "pathId": "-3655230868143389888"
+        }
+      ]
     },
     "editor/2019.4.41f2/lz4-notypetree/audio": {
       "signature": "UnityFS",
@@ -499,9 +528,26 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "1": "audio",
+            "8082097006500496530": "tone-vorbis",
+            "8983485164505037740": "tone-pcm"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/media/tone-pcm.wav",
+          "file": "CAB-d5ae2b5aa3edc0f73b4bb6b1ae125a53",
+          "pathId": "8983485164505037740"
+        },
+        {
+          "path": "assets/fixtures/media/tone-vorbis.wav",
+          "file": "CAB-d5ae2b5aa3edc0f73b4bb6b1ae125a53",
+          "pathId": "8082097006500496530"
+        }
+      ]
     },
     "editor/2019.4.41f2/lz4-notypetree/font": {
       "signature": "UnityFS",
@@ -591,9 +637,32 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "1": "font",
+            "1371323451777357266": "glyphs",
+            "5097923030202094685": "Font Material",
+            "8823724225441444264": "Font Texture"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "1371323451777357266"
+        },
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "5097923030202094685"
+        },
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "8823724225441444264"
+        }
+      ]
     },
     "editor/2019.4.41f2/lz4-notypetree/lz4-notypetree": {
       "signature": "UnityFS",
@@ -649,9 +718,20 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "1": "",
+            "2": "AssetBundleManifest"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assetbundlemanifest",
+          "file": "CAB-ed8cada14a988474fe1ca828514cf709",
+          "pathId": "2"
+        }
+      ]
     },
     "editor/2019.4.41f2/lz4-notypetree/main": {
       "signature": "UnityFS",
@@ -751,9 +831,27 @@
               "nodes": null
             }
           ],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "-1107784300911722889": "tri",
+            "-5055261391591463299": "FixtureData",
+            "1": "main",
+            "3992972000369313186": "data"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/main/data.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "3992972000369313186"
+        },
+        {
+          "path": "assets/fixtures/main/tri.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "-1107784300911722889"
+        }
+      ]
     },
     "editor/2019.4.41f2/lz4-notypetree/shared": {
       "signature": "UnityFS",
@@ -809,9 +907,20 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "1": "shared",
+            "9053748467371775859": "hello"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/shared/hello.txt",
+          "file": "CAB-71fca072df859359e7a6b09ff7151c53",
+          "pathId": "9053748467371775859"
+        }
+      ]
     },
     "editor/2019.4.41f2/lz4-notypetree/texture": {
       "signature": "UnityFS",
@@ -871,9 +980,20 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "1": "texture",
+            "2229888321255208862": "checker"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/texture/checker.png",
+          "file": "CAB-f04fab77212e693fb63bdad7458f66fe",
+          "pathId": "2229888321255208862"
+        }
+      ]
     },
     "editor/2019.4.41f2/lz4-notypetree/video": {
       "signature": "UnityFS",
@@ -933,9 +1053,20 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "1": "video",
+            "2851217806674877029": "clip"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/media/clip.webm",
+          "file": "CAB-f4056db44bc36994fffbc89e2912fee2",
+          "pathId": "2851217806674877029"
+        }
+      ]
     },
     "editor/2019.4.41f2/lz4/audio": {
       "signature": "UnityFS",
@@ -1184,6 +1315,11 @@
               }
             }
           },
+          "names": {
+            "1": "audio",
+            "8082097006500496530": "tone-vorbis",
+            "8983485164505037740": "tone-pcm"
+          },
           "rawData": {
             "8082097006500496530": {
               "classId": 83,
@@ -1201,7 +1337,19 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/media/tone-pcm.wav",
+          "file": "CAB-d5ae2b5aa3edc0f73b4bb6b1ae125a53",
+          "pathId": "8983485164505037740"
+        },
+        {
+          "path": "assets/fixtures/media/tone-vorbis.wav",
+          "file": "CAB-d5ae2b5aa3edc0f73b4bb6b1ae125a53",
+          "pathId": "8082097006500496530"
+        }
+      ]
     },
     "editor/2019.4.41f2/lz4/font": {
       "signature": "UnityFS",
@@ -1725,6 +1873,12 @@
               }
             }
           },
+          "names": {
+            "1": "font",
+            "1371323451777357266": "glyphs",
+            "5097923030202094685": "Font Material",
+            "8823724225441444264": "Font Texture"
+          },
           "rawData": {
             "1371323451777357266": {
               "classId": 128,
@@ -1735,7 +1889,24 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "1371323451777357266"
+        },
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "5097923030202094685"
+        },
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "8823724225441444264"
+        }
+      ]
     },
     "editor/2019.4.41f2/lz4/lz4": {
       "signature": "UnityFS",
@@ -2016,9 +2187,20 @@
                 ]
               }
             }
+          },
+          "names": {
+            "1": "",
+            "2": "AssetBundleManifest"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assetbundlemanifest",
+          "file": "CAB-07257cf8fc55423a133565b243ba132a",
+          "pathId": "2"
+        }
+      ]
     },
     "editor/2019.4.41f2/lz4/main": {
       "signature": "UnityFS",
@@ -2922,9 +3104,27 @@
               },
               "oracleNote": "UnityPy stops before the ManagedReferencesRegistry v1 Terminus sentinel (44 bytes, verified present); dump read with check_read=False - see #25"
             }
+          },
+          "names": {
+            "-1107784300911722889": "tri",
+            "-5055261391591463299": "FixtureData",
+            "1": "main",
+            "3992972000369313186": "data"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/main/data.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "3992972000369313186"
+        },
+        {
+          "path": "assets/fixtures/main/tri.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "-1107784300911722889"
+        }
+      ]
     },
     "editor/2019.4.41f2/lz4/shared": {
       "signature": "UnityFS",
@@ -3095,9 +3295,20 @@
                 "m_Script": "Hello from unity-asset-reader fixtures.\nLine 2: \u00e9\u20ac\ud83d\ude00\n"
               }
             }
+          },
+          "names": {
+            "1": "shared",
+            "9053748467371775859": "hello"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/shared/hello.txt",
+          "file": "CAB-71fca072df859359e7a6b09ff7151c53",
+          "pathId": "9053748467371775859"
+        }
+      ]
     },
     "editor/2019.4.41f2/lz4/texture": {
       "signature": "UnityFS",
@@ -3331,6 +3542,10 @@
               }
             }
           },
+          "names": {
+            "1": "texture",
+            "2229888321255208862": "checker"
+          },
           "textures": {
             "2229888321255208862": {
               "name": "checker",
@@ -3343,7 +3558,14 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/texture/checker.png",
+          "file": "CAB-f04fab77212e693fb63bdad7458f66fe",
+          "pathId": "2229888321255208862"
+        }
+      ]
     },
     "editor/2019.4.41f2/lz4/video": {
       "signature": "UnityFS",
@@ -3571,6 +3793,10 @@
               }
             }
           },
+          "names": {
+            "1": "video",
+            "2851217806674877029": "clip"
+          },
           "rawData": {
             "2851217806674877029": {
               "classId": 329,
@@ -3581,7 +3807,14 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/media/clip.webm",
+          "file": "CAB-f4056db44bc36994fffbc89e2912fee2",
+          "pathId": "2851217806674877029"
+        }
+      ]
     },
     "editor/2019.4.41f2/lzma/lzma": {
       "signature": "UnityFS",
@@ -3862,9 +4095,20 @@
                 ]
               }
             }
+          },
+          "names": {
+            "1": "",
+            "2": "AssetBundleManifest"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assetbundlemanifest",
+          "file": "CAB-e1ca5958665e586e9acdb82f350f789f",
+          "pathId": "2"
+        }
+      ]
     },
     "editor/2019.4.41f2/lzma/main": {
       "signature": "UnityFS",
@@ -4768,9 +5012,27 @@
               },
               "oracleNote": "UnityPy stops before the ManagedReferencesRegistry v1 Terminus sentinel (44 bytes, verified present); dump read with check_read=False - see #25"
             }
+          },
+          "names": {
+            "-1107784300911722889": "tri",
+            "-5055261391591463299": "FixtureData",
+            "1": "main",
+            "3992972000369313186": "data"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/main/data.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "3992972000369313186"
+        },
+        {
+          "path": "assets/fixtures/main/tri.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "-1107784300911722889"
+        }
+      ]
     },
     "editor/2019.4.41f2/lzma/shared": {
       "signature": "UnityFS",
@@ -4941,9 +5203,20 @@
                 "m_Script": "Hello from unity-asset-reader fixtures.\nLine 2: \u00e9\u20ac\ud83d\ude00\n"
               }
             }
+          },
+          "names": {
+            "1": "shared",
+            "9053748467371775859": "hello"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/shared/hello.txt",
+          "file": "CAB-71fca072df859359e7a6b09ff7151c53",
+          "pathId": "9053748467371775859"
+        }
+      ]
     },
     "editor/2019.4.41f2/lzma/texture": {
       "signature": "UnityFS",
@@ -5177,6 +5450,10 @@
               }
             }
           },
+          "names": {
+            "1": "texture",
+            "2229888321255208862": "checker"
+          },
           "textures": {
             "2229888321255208862": {
               "name": "checker",
@@ -5189,7 +5466,14 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/texture/checker.png",
+          "file": "CAB-f04fab77212e693fb63bdad7458f66fe",
+          "pathId": "2229888321255208862"
+        }
+      ]
     },
     "editor/2019.4.41f2/material/lz4-notypetree/material": {
       "signature": "UnityFS",
@@ -5251,9 +5535,20 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "1": "material",
+            "6061584164174037990": "uar"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/material/uar.mat",
+          "file": "CAB-4e1495302a9362227e5054a500aa979a",
+          "pathId": "6061584164174037990"
+        }
+      ]
     },
     "editor/2019.4.41f2/material/lz4-stripped/material": {
       "signature": "UnityFS",
@@ -5580,9 +5875,20 @@
                 }
               }
             }
+          },
+          "names": {
+            "1": "material",
+            "6061584164174037990": "uar"
           }
         }
       },
+      "container": [
+        {
+          "path": "assets/fixtures/material/uar.mat",
+          "file": "CAB-4e1495302a9362227e5054a500aa979a",
+          "pathId": "6061584164174037990"
+        }
+      ],
       "oracleNote": "version-stripped (\"0.0.0\"): UnityPy refuses it without a fallback, so it was read with config.FALLBACK_UNITY_VERSION = \"2019.4.41f2\", the editor that built it - see #104"
     },
     "editor/2019.4.41f2/material/lz4/material": {
@@ -5910,9 +6216,20 @@
                 }
               }
             }
+          },
+          "names": {
+            "1": "material",
+            "6061584164174037990": "uar"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/material/uar.mat",
+          "file": "CAB-4e1495302a9362227e5054a500aa979a",
+          "pathId": "6061584164174037990"
+        }
+      ]
     },
     "editor/2019.4.41f2/registry/refs": {
       "signature": "UnityFS",
@@ -6302,9 +6619,21 @@
               },
               "oracleNote": "UnityPy reads only the first ManagedReferencesRegistry v1 entry and stops before the other 12 and the Terminus sentinel (524 bytes, read back as entries with UnityPy's read_value up to the sentinel); dump read with check_read=False - see #25, #96"
             }
+          },
+          "names": {
+            "-1717385589351710209": "RegistryData",
+            "1": "refs",
+            "2485700671922716257": "registry"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/registry/registry.asset",
+          "file": "CAB-d2e33f6e943fe599655ba25bad44e133",
+          "pathId": "2485700671922716257"
+        }
+      ]
     },
     "editor/2019.4.41f2/sprite/sprites": {
       "signature": "UnityFS",
@@ -12781,6 +13110,37 @@
               }
             }
           },
+          "names": {
+            "-156751347255245714": "p_diamond",
+            "-2366580110379310511": "sactx-256x128-Uncompressed-packed-e5b25fb2",
+            "-2437713550006495630": "sheet_d",
+            "-2509535143661592855": "r_a",
+            "-3323124782454443650": "tight",
+            "-4269679966971541068": "p_tri5",
+            "-592712541611632507": "sactx-64x64-Uncompressed-rect-ccab47ad",
+            "-6695221779743322404": "p_bar2",
+            "-7001099603355699945": "sheet_a",
+            "1": "sprites",
+            "1206325322986096679": "p_ell2",
+            "2105071273470220239": "p_margin",
+            "2184889349654210559": "rect",
+            "2482016083277038688": "packed",
+            "3268598796671328263": "p_ell3",
+            "3340896496816470437": "p_tri4",
+            "3597950327003123056": "p_bar",
+            "3642453188897165403": "p_tri6",
+            "3701123324801877664": "tight",
+            "3730752262518394451": "p_wide",
+            "4117931017500461760": "p_ell",
+            "4906317238790552104": "r_b",
+            "4934211437345075723": "p_tri2",
+            "5199425751004511571": "p_tri",
+            "5745802606393256402": "sheet",
+            "5914312708322152466": "p_tri3",
+            "6019223944814553310": "sheet_c",
+            "8879537370169143755": "p_tall",
+            "939091006433814262": "sheet_b"
+          },
           "textures": {
             "-2366580110379310511": {
               "name": "sactx-256x128-Uncompressed-packed-e5b25fb2",
@@ -13072,7 +13432,54 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/sprite/packed.spriteatlas",
+          "file": "CAB-a16ea31b80f3996fc0c4193e6011c5f2",
+          "pathId": "2482016083277038688"
+        },
+        {
+          "path": "assets/fixtures/sprite/rect.spriteatlas",
+          "file": "CAB-a16ea31b80f3996fc0c4193e6011c5f2",
+          "pathId": "2184889349654210559"
+        },
+        {
+          "path": "assets/fixtures/sprite/sheet.asset",
+          "file": "CAB-a16ea31b80f3996fc0c4193e6011c5f2",
+          "pathId": "5745802606393256402"
+        },
+        {
+          "path": "assets/fixtures/sprite/sheet.asset",
+          "file": "CAB-a16ea31b80f3996fc0c4193e6011c5f2",
+          "pathId": "-7001099603355699945"
+        },
+        {
+          "path": "assets/fixtures/sprite/sheet.asset",
+          "file": "CAB-a16ea31b80f3996fc0c4193e6011c5f2",
+          "pathId": "939091006433814262"
+        },
+        {
+          "path": "assets/fixtures/sprite/sheet.asset",
+          "file": "CAB-a16ea31b80f3996fc0c4193e6011c5f2",
+          "pathId": "6019223944814553310"
+        },
+        {
+          "path": "assets/fixtures/sprite/sheet.asset",
+          "file": "CAB-a16ea31b80f3996fc0c4193e6011c5f2",
+          "pathId": "-2437713550006495630"
+        },
+        {
+          "path": "assets/fixtures/sprite/tight.png",
+          "file": "CAB-a16ea31b80f3996fc0c4193e6011c5f2",
+          "pathId": "3701123324801877664"
+        },
+        {
+          "path": "assets/fixtures/sprite/tight.png",
+          "file": "CAB-a16ea31b80f3996fc0c4193e6011c5f2",
+          "pathId": "-3323124782454443650"
+        }
+      ]
     },
     "editor/2019.4.41f2/stripped/audio": {
       "signature": "UnityFS",
@@ -13321,6 +13728,11 @@
               }
             }
           },
+          "names": {
+            "1": "audio",
+            "8082097006500496530": "tone-vorbis",
+            "8983485164505037740": "tone-pcm"
+          },
           "rawData": {
             "8082097006500496530": {
               "classId": 83,
@@ -13339,6 +13751,18 @@
           }
         }
       },
+      "container": [
+        {
+          "path": "assets/fixtures/media/tone-pcm.wav",
+          "file": "CAB-d5ae2b5aa3edc0f73b4bb6b1ae125a53",
+          "pathId": "8983485164505037740"
+        },
+        {
+          "path": "assets/fixtures/media/tone-vorbis.wav",
+          "file": "CAB-d5ae2b5aa3edc0f73b4bb6b1ae125a53",
+          "pathId": "8082097006500496530"
+        }
+      ],
       "oracleNote": "version-stripped (\"0.0.0\"): UnityPy refuses it without a fallback, so it was read with config.FALLBACK_UNITY_VERSION = \"2019.4.41f2\", the editor that built it - see #104"
     },
     "editor/2019.4.41f2/stripped/font": {
@@ -13863,6 +14287,12 @@
               }
             }
           },
+          "names": {
+            "1": "font",
+            "1371323451777357266": "glyphs",
+            "5097923030202094685": "Font Material",
+            "8823724225441444264": "Font Texture"
+          },
           "rawData": {
             "1371323451777357266": {
               "classId": 128,
@@ -13874,6 +14304,23 @@
           }
         }
       },
+      "container": [
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "1371323451777357266"
+        },
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "5097923030202094685"
+        },
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "8823724225441444264"
+        }
+      ],
       "oracleNote": "version-stripped (\"0.0.0\"): UnityPy refuses it without a fallback, so it was read with config.FALLBACK_UNITY_VERSION = \"2019.4.41f2\", the editor that built it - see #104"
     },
     "editor/2019.4.41f2/stripped/video": {
@@ -14102,6 +14549,10 @@
               }
             }
           },
+          "names": {
+            "1": "video",
+            "2851217806674877029": "clip"
+          },
           "rawData": {
             "2851217806674877029": {
               "classId": 329,
@@ -14113,6 +14564,13 @@
           }
         }
       },
+      "container": [
+        {
+          "path": "assets/fixtures/media/clip.webm",
+          "file": "CAB-f4056db44bc36994fffbc89e2912fee2",
+          "pathId": "2851217806674877029"
+        }
+      ],
       "oracleNote": "version-stripped (\"0.0.0\"): UnityPy refuses it without a fallback, so it was read with config.FALLBACK_UNITY_VERSION = \"2019.4.41f2\", the editor that built it - see #104"
     },
     "editor/2019.4.41f2/uncompressed/main": {
@@ -15017,9 +15475,27 @@
               },
               "oracleNote": "UnityPy stops before the ManagedReferencesRegistry v1 Terminus sentinel (44 bytes, verified present); dump read with check_read=False - see #25"
             }
+          },
+          "names": {
+            "-1107784300911722889": "tri",
+            "-5055261391591463299": "FixtureData",
+            "1": "main",
+            "3992972000369313186": "data"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/main/data.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "3992972000369313186"
+        },
+        {
+          "path": "assets/fixtures/main/tri.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "-1107784300911722889"
+        }
+      ]
     },
     "editor/2019.4.41f2/uncompressed/shared": {
       "signature": "UnityFS",
@@ -15190,9 +15666,20 @@
                 "m_Script": "Hello from unity-asset-reader fixtures.\nLine 2: \u00e9\u20ac\ud83d\ude00\n"
               }
             }
+          },
+          "names": {
+            "1": "shared",
+            "9053748467371775859": "hello"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/shared/hello.txt",
+          "file": "CAB-71fca072df859359e7a6b09ff7151c53",
+          "pathId": "9053748467371775859"
+        }
+      ]
     },
     "editor/2019.4.41f2/uncompressed/texture": {
       "signature": "UnityFS",
@@ -15426,6 +15913,10 @@
               }
             }
           },
+          "names": {
+            "1": "texture",
+            "2229888321255208862": "checker"
+          },
           "textures": {
             "2229888321255208862": {
               "name": "checker",
@@ -15438,7 +15929,14 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/texture/checker.png",
+          "file": "CAB-f04fab77212e693fb63bdad7458f66fe",
+          "pathId": "2229888321255208862"
+        }
+      ]
     },
     "editor/2019.4.41f2/uncompressed/uncompressed": {
       "signature": "UnityFS",
@@ -15719,9 +16217,20 @@
                 ]
               }
             }
+          },
+          "names": {
+            "1": "",
+            "2": "AssetBundleManifest"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assetbundlemanifest",
+          "file": "CAB-5ea1ea82f4f4c8b3cb2d44f03c2386c6",
+          "pathId": "2"
+        }
+      ]
     },
     "editor/2020.3.30f1/lz4-notypetree/audio": {
       "signature": "UnityFS",
@@ -15786,9 +16295,26 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "-5417295752519730674": "tone-pcm",
+            "-7976733684623618220": "tone-vorbis",
+            "1": "audio"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/media/tone-pcm.wav",
+          "file": "CAB-d5ae2b5aa3edc0f73b4bb6b1ae125a53",
+          "pathId": "-5417295752519730674"
+        },
+        {
+          "path": "assets/fixtures/media/tone-vorbis.wav",
+          "file": "CAB-d5ae2b5aa3edc0f73b4bb6b1ae125a53",
+          "pathId": "-7976733684623618220"
+        }
+      ]
     },
     "editor/2020.3.30f1/lz4-notypetree/font": {
       "signature": "UnityFS",
@@ -15878,9 +16404,32 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "-3688452361012742923": "Font Texture",
+            "1": "font",
+            "2469251926744403780": "Font Material",
+            "2885667092910415928": "glyphs"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "2885667092910415928"
+        },
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "2469251926744403780"
+        },
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "-3688452361012742923"
+        }
+      ]
     },
     "editor/2020.3.30f1/lz4-notypetree/lz4-notypetree": {
       "signature": "UnityFS",
@@ -15936,9 +16485,20 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "1": "",
+            "2": "AssetBundleManifest"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assetbundlemanifest",
+          "file": "CAB-ed8cada14a988474fe1ca828514cf709",
+          "pathId": "2"
+        }
+      ]
     },
     "editor/2020.3.30f1/lz4-notypetree/main": {
       "signature": "UnityFS",
@@ -16038,9 +16598,27 @@
               "nodes": null
             }
           ],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "-2518432286213258198": "FixtureData",
+            "-7189836546933969454": "data",
+            "1": "main",
+            "761322607204554584": "tri"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/main/data.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "-7189836546933969454"
+        },
+        {
+          "path": "assets/fixtures/main/tri.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "761322607204554584"
+        }
+      ]
     },
     "editor/2020.3.30f1/lz4-notypetree/shared": {
       "signature": "UnityFS",
@@ -16096,9 +16674,20 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "-4527522604521991290": "hello",
+            "1": "shared"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/shared/hello.txt",
+          "file": "CAB-71fca072df859359e7a6b09ff7151c53",
+          "pathId": "-4527522604521991290"
+        }
+      ]
     },
     "editor/2020.3.30f1/lz4-notypetree/texture": {
       "signature": "UnityFS",
@@ -16158,9 +16747,20 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "-2731902148048136883": "checker",
+            "1": "texture"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/texture/checker.png",
+          "file": "CAB-f04fab77212e693fb63bdad7458f66fe",
+          "pathId": "-2731902148048136883"
+        }
+      ]
     },
     "editor/2020.3.30f1/lz4-notypetree/video": {
       "signature": "UnityFS",
@@ -16220,9 +16820,20 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "1": "video",
+            "1991461008967169929": "clip"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/media/clip.webm",
+          "file": "CAB-f4056db44bc36994fffbc89e2912fee2",
+          "pathId": "1991461008967169929"
+        }
+      ]
     },
     "editor/2020.3.30f1/lz4/audio": {
       "signature": "UnityFS",
@@ -16471,6 +17082,11 @@
               }
             }
           },
+          "names": {
+            "-5417295752519730674": "tone-pcm",
+            "-7976733684623618220": "tone-vorbis",
+            "1": "audio"
+          },
           "rawData": {
             "-5417295752519730674": {
               "classId": 83,
@@ -16488,7 +17104,19 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/media/tone-pcm.wav",
+          "file": "CAB-d5ae2b5aa3edc0f73b4bb6b1ae125a53",
+          "pathId": "-5417295752519730674"
+        },
+        {
+          "path": "assets/fixtures/media/tone-vorbis.wav",
+          "file": "CAB-d5ae2b5aa3edc0f73b4bb6b1ae125a53",
+          "pathId": "-7976733684623618220"
+        }
+      ]
     },
     "editor/2020.3.30f1/lz4/font": {
       "signature": "UnityFS",
@@ -17034,6 +17662,12 @@
               }
             }
           },
+          "names": {
+            "-3688452361012742923": "Font Texture",
+            "1": "font",
+            "2469251926744403780": "Font Material",
+            "2885667092910415928": "glyphs"
+          },
           "rawData": {
             "2885667092910415928": {
               "classId": 128,
@@ -17044,7 +17678,24 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "2885667092910415928"
+        },
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "2469251926744403780"
+        },
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "-3688452361012742923"
+        }
+      ]
     },
     "editor/2020.3.30f1/lz4/lz4": {
       "signature": "UnityFS",
@@ -17325,9 +17976,20 @@
                 ]
               }
             }
+          },
+          "names": {
+            "1": "",
+            "2": "AssetBundleManifest"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assetbundlemanifest",
+          "file": "CAB-07257cf8fc55423a133565b243ba132a",
+          "pathId": "2"
+        }
+      ]
     },
     "editor/2020.3.30f1/lz4/main": {
       "signature": "UnityFS",
@@ -18231,9 +18893,27 @@
                 }
               }
             }
+          },
+          "names": {
+            "-2518432286213258198": "FixtureData",
+            "-7189836546933969454": "data",
+            "1": "main",
+            "761322607204554584": "tri"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/main/data.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "-7189836546933969454"
+        },
+        {
+          "path": "assets/fixtures/main/tri.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "761322607204554584"
+        }
+      ]
     },
     "editor/2020.3.30f1/lz4/shared": {
       "signature": "UnityFS",
@@ -18404,9 +19084,20 @@
                 "m_SceneHashes": []
               }
             }
+          },
+          "names": {
+            "-4527522604521991290": "hello",
+            "1": "shared"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/shared/hello.txt",
+          "file": "CAB-71fca072df859359e7a6b09ff7151c53",
+          "pathId": "-4527522604521991290"
+        }
+      ]
     },
     "editor/2020.3.30f1/lz4/texture": {
       "signature": "UnityFS",
@@ -18649,6 +19340,10 @@
               }
             }
           },
+          "names": {
+            "-2731902148048136883": "checker",
+            "1": "texture"
+          },
           "textures": {
             "-2731902148048136883": {
               "name": "checker",
@@ -18661,7 +19356,14 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/texture/checker.png",
+          "file": "CAB-f04fab77212e693fb63bdad7458f66fe",
+          "pathId": "-2731902148048136883"
+        }
+      ]
     },
     "editor/2020.3.30f1/lz4/video": {
       "signature": "UnityFS",
@@ -18896,6 +19598,10 @@
               }
             }
           },
+          "names": {
+            "1": "video",
+            "1991461008967169929": "clip"
+          },
           "rawData": {
             "1991461008967169929": {
               "classId": 329,
@@ -18906,7 +19612,14 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/media/clip.webm",
+          "file": "CAB-f4056db44bc36994fffbc89e2912fee2",
+          "pathId": "1991461008967169929"
+        }
+      ]
     },
     "editor/2020.3.30f1/lzma/lzma": {
       "signature": "UnityFS",
@@ -19187,9 +19900,20 @@
                 ]
               }
             }
+          },
+          "names": {
+            "1": "",
+            "2": "AssetBundleManifest"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assetbundlemanifest",
+          "file": "CAB-e1ca5958665e586e9acdb82f350f789f",
+          "pathId": "2"
+        }
+      ]
     },
     "editor/2020.3.30f1/lzma/main": {
       "signature": "UnityFS",
@@ -20093,9 +20817,27 @@
                 }
               }
             }
+          },
+          "names": {
+            "-2518432286213258198": "FixtureData",
+            "-7189836546933969454": "data",
+            "1": "main",
+            "761322607204554584": "tri"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/main/data.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "-7189836546933969454"
+        },
+        {
+          "path": "assets/fixtures/main/tri.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "761322607204554584"
+        }
+      ]
     },
     "editor/2020.3.30f1/lzma/shared": {
       "signature": "UnityFS",
@@ -20266,9 +21008,20 @@
                 "m_SceneHashes": []
               }
             }
+          },
+          "names": {
+            "-4527522604521991290": "hello",
+            "1": "shared"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/shared/hello.txt",
+          "file": "CAB-71fca072df859359e7a6b09ff7151c53",
+          "pathId": "-4527522604521991290"
+        }
+      ]
     },
     "editor/2020.3.30f1/lzma/texture": {
       "signature": "UnityFS",
@@ -20511,6 +21264,10 @@
               }
             }
           },
+          "names": {
+            "-2731902148048136883": "checker",
+            "1": "texture"
+          },
           "textures": {
             "-2731902148048136883": {
               "name": "checker",
@@ -20523,7 +21280,14 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/texture/checker.png",
+          "file": "CAB-f04fab77212e693fb63bdad7458f66fe",
+          "pathId": "-2731902148048136883"
+        }
+      ]
     },
     "editor/2020.3.30f1/material/lz4-notypetree/material": {
       "signature": "UnityFS",
@@ -20585,9 +21349,20 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "-3287953680256562156": "uar",
+            "1": "material"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/material/uar.mat",
+          "file": "CAB-4e1495302a9362227e5054a500aa979a",
+          "pathId": "-3287953680256562156"
+        }
+      ]
     },
     "editor/2020.3.30f1/material/lz4-stripped/material": {
       "signature": "UnityFS",
@@ -20927,9 +21702,20 @@
                 "m_SceneHashes": []
               }
             }
+          },
+          "names": {
+            "-3287953680256562156": "uar",
+            "1": "material"
           }
         }
       },
+      "container": [
+        {
+          "path": "assets/fixtures/material/uar.mat",
+          "file": "CAB-4e1495302a9362227e5054a500aa979a",
+          "pathId": "-3287953680256562156"
+        }
+      ],
       "oracleNote": "version-stripped (\"0.0.0\"): UnityPy refuses it without a fallback, so it was read with config.FALLBACK_UNITY_VERSION = \"2020.3.30f1\", the editor that built it - see #104"
     },
     "editor/2020.3.30f1/material/lz4/material": {
@@ -21270,9 +22056,20 @@
                 "m_SceneHashes": []
               }
             }
+          },
+          "names": {
+            "-3287953680256562156": "uar",
+            "1": "material"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/material/uar.mat",
+          "file": "CAB-4e1495302a9362227e5054a500aa979a",
+          "pathId": "-3287953680256562156"
+        }
+      ]
     },
     "editor/2020.3.30f1/registry/refs": {
       "signature": "UnityFS",
@@ -21662,9 +22459,21 @@
               },
               "oracleNote": "UnityPy reads only the first ManagedReferencesRegistry v1 entry and stops before the other 12 and the Terminus sentinel (524 bytes, read back as entries with UnityPy's read_value up to the sentinel); dump read with check_read=False - see #25, #96"
             }
+          },
+          "names": {
+            "-5905195012383509730": "RegistryData",
+            "1": "refs",
+            "4208432744604471527": "registry"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/registry/registry.asset",
+          "file": "CAB-d2e33f6e943fe599655ba25bad44e133",
+          "pathId": "4208432744604471527"
+        }
+      ]
     },
     "editor/2020.3.30f1/stripped/audio": {
       "signature": "UnityFS",
@@ -21913,6 +22722,11 @@
               }
             }
           },
+          "names": {
+            "-5417295752519730674": "tone-pcm",
+            "-7976733684623618220": "tone-vorbis",
+            "1": "audio"
+          },
           "rawData": {
             "-5417295752519730674": {
               "classId": 83,
@@ -21931,6 +22745,18 @@
           }
         }
       },
+      "container": [
+        {
+          "path": "assets/fixtures/media/tone-pcm.wav",
+          "file": "CAB-d5ae2b5aa3edc0f73b4bb6b1ae125a53",
+          "pathId": "-5417295752519730674"
+        },
+        {
+          "path": "assets/fixtures/media/tone-vorbis.wav",
+          "file": "CAB-d5ae2b5aa3edc0f73b4bb6b1ae125a53",
+          "pathId": "-7976733684623618220"
+        }
+      ],
       "oracleNote": "version-stripped (\"0.0.0\"): UnityPy refuses it without a fallback, so it was read with config.FALLBACK_UNITY_VERSION = \"2020.3.30f1\", the editor that built it - see #104"
     },
     "editor/2020.3.30f1/stripped/font": {
@@ -22477,6 +23303,12 @@
               }
             }
           },
+          "names": {
+            "-3688452361012742923": "Font Texture",
+            "1": "font",
+            "2469251926744403780": "Font Material",
+            "2885667092910415928": "glyphs"
+          },
           "rawData": {
             "2885667092910415928": {
               "classId": 128,
@@ -22488,6 +23320,23 @@
           }
         }
       },
+      "container": [
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "2885667092910415928"
+        },
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "2469251926744403780"
+        },
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "-3688452361012742923"
+        }
+      ],
       "oracleNote": "version-stripped (\"0.0.0\"): UnityPy refuses it without a fallback, so it was read with config.FALLBACK_UNITY_VERSION = \"2020.3.30f1\", the editor that built it - see #104"
     },
     "editor/2020.3.30f1/stripped/lz4": {
@@ -22659,9 +23508,20 @@
                 "m_Script": "Hello from unity-asset-reader fixtures.\nLine 2: \u00e9\u20ac\ud83d\ude00\n"
               }
             }
+          },
+          "names": {
+            "1": "lz4",
+            "4955328965318534919": "hello"
           }
         }
       },
+      "container": [
+        {
+          "path": "assets/fixtures/strip/hello.txt",
+          "file": "CAB-07257cf8fc55423a133565b243ba132a",
+          "pathId": "4955328965318534919"
+        }
+      ],
       "oracleNote": "version-stripped (\"0.0.0\"): UnityPy refuses it without a fallback, so it was read with config.FALLBACK_UNITY_VERSION = \"2020.3.30f1\", the editor that built it - see #104"
     },
     "editor/2020.3.30f1/stripped/uncompressed": {
@@ -22833,9 +23693,20 @@
                 "m_Script": "Hello from unity-asset-reader fixtures.\nLine 2: \u00e9\u20ac\ud83d\ude00\n"
               }
             }
+          },
+          "names": {
+            "1": "uncompressed",
+            "4955328965318534919": "hello"
           }
         }
       },
+      "container": [
+        {
+          "path": "assets/fixtures/strip/hello.txt",
+          "file": "CAB-5ea1ea82f4f4c8b3cb2d44f03c2386c6",
+          "pathId": "4955328965318534919"
+        }
+      ],
       "oracleNote": "version-stripped (\"0.0.0\"): UnityPy refuses it without a fallback, so it was read with config.FALLBACK_UNITY_VERSION = \"2020.3.30f1\", the editor that built it - see #104"
     },
     "editor/2020.3.30f1/stripped/video": {
@@ -23071,6 +23942,10 @@
               }
             }
           },
+          "names": {
+            "1": "video",
+            "1991461008967169929": "clip"
+          },
           "rawData": {
             "1991461008967169929": {
               "classId": 329,
@@ -23082,6 +23957,13 @@
           }
         }
       },
+      "container": [
+        {
+          "path": "assets/fixtures/media/clip.webm",
+          "file": "CAB-f4056db44bc36994fffbc89e2912fee2",
+          "pathId": "1991461008967169929"
+        }
+      ],
       "oracleNote": "version-stripped (\"0.0.0\"): UnityPy refuses it without a fallback, so it was read with config.FALLBACK_UNITY_VERSION = \"2020.3.30f1\", the editor that built it - see #104"
     },
     "editor/2020.3.30f1/uncompressed/main": {
@@ -23986,9 +24868,27 @@
                 }
               }
             }
+          },
+          "names": {
+            "-2518432286213258198": "FixtureData",
+            "-7189836546933969454": "data",
+            "1": "main",
+            "761322607204554584": "tri"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/main/data.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "-7189836546933969454"
+        },
+        {
+          "path": "assets/fixtures/main/tri.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "761322607204554584"
+        }
+      ]
     },
     "editor/2020.3.30f1/uncompressed/shared": {
       "signature": "UnityFS",
@@ -24159,9 +25059,20 @@
                 "m_SceneHashes": []
               }
             }
+          },
+          "names": {
+            "-4527522604521991290": "hello",
+            "1": "shared"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/shared/hello.txt",
+          "file": "CAB-71fca072df859359e7a6b09ff7151c53",
+          "pathId": "-4527522604521991290"
+        }
+      ]
     },
     "editor/2020.3.30f1/uncompressed/texture": {
       "signature": "UnityFS",
@@ -24404,6 +25315,10 @@
               }
             }
           },
+          "names": {
+            "-2731902148048136883": "checker",
+            "1": "texture"
+          },
           "textures": {
             "-2731902148048136883": {
               "name": "checker",
@@ -24416,7 +25331,14 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/texture/checker.png",
+          "file": "CAB-f04fab77212e693fb63bdad7458f66fe",
+          "pathId": "-2731902148048136883"
+        }
+      ]
     },
     "editor/2020.3.30f1/uncompressed/uncompressed": {
       "signature": "UnityFS",
@@ -24697,9 +25619,20 @@
                 ]
               }
             }
+          },
+          "names": {
+            "1": "",
+            "2": "AssetBundleManifest"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assetbundlemanifest",
+          "file": "CAB-5ea1ea82f4f4c8b3cb2d44f03c2386c6",
+          "pathId": "2"
+        }
+      ]
     },
     "editor/6000.3.25f1/block/android": {
       "signature": "UnityFS",
@@ -25794,6 +26727,25 @@
               }
             }
           },
+          "names": {
+            "-1467412585407596009": "53_ASTC_12x12",
+            "-2520829393171527924": "64_ETC_RGB4Crunched",
+            "-3480997141245973899": "52_ASTC_10x10",
+            "-3841896814306152457": "46_ETC2_RGBA1",
+            "-404742835940124455": "66_ASTC_HDR_4x4",
+            "-7097911581415734707": "51_ASTC_8x8",
+            "-7855238351035352437": "48_ASTC_4x4",
+            "-787316328046847521": "71_ASTC_HDR_12x12",
+            "1": "android",
+            "145567969509761200": "41_EAC_R",
+            "3101995342740521791": "49_ASTC_5x5",
+            "6009358047425432354": "65_ETC2_RGBA8Crunched",
+            "6473298024545626514": "45_ETC2_RGB",
+            "726338578915715017": "50_ASTC_6x6",
+            "7843455910421604857": "43_EAC_RG",
+            "7858577456546270001": "47_ETC2_RGBA8",
+            "8470382485787409961": "34_ETC_RGB4"
+          },
           "textures": {
             "-1467412585407596009": {
               "name": "53_ASTC_12x12",
@@ -25949,7 +26901,89 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/block/34_etc_rgb4.asset",
+          "file": "CAB-0b4babce2a4c621212247e1cc0422aa9",
+          "pathId": "8470382485787409961"
+        },
+        {
+          "path": "assets/fixtures/block/41_eac_r.asset",
+          "file": "CAB-0b4babce2a4c621212247e1cc0422aa9",
+          "pathId": "145567969509761200"
+        },
+        {
+          "path": "assets/fixtures/block/43_eac_rg.asset",
+          "file": "CAB-0b4babce2a4c621212247e1cc0422aa9",
+          "pathId": "7843455910421604857"
+        },
+        {
+          "path": "assets/fixtures/block/45_etc2_rgb.asset",
+          "file": "CAB-0b4babce2a4c621212247e1cc0422aa9",
+          "pathId": "6473298024545626514"
+        },
+        {
+          "path": "assets/fixtures/block/46_etc2_rgba1.asset",
+          "file": "CAB-0b4babce2a4c621212247e1cc0422aa9",
+          "pathId": "-3841896814306152457"
+        },
+        {
+          "path": "assets/fixtures/block/47_etc2_rgba8.asset",
+          "file": "CAB-0b4babce2a4c621212247e1cc0422aa9",
+          "pathId": "7858577456546270001"
+        },
+        {
+          "path": "assets/fixtures/block/48_astc_4x4.asset",
+          "file": "CAB-0b4babce2a4c621212247e1cc0422aa9",
+          "pathId": "-7855238351035352437"
+        },
+        {
+          "path": "assets/fixtures/block/49_astc_5x5.asset",
+          "file": "CAB-0b4babce2a4c621212247e1cc0422aa9",
+          "pathId": "3101995342740521791"
+        },
+        {
+          "path": "assets/fixtures/block/50_astc_6x6.asset",
+          "file": "CAB-0b4babce2a4c621212247e1cc0422aa9",
+          "pathId": "726338578915715017"
+        },
+        {
+          "path": "assets/fixtures/block/51_astc_8x8.asset",
+          "file": "CAB-0b4babce2a4c621212247e1cc0422aa9",
+          "pathId": "-7097911581415734707"
+        },
+        {
+          "path": "assets/fixtures/block/52_astc_10x10.asset",
+          "file": "CAB-0b4babce2a4c621212247e1cc0422aa9",
+          "pathId": "-3480997141245973899"
+        },
+        {
+          "path": "assets/fixtures/block/53_astc_12x12.asset",
+          "file": "CAB-0b4babce2a4c621212247e1cc0422aa9",
+          "pathId": "-1467412585407596009"
+        },
+        {
+          "path": "assets/fixtures/block/64_etc_rgb4crunched.asset",
+          "file": "CAB-0b4babce2a4c621212247e1cc0422aa9",
+          "pathId": "-2520829393171527924"
+        },
+        {
+          "path": "assets/fixtures/block/65_etc2_rgba8crunched.asset",
+          "file": "CAB-0b4babce2a4c621212247e1cc0422aa9",
+          "pathId": "6009358047425432354"
+        },
+        {
+          "path": "assets/fixtures/block/66_astc_hdr_4x4.asset",
+          "file": "CAB-0b4babce2a4c621212247e1cc0422aa9",
+          "pathId": "-404742835940124455"
+        },
+        {
+          "path": "assets/fixtures/block/71_astc_hdr_12x12.asset",
+          "file": "CAB-0b4babce2a4c621212247e1cc0422aa9",
+          "pathId": "-787316328046847521"
+        }
+      ]
     },
     "editor/6000.3.25f1/block/windows": {
       "signature": "UnityFS",
@@ -26588,6 +27622,17 @@
               }
             }
           },
+          "names": {
+            "-7608639151530802833": "28_DXT1Crunched",
+            "1": "windows",
+            "1593602975251878251": "10_DXT1",
+            "2382523547647860234": "12_DXT5",
+            "2475789864911729534": "25_BC7",
+            "4034067649381072084": "26_BC4",
+            "6460823294010242195": "27_BC5",
+            "6558190817624518578": "24_BC6H",
+            "6762633878724376406": "29_DXT5Crunched"
+          },
           "textures": {
             "-7608639151530802833": {
               "name": "28_DXT1Crunched",
@@ -26665,7 +27710,49 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/block/10_dxt1.asset",
+          "file": "CAB-591a9771352deb056ec1e4e650bb0860",
+          "pathId": "1593602975251878251"
+        },
+        {
+          "path": "assets/fixtures/block/12_dxt5.asset",
+          "file": "CAB-591a9771352deb056ec1e4e650bb0860",
+          "pathId": "2382523547647860234"
+        },
+        {
+          "path": "assets/fixtures/block/24_bc6h.asset",
+          "file": "CAB-591a9771352deb056ec1e4e650bb0860",
+          "pathId": "6558190817624518578"
+        },
+        {
+          "path": "assets/fixtures/block/25_bc7.asset",
+          "file": "CAB-591a9771352deb056ec1e4e650bb0860",
+          "pathId": "2475789864911729534"
+        },
+        {
+          "path": "assets/fixtures/block/26_bc4.asset",
+          "file": "CAB-591a9771352deb056ec1e4e650bb0860",
+          "pathId": "4034067649381072084"
+        },
+        {
+          "path": "assets/fixtures/block/27_bc5.asset",
+          "file": "CAB-591a9771352deb056ec1e4e650bb0860",
+          "pathId": "6460823294010242195"
+        },
+        {
+          "path": "assets/fixtures/block/28_dxt1crunched.asset",
+          "file": "CAB-591a9771352deb056ec1e4e650bb0860",
+          "pathId": "-7608639151530802833"
+        },
+        {
+          "path": "assets/fixtures/block/29_dxt5crunched.asset",
+          "file": "CAB-591a9771352deb056ec1e4e650bb0860",
+          "pathId": "6762633878724376406"
+        }
+      ]
     },
     "editor/6000.3.25f1/lz4-notypetree/audio": {
       "signature": "UnityFS",
@@ -26730,9 +27817,26 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "-8697092545929151112": "tone-vorbis",
+            "1": "audio",
+            "5926064380314684418": "tone-pcm"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/media/tone-pcm.wav",
+          "file": "CAB-d5ae2b5aa3edc0f73b4bb6b1ae125a53",
+          "pathId": "5926064380314684418"
+        },
+        {
+          "path": "assets/fixtures/media/tone-vorbis.wav",
+          "file": "CAB-d5ae2b5aa3edc0f73b4bb6b1ae125a53",
+          "pathId": "-8697092545929151112"
+        }
+      ]
     },
     "editor/6000.3.25f1/lz4-notypetree/font": {
       "signature": "UnityFS",
@@ -26822,9 +27926,32 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "-8620403434739765121": "Font Material",
+            "1": "font",
+            "1768393535352744902": "glyphs",
+            "6576359394872337110": "Font Texture"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "1768393535352744902"
+        },
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "-8620403434739765121"
+        },
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "6576359394872337110"
+        }
+      ]
     },
     "editor/6000.3.25f1/lz4-notypetree/lz4-notypetree": {
       "signature": "UnityFS",
@@ -26880,9 +28007,20 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "1": "",
+            "2": "AssetBundleManifest"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assetbundlemanifest",
+          "file": "CAB-ed8cada14a988474fe1ca828514cf709",
+          "pathId": "2"
+        }
+      ]
     },
     "editor/6000.3.25f1/lz4-notypetree/main": {
       "signature": "UnityFS",
@@ -26982,9 +28120,27 @@
               "nodes": null
             }
           ],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "-1429281316117538216": "data",
+            "-5437611257301171512": "tri",
+            "1": "main",
+            "4203245748248992679": "FixtureData"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/main/data.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "-1429281316117538216"
+        },
+        {
+          "path": "assets/fixtures/main/tri.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "-5437611257301171512"
+        }
+      ]
     },
     "editor/6000.3.25f1/lz4-notypetree/shared": {
       "signature": "UnityFS",
@@ -27040,9 +28196,20 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "-162899914357300573": "hello",
+            "1": "shared"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/shared/hello.txt",
+          "file": "CAB-71fca072df859359e7a6b09ff7151c53",
+          "pathId": "-162899914357300573"
+        }
+      ]
     },
     "editor/6000.3.25f1/lz4-notypetree/texture": {
       "signature": "UnityFS",
@@ -27102,9 +28269,20 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "-2966962111441417370": "checker",
+            "1": "texture"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/texture/checker.png",
+          "file": "CAB-f04fab77212e693fb63bdad7458f66fe",
+          "pathId": "-2966962111441417370"
+        }
+      ]
     },
     "editor/6000.3.25f1/lz4-notypetree/video": {
       "signature": "UnityFS",
@@ -27164,9 +28342,20 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "1": "video",
+            "7395134406774648242": "clip"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/media/clip.webm",
+          "file": "CAB-f4056db44bc36994fffbc89e2912fee2",
+          "pathId": "7395134406774648242"
+        }
+      ]
     },
     "editor/6000.3.25f1/lz4/audio": {
       "signature": "UnityFS",
@@ -27415,6 +28604,11 @@
               }
             }
           },
+          "names": {
+            "-8697092545929151112": "tone-vorbis",
+            "1": "audio",
+            "5926064380314684418": "tone-pcm"
+          },
           "rawData": {
             "-8697092545929151112": {
               "classId": 83,
@@ -27432,7 +28626,19 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/media/tone-pcm.wav",
+          "file": "CAB-d5ae2b5aa3edc0f73b4bb6b1ae125a53",
+          "pathId": "5926064380314684418"
+        },
+        {
+          "path": "assets/fixtures/media/tone-vorbis.wav",
+          "file": "CAB-d5ae2b5aa3edc0f73b4bb6b1ae125a53",
+          "pathId": "-8697092545929151112"
+        }
+      ]
     },
     "editor/6000.3.25f1/lz4/font": {
       "signature": "UnityFS",
@@ -28000,6 +29206,12 @@
               }
             }
           },
+          "names": {
+            "-8620403434739765121": "Font Material",
+            "1": "font",
+            "1768393535352744902": "glyphs",
+            "6576359394872337110": "Font Texture"
+          },
           "rawData": {
             "1768393535352744902": {
               "classId": 128,
@@ -28010,7 +29222,24 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "1768393535352744902"
+        },
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "-8620403434739765121"
+        },
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "6576359394872337110"
+        }
+      ]
     },
     "editor/6000.3.25f1/lz4/lz4": {
       "signature": "UnityFS",
@@ -28291,9 +29520,20 @@
                 ]
               }
             }
+          },
+          "names": {
+            "1": "",
+            "2": "AssetBundleManifest"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assetbundlemanifest",
+          "file": "CAB-07257cf8fc55423a133565b243ba132a",
+          "pathId": "2"
+        }
+      ]
     },
     "editor/6000.3.25f1/lz4/main": {
       "signature": "UnityFS",
@@ -29237,9 +30477,27 @@
                 "m_AssemblyName": "Assembly-CSharp"
               }
             }
+          },
+          "names": {
+            "-1429281316117538216": "data",
+            "-5437611257301171512": "tri",
+            "1": "main",
+            "4203245748248992679": "FixtureData"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/main/data.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "-1429281316117538216"
+        },
+        {
+          "path": "assets/fixtures/main/tri.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "-5437611257301171512"
+        }
+      ]
     },
     "editor/6000.3.25f1/lz4/shared": {
       "signature": "UnityFS",
@@ -29410,9 +30668,20 @@
                 "m_SceneHashes": []
               }
             }
+          },
+          "names": {
+            "-162899914357300573": "hello",
+            "1": "shared"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/shared/hello.txt",
+          "file": "CAB-71fca072df859359e7a6b09ff7151c53",
+          "pathId": "-162899914357300573"
+        }
+      ]
     },
     "editor/6000.3.25f1/lz4/texture": {
       "signature": "UnityFS",
@@ -29656,6 +30925,10 @@
               }
             }
           },
+          "names": {
+            "-2966962111441417370": "checker",
+            "1": "texture"
+          },
           "textures": {
             "-2966962111441417370": {
               "name": "checker",
@@ -29668,7 +30941,14 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/texture/checker.png",
+          "file": "CAB-f04fab77212e693fb63bdad7458f66fe",
+          "pathId": "-2966962111441417370"
+        }
+      ]
     },
     "editor/6000.3.25f1/lz4/video": {
       "signature": "UnityFS",
@@ -29903,6 +31183,10 @@
               }
             }
           },
+          "names": {
+            "1": "video",
+            "7395134406774648242": "clip"
+          },
           "rawData": {
             "7395134406774648242": {
               "classId": 329,
@@ -29913,7 +31197,14 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/media/clip.webm",
+          "file": "CAB-f4056db44bc36994fffbc89e2912fee2",
+          "pathId": "7395134406774648242"
+        }
+      ]
     },
     "editor/6000.3.25f1/lzma/lzma": {
       "signature": "UnityFS",
@@ -30194,9 +31485,20 @@
                 ]
               }
             }
+          },
+          "names": {
+            "1": "",
+            "2": "AssetBundleManifest"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assetbundlemanifest",
+          "file": "CAB-e1ca5958665e586e9acdb82f350f789f",
+          "pathId": "2"
+        }
+      ]
     },
     "editor/6000.3.25f1/lzma/main": {
       "signature": "UnityFS",
@@ -31140,9 +32442,27 @@
                 "m_AssemblyName": "Assembly-CSharp"
               }
             }
+          },
+          "names": {
+            "-1429281316117538216": "data",
+            "-5437611257301171512": "tri",
+            "1": "main",
+            "4203245748248992679": "FixtureData"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/main/data.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "-1429281316117538216"
+        },
+        {
+          "path": "assets/fixtures/main/tri.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "-5437611257301171512"
+        }
+      ]
     },
     "editor/6000.3.25f1/lzma/shared": {
       "signature": "UnityFS",
@@ -31313,9 +32633,20 @@
                 "m_SceneHashes": []
               }
             }
+          },
+          "names": {
+            "-162899914357300573": "hello",
+            "1": "shared"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/shared/hello.txt",
+          "file": "CAB-71fca072df859359e7a6b09ff7151c53",
+          "pathId": "-162899914357300573"
+        }
+      ]
     },
     "editor/6000.3.25f1/lzma/texture": {
       "signature": "UnityFS",
@@ -31559,6 +32890,10 @@
               }
             }
           },
+          "names": {
+            "-2966962111441417370": "checker",
+            "1": "texture"
+          },
           "textures": {
             "-2966962111441417370": {
               "name": "checker",
@@ -31571,7 +32906,14 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/texture/checker.png",
+          "file": "CAB-f04fab77212e693fb63bdad7458f66fe",
+          "pathId": "-2966962111441417370"
+        }
+      ]
     },
     "editor/6000.3.25f1/material/lz4-notypetree/material": {
       "signature": "UnityFS",
@@ -31633,9 +32975,20 @@
             }
           ],
           "refTypes": [],
-          "typetrees": {}
+          "typetrees": {},
+          "names": {
+            "-1146626092855194285": "uar",
+            "1": "material"
+          }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/material/uar.mat",
+          "file": "CAB-4e1495302a9362227e5054a500aa979a",
+          "pathId": "-1146626092855194285"
+        }
+      ]
     },
     "editor/6000.3.25f1/material/lz4-stripped/material": {
       "signature": "UnityFS",
@@ -31997,9 +33350,20 @@
                 "m_SceneHashes": []
               }
             }
+          },
+          "names": {
+            "-1146626092855194285": "uar",
+            "1": "material"
           }
         }
       },
+      "container": [
+        {
+          "path": "assets/fixtures/material/uar.mat",
+          "file": "CAB-4e1495302a9362227e5054a500aa979a",
+          "pathId": "-1146626092855194285"
+        }
+      ],
       "oracleNote": "version-stripped (\"0.0.0\"): UnityPy refuses it without a fallback, so it was read with config.FALLBACK_UNITY_VERSION = \"6000.3.25f1\", the editor that built it - see #104"
     },
     "editor/6000.3.25f1/material/lz4/material": {
@@ -32362,9 +33726,20 @@
                 "m_SceneHashes": []
               }
             }
+          },
+          "names": {
+            "-1146626092855194285": "uar",
+            "1": "material"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/material/uar.mat",
+          "file": "CAB-4e1495302a9362227e5054a500aa979a",
+          "pathId": "-1146626092855194285"
+        }
+      ]
     },
     "editor/6000.3.25f1/plain/textures": {
       "signature": "UnityFS",
@@ -33516,6 +34891,26 @@
               }
             }
           },
+          "names": {
+            "-2832168986171073264": "Alpha8",
+            "-3159872654653822976": "YUY2",
+            "-5239806702089811666": "R16",
+            "-6763931696315438614": "RGFloat",
+            "-8310544479731363474": "RGBAFloat",
+            "1": "textures",
+            "1088965797505479705": "ARGB32",
+            "4085711617783598899": "RHalf",
+            "4269294957971473202": "RGHalf",
+            "4438933582419933439": "RGB24",
+            "4622825323507962714": "RGB9e5Float",
+            "6907235663158918918": "RGB565",
+            "7168832519306753378": "RGBA32",
+            "7691121976916583098": "RGBAHalf",
+            "8246691180915658923": "ARGB4444",
+            "8270416328734266514": "BGRA32",
+            "8495813683791342181": "RGBA4444",
+            "8771068923228943863": "RFloat"
+          },
           "textures": {
             "-2832168986171073264": {
               "name": "Alpha8",
@@ -33674,7 +35069,94 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/plain/alpha8.asset",
+          "file": "CAB-b6ec7271e16d6169fe23b363bfe34b24",
+          "pathId": "-2832168986171073264"
+        },
+        {
+          "path": "assets/fixtures/plain/argb32.asset",
+          "file": "CAB-b6ec7271e16d6169fe23b363bfe34b24",
+          "pathId": "1088965797505479705"
+        },
+        {
+          "path": "assets/fixtures/plain/argb4444.asset",
+          "file": "CAB-b6ec7271e16d6169fe23b363bfe34b24",
+          "pathId": "8246691180915658923"
+        },
+        {
+          "path": "assets/fixtures/plain/bgra32.asset",
+          "file": "CAB-b6ec7271e16d6169fe23b363bfe34b24",
+          "pathId": "8270416328734266514"
+        },
+        {
+          "path": "assets/fixtures/plain/r16.asset",
+          "file": "CAB-b6ec7271e16d6169fe23b363bfe34b24",
+          "pathId": "-5239806702089811666"
+        },
+        {
+          "path": "assets/fixtures/plain/rfloat.asset",
+          "file": "CAB-b6ec7271e16d6169fe23b363bfe34b24",
+          "pathId": "8771068923228943863"
+        },
+        {
+          "path": "assets/fixtures/plain/rgb24.asset",
+          "file": "CAB-b6ec7271e16d6169fe23b363bfe34b24",
+          "pathId": "4438933582419933439"
+        },
+        {
+          "path": "assets/fixtures/plain/rgb565.asset",
+          "file": "CAB-b6ec7271e16d6169fe23b363bfe34b24",
+          "pathId": "6907235663158918918"
+        },
+        {
+          "path": "assets/fixtures/plain/rgb9e5float.asset",
+          "file": "CAB-b6ec7271e16d6169fe23b363bfe34b24",
+          "pathId": "4622825323507962714"
+        },
+        {
+          "path": "assets/fixtures/plain/rgba32.asset",
+          "file": "CAB-b6ec7271e16d6169fe23b363bfe34b24",
+          "pathId": "7168832519306753378"
+        },
+        {
+          "path": "assets/fixtures/plain/rgba4444.asset",
+          "file": "CAB-b6ec7271e16d6169fe23b363bfe34b24",
+          "pathId": "8495813683791342181"
+        },
+        {
+          "path": "assets/fixtures/plain/rgbafloat.asset",
+          "file": "CAB-b6ec7271e16d6169fe23b363bfe34b24",
+          "pathId": "-8310544479731363474"
+        },
+        {
+          "path": "assets/fixtures/plain/rgbahalf.asset",
+          "file": "CAB-b6ec7271e16d6169fe23b363bfe34b24",
+          "pathId": "7691121976916583098"
+        },
+        {
+          "path": "assets/fixtures/plain/rgfloat.asset",
+          "file": "CAB-b6ec7271e16d6169fe23b363bfe34b24",
+          "pathId": "-6763931696315438614"
+        },
+        {
+          "path": "assets/fixtures/plain/rghalf.asset",
+          "file": "CAB-b6ec7271e16d6169fe23b363bfe34b24",
+          "pathId": "4269294957971473202"
+        },
+        {
+          "path": "assets/fixtures/plain/rhalf.asset",
+          "file": "CAB-b6ec7271e16d6169fe23b363bfe34b24",
+          "pathId": "4085711617783598899"
+        },
+        {
+          "path": "assets/fixtures/plain/yuy2.asset",
+          "file": "CAB-b6ec7271e16d6169fe23b363bfe34b24",
+          "pathId": "-3159872654653822976"
+        }
+      ]
     },
     "editor/6000.3.25f1/registry/refs": {
       "signature": "UnityFS",
@@ -34206,9 +35688,21 @@
                 }
               }
             }
+          },
+          "names": {
+            "1": "refs",
+            "3471881875269403484": "RegistryData",
+            "6352459401869971755": "registry"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/registry/registry.asset",
+          "file": "CAB-d2e33f6e943fe599655ba25bad44e133",
+          "pathId": "6352459401869971755"
+        }
+      ]
     },
     "editor/6000.3.25f1/sprite/sprites": {
       "signature": "UnityFS",
@@ -40763,6 +42257,37 @@
               }
             }
           },
+          "names": {
+            "-1039240679811911761": "r_b",
+            "-1422611272743913367": "p_tri6",
+            "-2046293773917337472": "p_tri4",
+            "-2325357963565405524": "sheet_a",
+            "-2487371772301184456": "p_diamond",
+            "-3365422925715208524": "p_wide",
+            "-3818801428695456460": "p_tri2",
+            "-4053741968931027470": "p_bar2",
+            "-4279167025401449641": "p_tri3",
+            "-5044303405115492830": "packed",
+            "-5579874255579696064": "r_a",
+            "-5940458719803928754": "p_ell2",
+            "-6125264258281089226": "p_margin",
+            "-6722672711659504330": "p_tri",
+            "-7577322847973354110": "sheet_c",
+            "-919732291487264595": "p_ell3",
+            "1": "sprites",
+            "3224528706117267220": "p_ell",
+            "3751328083539606621": "p_tri5",
+            "476356339375776789": "sactx-0-128x128-Uncompressed-packed-4ecdcd87",
+            "4844007499873594028": "tight",
+            "5337720009743202578": "rect",
+            "6652841704280603340": "sheet_d",
+            "704835478652708463": "sactx-0-64x64-Uncompressed-rect-59967a26",
+            "7211013793186106065": "p_bar",
+            "7878314646845646521": "p_tall",
+            "8370339528945083761": "sheet_b",
+            "8737758328994040462": "tight",
+            "9032369681395423768": "sheet"
+          },
           "textures": {
             "476356339375776789": {
               "name": "sactx-0-128x128-Uncompressed-packed-4ecdcd87",
@@ -41054,7 +42579,54 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/sprite/packed.spriteatlas",
+          "file": "CAB-a16ea31b80f3996fc0c4193e6011c5f2",
+          "pathId": "-5044303405115492830"
+        },
+        {
+          "path": "assets/fixtures/sprite/rect.spriteatlas",
+          "file": "CAB-a16ea31b80f3996fc0c4193e6011c5f2",
+          "pathId": "5337720009743202578"
+        },
+        {
+          "path": "assets/fixtures/sprite/sheet.asset",
+          "file": "CAB-a16ea31b80f3996fc0c4193e6011c5f2",
+          "pathId": "9032369681395423768"
+        },
+        {
+          "path": "assets/fixtures/sprite/sheet.asset",
+          "file": "CAB-a16ea31b80f3996fc0c4193e6011c5f2",
+          "pathId": "-2325357963565405524"
+        },
+        {
+          "path": "assets/fixtures/sprite/sheet.asset",
+          "file": "CAB-a16ea31b80f3996fc0c4193e6011c5f2",
+          "pathId": "8370339528945083761"
+        },
+        {
+          "path": "assets/fixtures/sprite/sheet.asset",
+          "file": "CAB-a16ea31b80f3996fc0c4193e6011c5f2",
+          "pathId": "-7577322847973354110"
+        },
+        {
+          "path": "assets/fixtures/sprite/sheet.asset",
+          "file": "CAB-a16ea31b80f3996fc0c4193e6011c5f2",
+          "pathId": "6652841704280603340"
+        },
+        {
+          "path": "assets/fixtures/sprite/tight.png",
+          "file": "CAB-a16ea31b80f3996fc0c4193e6011c5f2",
+          "pathId": "4844007499873594028"
+        },
+        {
+          "path": "assets/fixtures/sprite/tight.png",
+          "file": "CAB-a16ea31b80f3996fc0c4193e6011c5f2",
+          "pathId": "8737758328994040462"
+        }
+      ]
     },
     "editor/6000.3.25f1/stripped/audio": {
       "signature": "UnityFS",
@@ -41303,6 +42875,11 @@
               }
             }
           },
+          "names": {
+            "-8697092545929151112": "tone-vorbis",
+            "1": "audio",
+            "5926064380314684418": "tone-pcm"
+          },
           "rawData": {
             "-8697092545929151112": {
               "classId": 83,
@@ -41321,6 +42898,18 @@
           }
         }
       },
+      "container": [
+        {
+          "path": "assets/fixtures/media/tone-pcm.wav",
+          "file": "CAB-d5ae2b5aa3edc0f73b4bb6b1ae125a53",
+          "pathId": "5926064380314684418"
+        },
+        {
+          "path": "assets/fixtures/media/tone-vorbis.wav",
+          "file": "CAB-d5ae2b5aa3edc0f73b4bb6b1ae125a53",
+          "pathId": "-8697092545929151112"
+        }
+      ],
       "oracleNote": "version-stripped (\"0.0.0\"): UnityPy refuses it without a fallback, so it was read with config.FALLBACK_UNITY_VERSION = \"6000.3.25f1\", the editor that built it - see #104"
     },
     "editor/6000.3.25f1/stripped/font": {
@@ -41889,6 +43478,12 @@
               }
             }
           },
+          "names": {
+            "-8620403434739765121": "Font Material",
+            "1": "font",
+            "1768393535352744902": "glyphs",
+            "6576359394872337110": "Font Texture"
+          },
           "rawData": {
             "1768393535352744902": {
               "classId": 128,
@@ -41900,6 +43495,23 @@
           }
         }
       },
+      "container": [
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "1768393535352744902"
+        },
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "-8620403434739765121"
+        },
+        {
+          "path": "assets/fixtures/media/glyphs.ttf",
+          "file": "CAB-f874315c3b89a64dd6e39e5d4f0305e5",
+          "pathId": "6576359394872337110"
+        }
+      ],
       "oracleNote": "version-stripped (\"0.0.0\"): UnityPy refuses it without a fallback, so it was read with config.FALLBACK_UNITY_VERSION = \"6000.3.25f1\", the editor that built it - see #104"
     },
     "editor/6000.3.25f1/stripped/lz4": {
@@ -42071,9 +43683,20 @@
                 "m_Script": "Hello from unity-asset-reader fixtures.\nLine 2: \u00e9\u20ac\ud83d\ude00\n"
               }
             }
+          },
+          "names": {
+            "1": "lz4",
+            "3832265191258415358": "hello"
           }
         }
       },
+      "container": [
+        {
+          "path": "assets/fixtures/strip/hello.txt",
+          "file": "CAB-07257cf8fc55423a133565b243ba132a",
+          "pathId": "3832265191258415358"
+        }
+      ],
       "oracleNote": "version-stripped (\"0.0.0\"): UnityPy refuses it without a fallback, so it was read with config.FALLBACK_UNITY_VERSION = \"6000.3.25f1\", the editor that built it - see #104"
     },
     "editor/6000.3.25f1/stripped/uncompressed": {
@@ -42245,9 +43868,20 @@
                 "m_Script": "Hello from unity-asset-reader fixtures.\nLine 2: \u00e9\u20ac\ud83d\ude00\n"
               }
             }
+          },
+          "names": {
+            "1": "uncompressed",
+            "3832265191258415358": "hello"
           }
         }
       },
+      "container": [
+        {
+          "path": "assets/fixtures/strip/hello.txt",
+          "file": "CAB-5ea1ea82f4f4c8b3cb2d44f03c2386c6",
+          "pathId": "3832265191258415358"
+        }
+      ],
       "oracleNote": "version-stripped (\"0.0.0\"): UnityPy refuses it without a fallback, so it was read with config.FALLBACK_UNITY_VERSION = \"6000.3.25f1\", the editor that built it - see #104"
     },
     "editor/6000.3.25f1/stripped/video": {
@@ -42483,6 +44117,10 @@
               }
             }
           },
+          "names": {
+            "1": "video",
+            "7395134406774648242": "clip"
+          },
           "rawData": {
             "7395134406774648242": {
               "classId": 329,
@@ -42494,6 +44132,13 @@
           }
         }
       },
+      "container": [
+        {
+          "path": "assets/fixtures/media/clip.webm",
+          "file": "CAB-f4056db44bc36994fffbc89e2912fee2",
+          "pathId": "7395134406774648242"
+        }
+      ],
       "oracleNote": "version-stripped (\"0.0.0\"): UnityPy refuses it without a fallback, so it was read with config.FALLBACK_UNITY_VERSION = \"6000.3.25f1\", the editor that built it - see #104"
     },
     "editor/6000.3.25f1/uncompressed/main": {
@@ -43438,9 +45083,27 @@
                 "m_AssemblyName": "Assembly-CSharp"
               }
             }
+          },
+          "names": {
+            "-1429281316117538216": "data",
+            "-5437611257301171512": "tri",
+            "1": "main",
+            "4203245748248992679": "FixtureData"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/main/data.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "-1429281316117538216"
+        },
+        {
+          "path": "assets/fixtures/main/tri.asset",
+          "file": "CAB-ba01e3c16ba268ec36e9543a39dc83ad",
+          "pathId": "-5437611257301171512"
+        }
+      ]
     },
     "editor/6000.3.25f1/uncompressed/shared": {
       "signature": "UnityFS",
@@ -43611,9 +45274,20 @@
                 "m_SceneHashes": []
               }
             }
+          },
+          "names": {
+            "-162899914357300573": "hello",
+            "1": "shared"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/shared/hello.txt",
+          "file": "CAB-71fca072df859359e7a6b09ff7151c53",
+          "pathId": "-162899914357300573"
+        }
+      ]
     },
     "editor/6000.3.25f1/uncompressed/texture": {
       "signature": "UnityFS",
@@ -43857,6 +45531,10 @@
               }
             }
           },
+          "names": {
+            "-2966962111441417370": "checker",
+            "1": "texture"
+          },
           "textures": {
             "-2966962111441417370": {
               "name": "checker",
@@ -43869,7 +45547,14 @@
             }
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assets/fixtures/texture/checker.png",
+          "file": "CAB-f04fab77212e693fb63bdad7458f66fe",
+          "pathId": "-2966962111441417370"
+        }
+      ]
     },
     "editor/6000.3.25f1/uncompressed/uncompressed": {
       "signature": "UnityFS",
@@ -44150,9 +45835,20 @@
                 ]
               }
             }
+          },
+          "names": {
+            "1": "",
+            "2": "AssetBundleManifest"
           }
         }
-      }
+      },
+      "container": [
+        {
+          "path": "assetbundlemanifest",
+          "file": "CAB-5ea1ea82f4f4c8b3cb2d44f03c2386c6",
+          "pathId": "2"
+        }
+      ]
     },
     "gzip-lz4.bundle.gz": {
       "signature": "UnityFS",

@@ -16,7 +16,11 @@ Per fixture (keyed by its path under fixtures/bundles/):
                 MovieTexture, `rawData`: the sha256 of the bytes each carries,
                 inline or read out of its resource file  (#41); and for a file
                 holding a Sprite, `sprites`: UnityPy's sprite image, rows as
-                stored, cropped only and with its mesh  (#34)
+                stored, cropped only and with its mesh  (#34); and for every
+                file, `names`: each object's `peek_name()`  (#183)
+  container   - for a fixture holding SerializedFiles: UnityPy's `env.container`,
+                every AssetBundle's m_Container entry in order, as the path and
+                the object it resolves to  (#183)
 Plus `synthetic`: UnityPy's RGBA for generated block data in the formats no
 editor on hand writes (ATC, signed EAC - #32); `platform`: the same for the
 console layouts no editor on hand builds (Switch swizzle, Xbox 360 byte swap),
@@ -411,6 +415,13 @@ def serialized_golden(name: str, sf) -> dict:
         "types": [serialized_type(t) for t in sf.types],
         "refTypes": [serialized_type(t) for t in (sf.ref_types or [])],
         "typetrees": {},
+        # Every object's name as UnityPy peeks it (#183): the type tree read up
+        # to m_Name, with its TPK type tree when the file has none; "" for a
+        # class without one (peek_name() gives None).
+        "names": {
+            str(obj.path_id): obj.peek_name() or ""
+            for obj in sorted(sf.objects.values(), key=lambda o: str(o.path_id))
+        },
     }
     if sf._enable_type_tree:
         for obj in sorted(sf.objects.values(), key=lambda o: str(o.path_id)):
@@ -783,12 +794,31 @@ def read_fixture(path: pathlib.Path) -> dict:
         golden["unityRevision"] = bundle.version_engine
     golden["files"] = dict(sorted(files.items()))
     golden["objects"] = objects
-    # Only real SerializedFiles get this - the M1 stand-ins hold opaque bytes.
+    # Only real SerializedFiles get these - the M1 stand-ins hold opaque bytes.
     if serialized:
         golden["serialized"] = dict(sorted(serialized.items()))
+        golden["container"] = container_golden(env)
     if note:
         golden["oracleNote"] = note
     return golden
+
+
+def container_golden(env) -> list[dict]:
+    """UnityPy's `env.container` (#183): every m_Container entry of every
+    AssetBundle object, in order, with the object its pointer resolves to.
+
+    `file` is the SerializedFile the object is in; `None` (and the raw pointer)
+    when the oracle cannot resolve it, such as into a bundle that is not loaded.
+    """
+    out = []
+    for path, info in env.container.container:
+        pptr = info.asset
+        try:
+            obj = pptr.deref()
+            out.append({"path": path, "file": obj.assets_file.name, "pathId": str(obj.path_id)})
+        except (FileNotFoundError, KeyError, ValueError):
+            out.append({"path": path, "file": None, "fileId": pptr.m_FileID, "pathId": str(pptr.m_PathID)})
+    return out
 
 
 def editor_of(path: pathlib.Path) -> str | None:

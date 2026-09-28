@@ -163,6 +163,10 @@ sprites (#34).
 
 ## Oracle notes
 
+- `serialized.<file>.names` is UnityPy's `peek_name()` for every object (`""` where it gives
+  `None`): the type tree read as far as `m_Name`, and for a file without type trees UnityPy's own
+  TPK type tree for the class. `container` is UnityPy's `env.container`: every `AssetBundle`'s
+  `m_Container` entry in order, with the object its pointer resolves to (#183).
 - `files` hashes are of the raw node bytes. For a node UnityPy parses as a
   SerializedFile they come from `entry.reader.bytes`, never `entry.save()`,
   which re-serializes and can differ from the original (#81).
