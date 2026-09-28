@@ -46,9 +46,10 @@ First release. The core: isomorphic, synchronous, no WASM.
   2020.3 and 6000.3 builds. `readTypeTree()` turns any object with a type tree into a plain JS
   object.
 - Hardcoded readers for typetree-stripped files: `Object`, `EditorExtension`, `NamedObject`,
-  `AssetBundle` (container map), `TextAsset`, `MonoScript`, `MonoBehaviour` (header), `Material`,
-  `Texture2D` (+ `StreamingInfo`), `Sprite`, `SpriteAtlas`, `AudioClip`, `Font`, `VideoClip` and
-  `MovieTexture` (metadata and raw bytes out).
+  `AssetBundle` (container map), `TextAsset` (with `textAssetString()` for its text),
+  `MonoScript`, `MonoBehaviour` (header), `Material`, `Texture`, `Texture2D` (+ `StreamingInfo`),
+  `Sprite`, `SpriteAtlas`, `AudioClip`, `Font`, `VideoClip` and `MovieTexture` (metadata and raw
+  bytes out).
 - Low-level building blocks: `readBundle()`, `readWebFile()` and `readSerializedFile()` for
   one container or file, `ObjectReader` and `BinaryReader`, the codecs (`decompressLz4()`,
   `lzmaDecompress()`, `gunzip()`, `unzlib()`), and the value tables `ClassID` (with
