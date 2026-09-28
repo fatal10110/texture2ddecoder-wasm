@@ -12,6 +12,9 @@
       "require": "./dist/index.cjs"
     }
   },
+  "browser": {
+    "./wasm/texture2ddecoder.js": false
+  },
   "bin": {
     "texture2ddecoder-copy-wasm": "./scripts/copy-wasm.js"
   },
