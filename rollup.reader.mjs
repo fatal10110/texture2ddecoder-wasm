@@ -23,7 +23,7 @@ import { readFileSync } from "node:fs";
  *
  * CDN consumers therefore need an import map or a CDN ESM endpoint
  * (`/+esm`, esm.sh) - still zero bundler, and already required by
- * `unity-asset-reader-texture`, whose `unity-asset-reader-decoder` import is
+ * `unity-asset-reader-texture`, whose `texture2ddecoder-wasm` import is
  * external either way (D6, D7).
  *
  * @param {string} manifest path to the package's `package.json`

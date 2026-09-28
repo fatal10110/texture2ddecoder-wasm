@@ -104,7 +104,7 @@ async function loadWasmModuleFactory(wasmPath?: string): Promise<any> {
  *
  * // Browser - with CDN:
  * await initialize({
- *   wasmPath: 'https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/wasm'
+ *   wasmPath: 'https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm'
  * });
  *
  * // Advanced - custom locateFile (both Node.js and Browser):

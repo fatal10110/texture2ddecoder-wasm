@@ -35,7 +35,7 @@ npm ci && npm run verify
 git ls-files '*.cs' '*.csproj' '*.sln'
 ```
 
-Second command must print nothing (`verify` runs it too; rerun it by hand so the review does not trust the script). `packages/decoder/` touched → also run `npm test -w unity-asset-reader-decoder` with `wasm/` built. Any failure is a blocker; record the exact failing output.
+Second command must print nothing (`verify` runs it too; rerun it by hand so the review does not trust the script). `packages/decoder/` touched → also run `npm test -w texture2ddecoder-wasm` with `wasm/` built. Any failure is a blocker; record the exact failing output.
 
 ## 3. Check the issue was actually implemented
 

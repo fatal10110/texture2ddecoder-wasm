@@ -1,7 +1,7 @@
 # Bundler Guide
 
 How to set up the reader packages with Vite, Next.js, a plain CDN page, and Node.js (ESM and
-CommonJS). For `unity-asset-reader-decoder` on its own, see its
+CommonJS). For `texture2ddecoder-wasm` on its own, see its
 [Bundler Guide](packages/decoder/BUNDLER_GUIDE.md).
 
 - [What each package needs](#what-each-package-needs)
@@ -146,7 +146,7 @@ export default function Page() {
 
 **`unity-asset-reader-texture` cannot be bundled by Next.js yet**
 ([#171](https://github.com/fatal10110/texture2ddecoder-wasm/issues/171)). The WASM loader of
-`unity-asset-reader-decoder` imports its glue code from a URL at run time, and Next.js rewrites
+`texture2ddecoder-wasm` imports its glue code from a URL at run time, and Next.js rewrites
 that import in both Turbopack and webpack builds. The build succeeds, but `initTexture()` fails with
 `Cannot find module ...`.
 
@@ -163,7 +163,7 @@ const CDN = "https://cdn.jsdelivr.net/npm";
 const ready = (async () => {
   const reader = await import(`${CDN}/unity-asset-reader@1/+esm`);
   const texture = await import(`${CDN}/unity-asset-reader-texture@1/+esm`);
-  await texture.initTexture({ wasmPath: `${CDN}/unity-asset-reader-decoder@1/wasm` });
+  await texture.initTexture({ wasmPath: `${CDN}/texture2ddecoder-wasm@1/wasm` });
   return { ...reader, ...texture };
 })();
 
@@ -189,7 +189,7 @@ new Worker("/texture-worker.js", { type: "module" });
 a texture. Its Worker is [`examples/cdn-worker.js`](examples/cdn-worker.js).
 
 - **Import jsDelivr's `/+esm` builds.** The packages import their dependencies by bare name
-  (`fflate`, `lzma1`, `unity-asset-reader`, `unity-asset-reader-decoder`). A browser cannot
+  (`fflate`, `lzma1`, `unity-asset-reader`, `texture2ddecoder-wasm`). A browser cannot
   resolve those, and import maps do not apply inside Workers. jsDelivr's `/+esm` endpoint rewrites
   them to CDN URLs:
 
@@ -197,12 +197,14 @@ a texture. Its Worker is [`examples/cdn-worker.js`](examples/cdn-worker.js).
   const CDN = "https://cdn.jsdelivr.net/npm";
   const { load, ClassID } = await import(`${CDN}/unity-asset-reader@1/+esm`);
   const { initTexture, decodeTexture2D } = await import(`${CDN}/unity-asset-reader-texture@1/+esm`);
-  await initTexture({ wasmPath: `${CDN}/unity-asset-reader-decoder@1/wasm` });
+  await initTexture({ wasmPath: `${CDN}/texture2ddecoder-wasm@1/wasm` });
   ```
 
-  Pin exact versions (`@1.0.0`) in production. Keep `unity-asset-reader`,
-  `unity-asset-reader-texture` and `unity-asset-reader-decoder` on the same version: they are
-  released together.
+  Pin exact versions in production. Keep `unity-asset-reader` and `unity-asset-reader-texture`
+  on the same version (`@1.0.0`): they are released together. `texture2ddecoder-wasm` has its
+  own version line; use one the texture package's range allows (`@1.2.3` or later).
+- **In a Worker, `texture2ddecoder-wasm` must be 1.2.3 or later.** 1.2.2 refuses to initialize in
+  a Worker ([#149](https://github.com/fatal10110/texture2ddecoder-wasm/issues/149)).
 - **Try it on this repo's builds** with `node examples/serve.mjs`, a local stand-in for jsDelivr,
   and open `cdn.html?local`. See [`examples/README.md`](examples/README.md).
 
@@ -223,7 +225,7 @@ const { loadPath } = require("unity-asset-reader-node");
 ```
 
 In Node.js, `initTexture()` takes no options: the WASM files are found in the installed
-`unity-asset-reader-decoder` package.
+`texture2ddecoder-wasm` package.
 
 Which Node.js versions work
 ([#172](https://github.com/fatal10110/texture2ddecoder-wasm/issues/172)):
@@ -235,10 +237,10 @@ Which Node.js versions work
 
 `require()` needs a Node.js that can `require()` an ES module, because the LZMA decoder `lzma1`
 is published as ES modules only. `initTexture()` needs a Node.js that detects ES-module syntax
-in `unity-asset-reader-decoder`'s glue code.
+in `texture2ddecoder-wasm`'s glue code.
 
 When you bundle a Node.js app (esbuild, Rollup, webpack with `target: "node"`), keep
-`unity-asset-reader-decoder` external. `initTexture()` finds the WASM files relative to its own
+`texture2ddecoder-wasm` external. `initTexture()` finds the WASM files relative to its own
 installed location.
 
 ## Troubleshooting

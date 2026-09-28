@@ -6,7 +6,7 @@ to RGBA8 pixels. It runs in browsers, Web Workers and Node.js.
 
 - **Plain formats** (RGBA32, RGB565, RHalf, ...) are converted in TypeScript.
 - **Block-compressed and Crunch formats** (BC1–BC7, ETC, EAC, PVRTC, ASTC, ATC) are decoded by
-  [`unity-asset-reader-decoder`](https://www.npmjs.com/package/unity-asset-reader-decoder), a
+  [`texture2ddecoder-wasm`](https://www.npmjs.com/package/texture2ddecoder-wasm), a
   small single-threaded WASM module (about 150 KB). It needs no special headers (COOP/COEP).
 - **Output is always RGBA, top row first:** `{ data, width, height }`, ready for `ImageData` or an
   image encoder. Unity stores rows bottom first and the WASM decoders produce BGRA; both are
@@ -19,7 +19,7 @@ npm install unity-asset-reader unity-asset-reader-texture
 ```
 
 `unity-asset-reader` is a peer dependency, so your app has exactly one copy of the parser.
-`unity-asset-reader-decoder` is installed with this package.
+`texture2ddecoder-wasm` is installed with this package.
 
 ## Usage
 
@@ -71,12 +71,11 @@ for it before the first decode. Every format needs it, the plain ones too.
   Pass an absolute URL. In the Vite dev server, a root-relative `"/wasm"` fails to load.
   In a Worker, use `self.location.href` in place of `location.href`.
 - **Browser, CDN:**
-  `await initTexture({ wasmPath: "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1/wasm" })`.
+  `await initTexture({ wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1/wasm" })`.
 
-**In a Web Worker** it works the same way. The decoder's predecessor, `texture2ddecoder-wasm`,
-refused to initialize in a Worker up to 1.2.2
-([#149](https://github.com/fatal10110/texture2ddecoder-wasm/issues/149)); make sure your
-`wasmPath` points at `unity-asset-reader-decoder`, not at the old package.
+**In a Web Worker**, `texture2ddecoder-wasm` 1.2.3 or later is needed. 1.2.2 refuses to
+initialize in a Worker ([#149](https://github.com/fatal10110/texture2ddecoder-wasm/issues/149)).
+This package depends on `^1.2.3`; a CDN `wasmPath` should point at 1.2.3 or later too.
 
 The [Bundler Guide](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/BUNDLER_GUIDE.md)
 has the setup for Vite, Next.js and CDN pages. **Next.js cannot bundle the WASM loader yet**
@@ -154,7 +153,7 @@ confirmed against Unity's packer yet
 
 - **Browsers:** WebAssembly and ES2020. No COOP/COEP headers, no `SharedArrayBuffer`.
 - **Node.js:** 20.19+ or 22.12+, for both `import` and `require`. `initTexture()` loads
-  `unity-asset-reader-decoder`'s ES-module glue code, which older Node.js versions refuse
+  `texture2ddecoder-wasm`'s ES-module glue code, which older Node.js versions refuse
   ([#172](https://github.com/fatal10110/texture2ddecoder-wasm/issues/172)). Node.js 22 prints a
   `MODULE_TYPELESS_PACKAGE_JSON` warning while loading it. The warning is harmless.
 
@@ -166,7 +165,7 @@ Every export. Each one has full JSDoc (parameters, return values, what it throws
 | Export | What |
 |---|---|
 | `initTexture(options?)` | Load the WASM decoder. Call it once, and await it, before decoding |
-| `InitTextureOptions` | `{ wasmPath?, locateFile? }`, passed to `unity-asset-reader-decoder`'s `initialize` |
+| `InitTextureOptions` | `{ wasmPath?, locateFile? }`, passed to `texture2ddecoder-wasm`'s `initialize` |
 | `decodeTexture2D(texture)` | A `Texture2D`, as `obj.read()` returns it, to RGBA, top row first |
 | `decodeSprite(obj, env, options?)` | A `Sprite` to RGBA, top row first, cut out of its texture or atlas |
 | `DecodeSpriteOptions` | `{ tightMesh? }` |

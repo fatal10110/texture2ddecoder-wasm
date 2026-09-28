@@ -252,7 +252,7 @@ sprites (#34).
       / `fourColor`), where every decoder agrees on every pixel.
     - **DXT5, colour half: Pillow.** The other decoders' 3-colour mode is a
       defect, fixed in the decoder's bindings by #137 and shipped in
-      `unity-asset-reader-decoder` 1.0.0, which the texture package depends
+      `texture2ddecoder-wasm` 1.2.3, which the texture package depends
       on. The spec (`EXT_texture_compression_s3tc`, D3D BC3) decodes
       DXT3/DXT5 colour as though c0 > c1 always, as Pillow does. Upstream
       Texture2DDecoder switches to 3-colour mode instead. So the DXT5 inputs

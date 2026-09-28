@@ -6,7 +6,7 @@ import {
   decode_etc1,
   decode_astc,
   decode_etc2a8,
-} from "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/dist/index.mjs";
+} from "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs";
 
 const statusDiv = document.getElementById("status");
 const controlsDiv = document.getElementById("controls");
@@ -21,7 +21,7 @@ async function init() {
   try {
     // Point to WASM files on jsDelivr CDN
     await initialize({
-      wasmPath: "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/wasm",
+      wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
     });
 
     statusDiv.className = "status success";
@@ -31,7 +31,7 @@ async function init() {
     controlsDiv.style.display = "block";
     isReady = true;
 
-    console.log("unity-asset-reader-decoder initialized successfully!");
+    console.log("texture2ddecoder-wasm initialized successfully!");
   } catch (error) {
     statusDiv.className = "status error";
     statusDiv.innerHTML = `❌ Error: ${error.message}`;

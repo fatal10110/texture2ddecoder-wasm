@@ -24,13 +24,13 @@ import {
   initialize,
   unpack_crunch,
   unpack_unity_crunch,
-} from "unity-asset-reader-decoder";
+} from "texture2ddecoder-wasm";
 import { BuildTarget, CorruptError, TextureFormat, UnsupportedError } from "unity-asset-reader";
 import type { Texture2DData } from "unity-asset-reader";
 import { convertPlain, type RgbaImage } from "./convert.js";
 import { deswizzle, refuseTiledPlatform, switchLayout, xbox360Swap } from "./platform.js";
 
-/** Where `initTexture` finds the WASM files; passed to `unity-asset-reader-decoder` as it is. */
+/** Where `initTexture` finds the WASM files; passed to `texture2ddecoder-wasm` as it is. */
 export interface InitTextureOptions {
   /**
    * URL of the directory holding `texture2ddecoder.js` and `.wasm` (or of the
@@ -149,12 +149,12 @@ let initialized = false;
 /**
  * Load the WASM block decoder. Call it once, and wait for it, before
  * {@link decodeTexture2D}; later calls return at once. A passthrough to
- * `unity-asset-reader-decoder`'s `initialize`.
+ * `texture2ddecoder-wasm`'s `initialize`.
  *
  * @param options where the WASM files are; browsers need `wasmPath`
  *   (`npx texture2ddecoder-copy-wasm public/wasm`, or a CDN URL), Node needs
  *   nothing
- * @throws {Error} from `unity-asset-reader-decoder` when the WASM files cannot be
+ * @throws {Error} from `texture2ddecoder-wasm` when the WASM files cannot be
  *   loaded; `initTexture` can then be called again
  * @example
  * await initTexture({ wasmPath: "/wasm" });
@@ -168,7 +168,7 @@ export async function initTexture(options?: InitTextureOptions): Promise<void> {
  * Decode the first mip level of a Texture2D to RGBA8, top row first, whatever
  * its format: the plain formats in TS (`convertPlain`), the block and Crunch
  * formats - BC1-BC7, ETC1/ETC2/EAC, PVRTC, ASTC, ATC and Crunch - through
- * `unity-asset-reader-decoder`. Its BGRA output is swapped to RGBA once (D5).
+ * `texture2ddecoder-wasm`. Its BGRA output is swapped to RGBA once (D5).
  *
  * Unity stores the rows bottom row first; they are flipped, so row 0 of the
  * result is the top of the image, as `ImageData` and image files expect
@@ -290,7 +290,7 @@ async function decodeLinear(
   const out = await codec.decode(blocks.subarray(0, need), width, height);
   if (out === null || out.length !== width * height * 4) {
     throw new CorruptError(
-      `unity-asset-reader-decoder could not decode ${describe(format)} at ${width} x ${height} ` +
+      `texture2ddecoder-wasm could not decode ${describe(format)} at ${width} x ${height} ` +
         `(${out === null ? "no output" : `${out.length} bytes out`})`,
     );
   }

@@ -1,19 +1,19 @@
 # Quick Start Guide
 
-Get up and running with `unity-asset-reader-decoder` in 3 simple steps!
+Get up and running with `texture2ddecoder-wasm` in 3 simple steps!
 
 ## 🚀 For Node.js Projects
 
 ```bash
 # 1. Install
-npm install unity-asset-reader-decoder
+npm install texture2ddecoder-wasm
 
 # 2. Use it
 ```
 
 ```javascript
 // app.js
-import { decode_bc1 } from "unity-asset-reader-decoder";
+import { decode_bc1 } from "texture2ddecoder-wasm";
 import fs from "fs";
 
 const textureData = fs.readFileSync("texture.bin");
@@ -38,12 +38,12 @@ Want to try it instantly without any setup? Use jsDelivr CDN:
       import {
         initialize,
         decode_bc1,
-      } from "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/dist/index.mjs";
+      } from "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs";
 
       // Initialize with CDN path
       await initialize({
         wasmPath:
-          "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/wasm",
+          "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
       });
 
       console.log("Ready to decode!");
@@ -69,7 +69,7 @@ Want to try it instantly without any setup? Use jsDelivr CDN:
 ### Step 1: Install
 
 ```bash
-npm install unity-asset-reader-decoder
+npm install texture2ddecoder-wasm
 ```
 
 ### Step 2: Copy WASM Files
@@ -85,7 +85,7 @@ See [BUNDLER_GUIDE.md](BUNDLER_GUIDE.md) for more bundler configurations.
 ### Step 3: Initialize and Use
 
 ```javascript
-import { initialize, decode_bc1 } from "unity-asset-reader-decoder";
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 // Initialize with path to WASM files
 await initialize({ wasmPath: "/wasm" });
@@ -101,14 +101,14 @@ const decoded = await decode_bc1(textureData, 512, 512);
 ### Vite + React
 
 ```bash
-npm install unity-asset-reader-decoder
+npm install texture2ddecoder-wasm
 npx texture2ddecoder-copy-wasm public/wasm
 ```
 
 ```jsx
 // App.jsx
 import { useEffect, useState } from "react";
-import { initialize } from "unity-asset-reader-decoder";
+import { initialize } from "texture2ddecoder-wasm";
 
 function App() {
   const [ready, setReady] = useState(false);
@@ -126,7 +126,7 @@ See: [examples/vite-react-example/](examples/vite-react-example/)
 ### Next.js
 
 ```bash
-npm install unity-asset-reader-decoder
+npm install texture2ddecoder-wasm
 npx texture2ddecoder-copy-wasm public/wasm
 ```
 
@@ -134,7 +134,7 @@ npx texture2ddecoder-copy-wasm public/wasm
 // app/page.tsx
 "use client";
 import { useEffect } from "react";
-import { initialize } from "unity-asset-reader-decoder";
+import { initialize } from "texture2ddecoder-wasm";
 
 export default function Page() {
   useEffect(() => {
@@ -152,14 +152,14 @@ See: [examples/nextjs-example/](examples/nextjs-example/)
 ### Create React App
 
 ```bash
-npm install unity-asset-reader-decoder
+npm install texture2ddecoder-wasm
 npx texture2ddecoder-copy-wasm public/wasm
 ```
 
 ```jsx
 // src/App.js
 import { useEffect, useState } from "react";
-import { initialize } from "unity-asset-reader-decoder";
+import { initialize } from "texture2ddecoder-wasm";
 
 function App() {
   const [ready, setReady] = useState(false);
@@ -176,7 +176,7 @@ function App() {
 ### SvelteKit
 
 ```bash
-npm install unity-asset-reader-decoder
+npm install texture2ddecoder-wasm
 npx texture2ddecoder-copy-wasm static/wasm
 ```
 
@@ -184,7 +184,7 @@ npx texture2ddecoder-copy-wasm static/wasm
 <!-- src/routes/+page.svelte -->
 <script>
   import { onMount } from 'svelte';
-  import { initialize } from 'unity-asset-reader-decoder';
+  import { initialize } from 'texture2ddecoder-wasm';
 
   let ready = false;
 
@@ -209,7 +209,7 @@ npx texture2ddecoder-copy-wasm static/wasm
 
 ```javascript
 // utils/decoder.js
-import { initialize } from "unity-asset-reader-decoder";
+import { initialize } from "texture2ddecoder-wasm";
 
 let initialized = false;
 
@@ -224,7 +224,7 @@ export async function ensureDecoder() {
 ```javascript
 // anywhere in your app
 import { ensureDecoder } from "./utils/decoder";
-import { decode_bc1 } from "unity-asset-reader-decoder";
+import { decode_bc1 } from "texture2ddecoder-wasm";
 
 async function decodeTexture(data) {
   await ensureDecoder();
@@ -237,7 +237,7 @@ async function decodeTexture(data) {
 ```javascript
 // Load decoder only when needed
 button.onclick = async () => {
-  const decoder = await import("unity-asset-reader-decoder");
+  const decoder = await import("texture2ddecoder-wasm");
   await decoder.initialize({ wasmPath: "/wasm" });
   const result = await decoder.decode_bc1(data, width, height);
 };
@@ -247,7 +247,7 @@ button.onclick = async () => {
 
 ```typescript
 // TextureDecoderService.ts
-import { initialize, decode_bc1 } from "unity-asset-reader-decoder";
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 class TextureDecoderService {
   private static instance: TextureDecoderService;

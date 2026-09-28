@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { initialize, decode_bc1 } from "unity-asset-reader-decoder";
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 function App() {
   const [isReady, setIsReady] = useState(false);
@@ -8,7 +8,7 @@ function App() {
   useEffect(() => {
     // Initialize the WASM module from CDN (no setup required!)
     initialize({
-      wasmPath: "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/wasm",
+      wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
     })
       .then(() => {
         console.log("Texture decoder initialized from CDN!");

@@ -1,7 +1,7 @@
 {
   "name": "texture2ddecoder-vite-cdn-example",
   "version": "1.0.0",
-  "description": "Vite example for unity-asset-reader-decoder with CDN",
+  "description": "Vite example for texture2ddecoder-wasm with CDN",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,6 +12,6 @@
     "vite": "^5.0.0"
   },
   "dependencies": {
-    "unity-asset-reader-decoder": "^1.0.0"
+    "texture2ddecoder-wasm": "^1.2.2"
   }
 }

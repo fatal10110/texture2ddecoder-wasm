@@ -9,10 +9,13 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** Packages of this repo (core, feature packages, decoder), as import specifiers. */
-const READER = /^unity-asset-reader(-[\w-]+)?(\/|$)/;
+/**
+ * Packages of this repo (core, feature packages, and the decoder, which keeps its
+ * own name `texture2ddecoder-wasm`), as import specifiers.
+ */
+const READER = /^(unity-asset-reader(-[\w-]+)?|texture2ddecoder-wasm)(\/|$)/;
 /** A subpath of one of them: a deep import, never allowed (R14). */
-const READER_DEEP = /^unity-asset-reader(-[\w-]+)?\//;
+const READER_DEEP = /^(unity-asset-reader(-[\w-]+)?|texture2ddecoder-wasm)\//;
 
 /** What each package is held to. `browser`: bundle for browsers. `noReader`: R14. */
 export const PACKAGES = {
@@ -112,8 +115,8 @@ export async function checkPackage(root, { browser, noReader }) {
         logLevel: "silent",
         external: [
           "unity-asset-reader",
-          "unity-asset-reader-decoder",
-          "unity-asset-reader-decoder/*",
+          "texture2ddecoder-wasm",
+          "texture2ddecoder-wasm/*",
         ],
       });
       const out = outputFiles.map((f) => f.text).join("\n");

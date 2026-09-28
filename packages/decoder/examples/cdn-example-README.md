@@ -2,7 +2,7 @@
 
 ## Quick Start
 
-This example demonstrates using `unity-asset-reader-decoder` loaded directly from jsDelivr CDN without any build tools.
+This example demonstrates using `texture2ddecoder-wasm` loaded directly from jsDelivr CDN without any build tools.
 
 ### How to Run
 
@@ -61,7 +61,7 @@ php -S localhost:8000
 
 ## What It Does
 
-1. Loads `unity-asset-reader-decoder` from jsDelivr CDN
+1. Loads `texture2ddecoder-wasm` from jsDelivr CDN
 2. Initializes WASM module from CDN
 3. Provides buttons to test different texture decoders
 4. **"Load Real ETC2 Image"** button loads `compressed_etc2_rgba_400x400.bin` and displays it

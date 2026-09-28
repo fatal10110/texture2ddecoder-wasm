@@ -1,19 +1,19 @@
-# unity-asset-reader-decoder
+# texture2ddecoder-wasm
 
-[![npm version](https://img.shields.io/npm/v/unity-asset-reader-decoder.svg)](https://www.npmjs.com/package/unity-asset-reader-decoder)
+[![npm version](https://img.shields.io/npm/v/texture2ddecoder-wasm.svg)](https://www.npmjs.com/package/texture2ddecoder-wasm)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D14.0.0-brightgreen.svg)](https://nodejs.org/)
 
 **Zero-native-deps WebAssembly decoder for BC / ETC / ASTC / PVRTC / Crunch** (Unity assets included). Runs in the browser and Node.js — no native toolchain.
 
 ```bash
-npm install unity-asset-reader-decoder
+npm install texture2ddecoder-wasm
 ```
 
 Try a complete Node.js example: save this as `decode.mjs` and run `node decode.mjs`.
 
 ```javascript
-import { decode_bc1 } from "unity-asset-reader-decoder";
+import { decode_bc1 } from "texture2ddecoder-wasm";
 
 // One BC1 block representing a solid red 4 x 4 texture; no input file needed.
 const data = new Uint8Array([0, 248, 0, 0, 0, 0, 0, 0]);
@@ -28,22 +28,6 @@ console.log([...decoded.slice(0, 4)]); // [0, 0, 255, 255] — BGRA, not RGBA
 For real assets, supply compressed texture payloads and the matching dimensions/format. Browser initialization and WASM asset paths are covered in the [Quick Start Guide](QUICK_START.md).
 
 Same codecs as [Perfare's Texture2DDecoder](https://github.com/Perfare/AssetStudio/tree/master/Texture2DDecoder) (AssetStudio) and the formats covered by [K0lb3/texture2ddecoder](https://github.com/K0lb3/texture2ddecoder) (Python + native) — this package ships them as WASM so you can decode in **browser + Node** without native deps.
-
-## Migrating from texture2ddecoder-wasm
-
-This package was published as `texture2ddecoder-wasm` up to 1.2.2. It is now
-`unity-asset-reader-decoder`, starting at 1.0.0, and shares its version with the
-[unity-asset-reader](https://github.com/fatal10110/texture2ddecoder-wasm#readme) packages. The API is
-unchanged: same exports, same `initialize()` options, same `wasm/` files, same
-`texture2ddecoder-copy-wasm` command. To move over:
-
-```bash
-npm uninstall texture2ddecoder-wasm
-npm install unity-asset-reader-decoder
-```
-
-Then import from `"unity-asset-reader-decoder"` and point CDN URLs at
-`unity-asset-reader-decoder@1` instead. `texture2ddecoder-wasm` gets no further releases.
 
 ## Features
 
@@ -90,13 +74,13 @@ Then import from `"unity-asset-reader-decoder"` and point CDN URLs at
 ## Installation
 
 ```bash
-npm install unity-asset-reader-decoder
+npm install texture2ddecoder-wasm
 ```
 
 or
 
 ```bash
-yarn add unity-asset-reader-decoder
+yarn add texture2ddecoder-wasm
 ```
 
 > 🚀 **New to this library?** Check out the [Quick Start Guide](QUICK_START.md) for the fastest way to get running!  
@@ -109,7 +93,7 @@ yarn add unity-asset-reader-decoder
 ### Node.js Usage
 
 ```typescript
-import { decode_astc } from "unity-asset-reader-decoder";
+import { decode_astc } from "texture2ddecoder-wasm";
 import * as fs from "fs";
 
 // Load compressed texture data
@@ -137,11 +121,11 @@ For modern frameworks (React, Vue, Svelte, Next.js, etc.), you can use CDN for q
 #### Quick Start - Using CDN (Recommended for Development)
 
 ```typescript
-import { initialize, decode_bc1 } from "unity-asset-reader-decoder";
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 // Initialize with CDN
 await initialize({
-  wasmPath: "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/wasm",
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
 });
 
 // Load and decode texture
@@ -166,7 +150,7 @@ npx texture2ddecoder-copy-wasm public/wasm
 ```
 
 ```typescript
-import { initialize, decode_bc1 } from "unity-asset-reader-decoder";
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 // Initialize with local path
 await initialize({ wasmPath: "/wasm" });
@@ -185,11 +169,11 @@ const decoded = await decode_bc1(data, 512, 512);
 **Vite + React:**
 
 ```typescript
-import { initialize, decode_bc1 } from "unity-asset-reader-decoder";
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 // Development: Use CDN
 await initialize({
-  wasmPath: "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/wasm",
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
 });
 
 // Production: Use local files (copy with: npx texture2ddecoder-copy-wasm public/wasm)
@@ -200,11 +184,11 @@ await initialize({ wasmPath: "/wasm" });
 
 ```typescript
 // In a 'use client' component
-import { initialize, decode_bc1 } from "unity-asset-reader-decoder";
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 // Development: Use CDN
 await initialize({
-  wasmPath: "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/wasm",
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
 });
 
 // Production: Use local files (copy with: npx texture2ddecoder-copy-wasm public/wasm)
@@ -214,11 +198,11 @@ await initialize({ wasmPath: "/wasm" });
 **Webpack 5:**
 
 ```typescript
-import { initialize, decode_bc1 } from "unity-asset-reader-decoder";
+import { initialize, decode_bc1 } from "texture2ddecoder-wasm";
 
 // Development: Use CDN
 await initialize({
-  wasmPath: "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/wasm",
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
 });
 
 // Production: Use local files (copy with: npx texture2ddecoder-copy-wasm public/wasm)
@@ -244,12 +228,12 @@ You can use the library directly from jsDelivr CDN without any installation:
       import {
         initialize,
         decode_bc1,
-      } from "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/dist/index.mjs";
+      } from "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/dist/index.mjs";
 
       // Initialize with CDN path for WASM files
       await initialize({
         wasmPath:
-          "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/wasm",
+          "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
       });
 
       document.getElementById("status").textContent = "✓ Ready to decode!";
@@ -268,14 +252,14 @@ You can use the library directly from jsDelivr CDN without any installation:
 - ✅ Cached by jsDelivr globally
 - ✅ Perfect for quick prototypes
 
-**Production tip:** Pin to a specific version (e.g., `@1.0.0`) instead of `@latest` for stability.
+**Production tip:** Pin to a specific version (e.g., `@1.2.1`) instead of `@latest` for stability.
 
 **Complete working example:** See [examples/cdn-example.html](examples/cdn-example.html) for a full interactive demo.
 
 ### Manual Initialization
 
 ```typescript
-import { initialize, decode_bc3 } from "unity-asset-reader-decoder";
+import { initialize, decode_bc3 } from "texture2ddecoder-wasm";
 
 // Node.js - no parameter needed (auto-detects module location)
 await initialize();
@@ -285,7 +269,7 @@ await initialize({ wasmPath: "/wasm" });
 
 // Browser with CDN - provide full CDN URL
 await initialize({
-  wasmPath: "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/wasm",
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
 });
 
 // Browser with custom locateFile for advanced use cases
@@ -424,7 +408,7 @@ await initialize({ wasmPath: "/wasm" });
 
 // With CDN
 await initialize({
-  wasmPath: "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1.0.0/wasm",
+  wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1.2.1/wasm",
 });
 
 // With custom locateFile for advanced scenarios
