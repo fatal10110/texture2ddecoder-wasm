@@ -1,6 +1,13 @@
 // Ported from AssetStudio/AssetsManager.cs (MIT, © Perfare / RazTools / Razviar)
 // Ported from AssetStudio/ResourceReader.cs (MIT, © Perfare / RazTools / Razviar)
 
+import {
+  indexContainers,
+  makeAsset,
+  type Asset,
+  type AssetType,
+  type ContainerIndex,
+} from "./asset.js";
 import { readBundle } from "./bundle/BundleFile.js";
 import { detectContainer, detectFileType, type FileType } from "./bundle/detect.js";
 import { readWebFile } from "./bundle/WebFile.js";
@@ -47,13 +54,33 @@ const SIGNED_CONTAINERS: readonly FileType[] = [
   "UnityArchive",
 ];
 
-/** One file handed to {@link load}. */
+/** One file handed to {@link load}, with its name. */
 export interface LoadInput {
-  /** File name, used as the path of anything that is not a container. */
+  /**
+   * File name, used as the path of anything that is not a container, and in
+   * error messages.
+   *
+   * A loose file (not a bundle) needs its real name: a `.resS` / `.resource`
+   * sidecar is found by it, and so is a SerializedFile that another file's
+   * pointers name (`sharedassets0.assets`). A bundle's own name only shows up
+   * in messages; the files inside it carry their own.
+   */
   name: string;
   /** Whole file bytes. */
   data: Uint8Array | ArrayBuffer;
 }
+
+/**
+ * One input of {@link load}: the file's bytes, or the bytes with a name
+ * ({@link LoadInput}), which may be left out. A file without a name is called
+ * `"input <index>"` after its place in the inputs; see {@link LoadInput.name}
+ * for when the real name matters.
+ */
+export type LoadSource =
+  | Uint8Array
+  | ArrayBuffer
+  | LoadInput
+  | { name?: string; data: Uint8Array | ArrayBuffer };
 
 /** One unpacked file, as {@link Env.files} yields it. */
 export interface LoadedFile {
@@ -191,6 +218,51 @@ export interface Env {
    *   finding `from`'s file parses the SerializedFiles too
    */
   readResource(ref: ResourceRef, from: ObjectReader): Uint8Array;
+  /**
+   * Every object of {@link objects}, in the same order, as an {@link Asset}:
+   * plain data whose `type` narrows its `data`. With `types`, only the assets
+   * of those types, and the result type narrowed to them.
+   *
+   * Iterating reads nothing. An asset's `name`, `path` and `data` are read on
+   * first access and kept, and each call yields the same asset objects:
+   *
+   * - `name` reads the type tree only as far as `m_Name`. Without a type tree
+   *   it reads the `NamedObject` header of the asset classes (every class with
+   *   a hardcoded reader, `Mesh`, `Shader`, `AnimationClip`,
+   *   `AssetBundleManifest`, ...) or a `MonoBehaviour`'s header, and is `""`
+   *   for any other class (a `GameObject`, a `Transform`).
+   * - `path` reads every `AssetBundle` object once, for its `m_Container`.
+   *   An asset listed under several paths takes the first one.
+   * - `data` is `asset.reader.read()`.
+   *
+   * A failed read throws at the access, with the file (after the containers
+   * it came out of), the class and the path id in the message. It is not
+   * kept, and throws again on the next access.
+   *
+   * @param types the types to keep (`"Texture2D"`, `"Other"`, ...); none
+   *   keeps every asset
+   * @throws {UnsupportedError} / {CorruptError} as {@link objects} does, once
+   *   iteration starts
+   */
+  assets<T extends AssetType = AssetType>(...types: T[]): Generator<Asset<T>, void, undefined>;
+  /**
+   * The asset a container path names (`"assets/ui/icon.png"`), from the
+   * `m_Container` of every loaded `AssetBundle`. Unity stores these paths
+   * lower-cased and the lookup ignores case, so the path as the project
+   * spells it (`"Assets/UI/Icon.png"`) matches too.
+   *
+   * A path can list several assets: a texture and the sprite cut from it, or
+   * the sub-assets of a model. This returns the first one listed, in
+   * {@link objects} order and then `m_Container` order; filter `assets()` by
+   * `path` for the rest.
+   *
+   * @param path the asset's path in the editor project
+   * @returns the asset, or `undefined` when no loaded bundle lists the path,
+   *   or its entries point into files that are not loaded
+   * @throws {UnsupportedError} / {CorruptError} as {@link objects} does, and
+   *   what reading an `AssetBundle` throws, with its file and path id
+   */
+  get(path: string): Asset | undefined;
 }
 
 /**
@@ -205,6 +277,8 @@ export interface SerializedFileEntry {
   objects: Map<bigint, ObjectReader>;
   /** The container it came out of, for {@link Env.resolve} and {@link Env.readResource}. */
   container: ContainerId;
+  /** The containers it was found under, outermost first, then its own path. */
+  source: string;
 }
 
 /**
@@ -272,20 +346,32 @@ interface EnvIndex {
  * Nothing is decompressed lazily and nothing is copied: the returned bytes are
  * views into the decompressed blocks.
  *
- * @param inputs the files to open; an `ArrayBuffer` is wrapped, never copied
+ * To fetch the files or read them out of a `Blob` first, use `open()`, which
+ * then calls this.
+ *
+ * @example
+ * const env = load(bundleBytes);
+ * const env2 = load([bundleBytes, { name: "sharedassets0.assets.resS", data: resS }]);
+ *
+ * @param inputs one file or several, each as bytes or `{ name?, data }` ({@link LoadSource});
+ *   an `ArrayBuffer` is wrapped, never copied. Files without a name are
+ *   called `"input <index>"`, which is fine for a bundle but not for a loose
+ *   file whose name is looked up (see {@link LoadInput.name}).
  * @returns an {@link Env} whose `files` hold every unpacked file
+ * @throws {TypeError} for an input that is neither bytes nor `{ name, data }`
  * @throws {UnsupportedError} for a container, compression type or nesting depth
  *   this library does not implement, its message naming the containers it was
  *   found under, outermost first
  * @throws {CorruptError} when a file claims to be a container but does not hold
  *   together, named the same way
  */
-export function load(inputs: readonly LoadInput[]): Env {
+export function load(inputs: LoadSource | readonly LoadSource[]): Env {
   const out: Collected = { files: [], serialized: [], byName: new Map(), lastContainer: 0 };
-  for (const { name, data } of inputs) {
-    const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
-    ingest(name, bytes, 0, false, "", undefined, 0, out);
-  }
+  const list: readonly LoadSource[] = isList(inputs) ? inputs : [inputs];
+  list.forEach((input, index) => {
+    const { name, data } = toInput(input, index);
+    ingest(name, data, 0, false, "", undefined, 0, out);
+  });
 
   let index: EnvIndex | undefined;
   const indexed = (): EnvIndex => {
@@ -297,10 +383,40 @@ export function load(inputs: readonly LoadInput[]): Env {
     return index;
   };
 
+  let assetIndex: { assets: Asset[]; assetOf: Map<ObjectReader, Asset> } | undefined;
+  const assetsIndexed = () => {
+    if (assetIndex) return assetIndex;
+    const { objects, sourceOf } = indexed();
+    const assetOf = new Map<ObjectReader, Asset>();
+    const assets = objects.map((object) => {
+      const asset = makeAsset(object, sourceOf.get(object)!.source, containersIndexed);
+      assetOf.set(object, asset);
+      return asset;
+    });
+    assetIndex = { assets, assetOf };
+    return assetIndex;
+  };
+  let containers: ContainerIndex | undefined;
+  const containersIndexed = (): ContainerIndex => {
+    containers ??= indexContainers(assetsIndexed().assets, env.resolve.bind(env));
+    return containers;
+  };
+
   const env: Env = {
     files: out.files,
     get objects() {
       return indexed().objects;
+    },
+    *assets<T extends AssetType>(...types: T[]) {
+      const keep = types.length > 0 ? new Set<AssetType>(types) : undefined;
+      for (const asset of assetsIndexed().assets) {
+        // `keep` holds `T`s only, so a kept asset is an `Asset<T>`.
+        if (!keep || keep.has(asset.type)) yield asset as Asset<T>;
+      }
+    },
+    get(path) {
+      const object = containersIndexed().byPath.get(path.toLowerCase());
+      return object && assetsIndexed().assetOf.get(object);
     },
     resolve(pptr, from) {
       const { sourceOf, byName } = indexed();
@@ -322,6 +438,31 @@ export function load(inputs: readonly LoadInput[]): Env {
     },
   };
   return env;
+}
+
+/** `Array.isArray`, which does not narrow a union with a `readonly` array by itself. */
+function isList(inputs: LoadSource | readonly LoadSource[]): inputs is readonly LoadSource[] {
+  return Array.isArray(inputs);
+}
+
+/**
+ * One input as a name and a `Uint8Array`, the name defaulting to
+ * `"input <index>"`.
+ *
+ * @throws {TypeError} when it is neither bytes nor `{ name, data }`
+ */
+function toInput(input: LoadSource, index: number): { name: string; data: Uint8Array } {
+  // A `Uint8Array` or `ArrayBuffer` has no `data`; `{ name, data }` does.
+  const named = typeof input === "object" && input !== null && "data" in input;
+  const name = (named ? input.name : undefined) ?? `input ${index}`;
+  const data: unknown = named ? input.data : input;
+  if (data instanceof Uint8Array) return { name, data };
+  // The tag, not `instanceof`: an ArrayBuffer from another realm (a Node `vm`
+  // context, an iframe) is one too.
+  if (Object.prototype.toString.call(data) === "[object ArrayBuffer]") {
+    return { name, data: new Uint8Array(data as ArrayBuffer) };
+  }
+  throw new TypeError(`${name}: expected a Uint8Array, an ArrayBuffer or { name, data }`);
 }
 
 /**
@@ -422,7 +563,7 @@ function indexSerializedFiles(candidates: readonly SerializedCandidate[]): EnvIn
   for (const { source, path, data, revision, container } of candidates) {
     let entry: SerializedFileEntry;
     try {
-      entry = readEntry(path, data, revision, container);
+      entry = readEntry(path, data, revision, container, source);
     } catch (error) {
       throw withSource(source, error);
     }
@@ -456,6 +597,7 @@ function indexSerializedFiles(candidates: readonly SerializedCandidate[]): EnvIn
  *
  * @param revision `unityRevision` of the bundle the file is a node of
  * @param container the container the file came out of
+ * @param source the containers it was found under, then its own path
  * @throws {CorruptError} when the object table lists a path id twice. Unity
  *   never writes that, and either choice of object would leave a pointer to
  *   it meaning one of two things; upstream's `ObjectsDic.Add` throws too.
@@ -465,6 +607,7 @@ function readEntry(
   data: Uint8Array,
   revision: string | undefined,
   container: ContainerId,
+  source: string,
 ): SerializedFileEntry {
   const file = readSerializedFile(data);
   // An empty revision names nothing; upstream checks `IsNullOrEmpty`.
@@ -487,7 +630,7 @@ function readEntry(
     }
     objects.set(info.pathId, new ObjectReader(data, file, info, name));
   }
-  return { name, file, objects, container };
+  return { name, file, objects, container, source };
 }
 
 /**
