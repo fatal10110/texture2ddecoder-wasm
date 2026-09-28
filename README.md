@@ -27,13 +27,14 @@ so you never add it next to `-texture` yourself.
 ### What each package does
 
 - **[`unity-asset-reader`](packages/core/README.md)**, the parser. It takes bytes
-  (`Uint8Array`) and gives back the unpacked files and the objects in them. It is plain
-  TypeScript: synchronous, with no WASM and no Node.js APIs, so it runs the same everywhere. For a
+  (`Uint8Array`), or fetches them for you with `open()`, and gives back the unpacked files and the
+  assets in them. It is plain TypeScript: synchronous parsing, with no WASM and no Node.js APIs,
+  so it runs the same everywhere. For a
   `Texture2D` it reads the header fields and the still-encoded `imageData`, but it never decodes
   pixels.
 - **[`unity-asset-reader-texture`](packages/texture/README.md)** turns the `Texture2D` and
   `Sprite` objects that the parser reads into RGBA pixels. It parses nothing itself: you pass it
-  `obj.read()` from `unity-asset-reader`. It decodes plain formats (RGBA32, RGB565, ...) in
+  an asset's `data` from `unity-asset-reader`. It decodes plain formats (RGBA32, RGB565, ...) in
   TypeScript and block-compressed ones (BC, ETC, ASTC, PVRTC, ...) through the decoder's WASM.
 - **[`unity-asset-reader-node`](packages/node/README.md)** gets Unity files off the disk.
   `loadPath()` reads a file or a whole folder, merges split files (`.split0`, `.split1`, ...),
@@ -71,7 +72,6 @@ npm install unity-asset-reader unity-asset-reader-texture unity-asset-reader-nod
 ```
 
 ```js
-import { ClassID } from "unity-asset-reader";
 import { initTexture, decodeTexture2D } from "unity-asset-reader-texture";
 import { loadPath } from "unity-asset-reader-node";
 
@@ -79,16 +79,15 @@ await initTexture(); // no options: the WASM is read from the installed decoder 
 
 const env = loadPath("Build/StreamingAssets/bundles"); // a file, or a folder read recursively
 env.files; // every unpacked file: [{ path: "CAB-…", data }, { path: "CAB-….resS", data }]
-for (const obj of env.objects) {
-  if (obj.type === ClassID.Texture2D) {
-    const { data, width, height } = await decodeTexture2D(obj.read()); // RGBA
-  }
+for (const asset of env.assets("Texture2D")) {
+  const { data, width, height } = await decodeTexture2D(asset.data); // RGBA
+  console.log(asset.path ?? asset.name, width, height); // "assets/ui/icon.png" 256 256
 }
 ```
 
 The bytes don't have to come from disk: when they come from an upload or a download, skip
-`unity-asset-reader-node` and call `load([{ name: "a.bundle", data: bytes }])` (`bytes` is a
-`Uint8Array`; a `Buffer` is one too). No package here writes image files; to save a PNG, hand the
+`unity-asset-reader-node` and call `load(bytes)` (`bytes` is a `Uint8Array` or an `ArrayBuffer`;
+a `Buffer` is a `Uint8Array` too), or `await open(url)` to fetch them. No package here writes image files; to save a PNG, hand the
 RGBA to an image library, for example
 `sharp(data, { raw: { width, height, channels: 4 } }).png().toFile("out.png")`.
 
@@ -99,19 +98,17 @@ npm install unity-asset-reader unity-asset-reader-texture
 ```
 
 ```js
-import { load, ClassID } from "unity-asset-reader";
+import { open } from "unity-asset-reader";
 import { initTexture, decodeTexture2D } from "unity-asset-reader-texture";
 
 // A browser has no package folder to read from, so tell it where the two WASM files are:
 // a CDN, as here, or your own static folder (`npx texture2ddecoder-copy-wasm public/wasm`).
 await initTexture({ wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1/wasm" });
 
-const bytes = new Uint8Array(await (await fetch("a.bundle")).arrayBuffer());
-const env = load([{ name: "a.bundle", data: bytes }]);
-for (const obj of env.objects) {
-  if (obj.type === ClassID.Texture2D) {
-    const { data, width, height } = await decodeTexture2D(obj.read()); // RGBA
-  }
+const env = await open("a.bundle"); // fetches it; a File from an <input> works too
+const icon = env.get("Assets/UI/Icon.png"); // an asset by its path in the Unity project
+if (icon?.type === "Texture2D") {
+  const { data, width, height } = await decodeTexture2D(icon.data); // RGBA
 }
 ```
 
