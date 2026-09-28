@@ -80,7 +80,7 @@ await initTexture(); // no options: the WASM is read from the installed decoder 
 const env = loadPath("Build/StreamingAssets/bundles"); // a file, or a folder read recursively
 env.files; // every unpacked file: [{ path: "CAB-…", data }, { path: "CAB-….resS", data }]
 for (const asset of env.assets("Texture2D")) {
-  const { data, width, height } = await decodeTexture2D(asset.data); // RGBA
+  const { data, width, height } = await decodeTexture2D(asset.reader.read()); // RGBA
   console.log(asset.path ?? asset.name, width, height); // "assets/ui/icon.png" 256 256
 }
 ```

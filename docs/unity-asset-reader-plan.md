@@ -117,13 +117,13 @@ for (const asset of env.assets()) {            // every object, in env.objects o
   asset.classId; asset.pathId; asset.file; asset.byteSize
   asset.name      // m_Name, '' when the class has none; reads only as far as m_Name
   asset.path      // first m_Container path pointing at it, or undefined
-  asset.data      // obj.read(), on first access, cached; narrowed by `switch (asset.type)`
+  asset.data      // obj.read() with camelCase names (#184), on first access, cached; narrowed by `switch (asset.type)`
 }
 env.assets('Texture2D', 'Sprite')              // filtered and narrowed
 env.get('Assets/UI/Icon.png')                  // by container path, case-insensitive, or undefined
 ```
 
-- **Data plus free functions, no per-class methods.** An `Asset` is plain data with a discriminant (`type`); its `data` is what `obj.read()` returns. Whatever an asset can be turned into is a free function taking it (#185: texture `isImage` / `decodeImage`), never a method on an asset class.
+- **Data plus free functions, no per-class methods.** An `Asset` is plain data with a discriminant (`type`); its `data` is what `obj.read()` returns, as plain data with camelCase field names without `m_` (#184; `obj.read()` keeps Unity's). Whatever an asset can be turned into is a free function taking it (#185: texture `isImage` / `decodeImage`), never a method on an asset class.
 - `type` is the class name for the classes with a hand reader and `'Other'` for the rest (a `string` fallback would stop `switch` from narrowing `data`); `typeName` names every class.
 - `load()` takes one input or an array; an input is bytes or `{ name?, data }`, a missing name becomes `input <index>`. Loose files still need their real names (resource and externals lookup).
 - `open()` is the async way in: it only gets the bytes (global `fetch` or `options.fetch`, `Blob.arrayBuffer()`), names each file after its URL's last path segment or `File.name`, throws on a non-OK response, then calls `load()`. Parsing stays sync (D4).

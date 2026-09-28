@@ -56,7 +56,7 @@ for (const asset of env.assets()) {
 
   // 3. Textures as raw RGBA, top row first.
   if (asset.type === "Texture2D") {
-    const { data, width, height } = await decodeTexture2D(asset.data);
+    const { data, width, height } = await decodeTexture2D(asset.reader.read());
     save(join("textures", `${name}-${width}x${height}.rgba`), data);
     // To get a PNG, hand the pixels to an image library, e.g. sharp:
     // await sharp(data, { raw: { width, height, channels: 4 } }).png().toFile(`${name}.png`);
@@ -73,10 +73,12 @@ What happens here:
   SerializedFile among them, with its `type`, `name` and container `path` (the path the asset had
   in the Unity project).
 - `asset.data` is read when you first use it. For the common classes it comes from a hand-written
-  reader, which also works without type trees; `asset.type` is then the class name, and checking
-  it types `data`. Any other class (`asset.type === "Other"`, `asset.typeName === "Mesh"`) is read
-  through its type tree, which includes your own scripts' fields when the bundle was built with
-  type trees (the Unity default).
+  reader, which also works without type trees; `asset.type` is then the class name, checking it
+  types `data`, and its fields have TypeScript-style names (`width`, `format`, `text`; each one's
+  JSDoc names its Unity field, `m_Width`, ...). `decodeTexture2D` takes the low-level
+  `asset.reader.read()`, which keeps Unity's names. Any other class (`asset.type === "Other"`,
+  `asset.typeName === "Mesh"`) is read through its type tree, which includes your own scripts'
+  fields when the bundle was built with type trees (the Unity default).
 - 64-bit integers, such as path ids, are always `bigint`, so JSON needs the replacer.
 
 Without Node.js file access (a server that received an upload, say), use `load()` directly, or
@@ -110,7 +112,7 @@ self.onmessage = async ({ data: { name, bytes } }) => {
   await ready;
   const env = load({ name, data: bytes }); // bytes: the ArrayBuffer the page transferred
   for (const texture of env.assets("Texture2D")) {
-    const { data, width, height } = await decodeTexture2D(texture.data);
+    const { data, width, height } = await decodeTexture2D(texture.reader.read());
     self.postMessage({ name: texture.name, width, height, rgba: data.buffer }, [data.buffer]);
   }
 };

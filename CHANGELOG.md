@@ -39,6 +39,11 @@ First release of `unity-asset-reader`, `unity-asset-reader-texture` and `unity-a
   `load()`. `env.assets(...types)` yields every object as an `Asset`, plain data with a `type`
   that narrows its lazily read `data`, plus its `name` and container `path`. `env.get(path)` finds
   an asset by container path (#183).
+- `asset.data` has TypeScript-style field names for every class with a hardcoded reader:
+  camelCase without Unity's `m_` (`Texture2DFields.format`, `.width`, `.mipCount`), with
+  `TextAsset`'s `text` and `bytes`, and `MonoBehaviour`'s `script` and `fields`. Each field's
+  JSDoc names its Unity field. `obj.read()` keeps Unity's names; `toXFields()` maps its result
+  (#184).
 - SerializedFile header, metadata, type trees and object table. Fixtures cover Unity 2019.4,
   2020.3 and 6000.3 builds. `readTypeTree()` turns any object with a type tree into a plain JS
   object.

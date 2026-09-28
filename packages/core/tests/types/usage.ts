@@ -1,11 +1,20 @@
-// The #183 usage block, as a function the tests run against the fixtures and
-// `types.test.ts` compiles under the package's strict flags. The type
+// The #183 usage block, with #184's friendly `data` fields, as a function the
+// tests run against the fixtures and `types.test.ts` compiles under the
+// package's strict flags. The type
 // assertions below compile only while `switch (asset.type)` and
 // `assets(...types)` narrow; each `@ts-expect-error` fails the compile if the
 // line after it stops being an error.
 
 import { load, open, type Asset, type Env, type TypeTreeObject } from "../../src/index.js";
-import type { AssetBundle, Sprite, TextAsset, Texture2DData } from "../../src/index.js";
+import type {
+  AssetBundleFields,
+  MonoBehaviourFields,
+  PPtr,
+  SpriteFields,
+  TextAssetFields,
+  Texture2DFields,
+  TextureFormat,
+} from "../../src/index.js";
 
 /** `A` and `B` are the same type. */
 type Equal<A, B> =
@@ -68,15 +77,28 @@ export async function usage(
     asset.data; // parsed on first access, cached; typed by `type`
     switch (asset.type) {
       case "Texture2D":
-        expectType<Equal<typeof asset.data, Texture2DData>>();
+        expectType<Equal<typeof asset.data, Texture2DFields>>();
         // @ts-expect-error - a Texture2D's data is not a TextAsset
-        asset.data satisfies TextAsset;
+        asset.data satisfies TextAssetFields;
+        // #184: friendly names, not m_TextureFormat
+        expectType<Equal<typeof asset.data.format, TextureFormat>>();
+        expectType<Equal<typeof asset.data.width, number>>();
+        expectType<Equal<typeof asset.data.mipCount, number | undefined>>();
+        // @ts-expect-error - Unity's names are the low-level reader's
+        asset.data.m_TextureFormat;
         break;
       case "TextAsset":
-        expectType<Equal<typeof asset.data, TextAsset>>();
+        expectType<Equal<typeof asset.data, TextAssetFields>>();
+        expectType<Equal<typeof asset.data.text, string>>();
+        expectType<Equal<typeof asset.data.bytes, Uint8Array>>();
+        break;
+      case "MonoBehaviour":
+        expectType<Equal<typeof asset.data, MonoBehaviourFields>>();
+        expectType<Equal<typeof asset.data.script, PPtr>>();
+        expectType<Equal<typeof asset.data.fields, TypeTreeObject | undefined>>();
         break;
       case "AssetBundle":
-        expectType<Equal<typeof asset.data, AssetBundle>>();
+        expectType<Equal<typeof asset.data, AssetBundleFields>>();
         break;
       case "Other":
         // TypeTreeObject for classes without a hand reader
@@ -104,7 +126,7 @@ export async function usage(
   const filtered = [...env.assets("Texture2D", "Sprite")]; // filtered and narrowed
   for (const asset of filtered) {
     expectType<Equal<typeof asset.type, "Texture2D" | "Sprite">>();
-    expectType<Equal<typeof asset.data, Texture2DData | Sprite>>();
+    expectType<Equal<typeof asset.data, Texture2DFields | SpriteFields>>();
     // @ts-expect-error - no TextAsset left after the filter
     asset.type === "TextAsset";
   }

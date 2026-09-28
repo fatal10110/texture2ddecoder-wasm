@@ -7,6 +7,7 @@ import { test } from "node:test";
 
 import { fixtureNames, golden, loadFixture } from "../../../fixtures/helpers.js";
 import type { Asset } from "../src/asset.js";
+import { readAssetData } from "../src/classes/registry.js";
 import { load, type Env } from "../src/env.js";
 import { UnsupportedError } from "../src/errors.js";
 import { ClassID, classIdName } from "../src/serialized/ClassID.js";
@@ -101,12 +102,13 @@ for (const name of EDITOR) {
   });
 }
 
-test("data is what reader.read() returns, read once and kept", () => {
+test("data is reader.read() in its friendly shape, read once and kept", () => {
   const env = loadBytes("editor/6000.3.25f1/lz4/main");
   for (const asset of env.assets()) {
     const first = asset.data;
     assert.equal(asset.data, first, `${asset.typeName} ${asset.pathId}: cached`);
-    assert.deepStrictEqual(first, asset.reader.read(), `${asset.typeName} ${asset.pathId}`);
+    // The mapping itself is checked field by field in fields.test.ts (#184).
+    assert.deepStrictEqual(first, readAssetData(asset.reader), `${asset.typeName} ${asset.pathId}`);
   }
   const mesh = [...env.assets()].find((a) => a.classId === ClassID.Mesh)!;
   assert.equal(mesh.type, "Other");
@@ -165,7 +167,7 @@ test("assets(...types) keeps only those types", () => {
   assert.ok(picked.some((a) => a.type === "Sprite"));
   assert.ok(picked.some((a) => a.type === "Texture2D"));
   for (const sprite of env.assets("Sprite")) {
-    assert.equal(typeof sprite.data.m_Rect.width, "number");
+    assert.equal(typeof sprite.data.rect.width, "number");
   }
 
   const main = loadBytes("editor/6000.3.25f1/lz4/main");
