@@ -1,0 +1,7 @@
+# actionlint 1.7.12, the latest release, predates `concurrency.queue`, which GitHub Actions has
+# accepted since 2026-05-07 (workflow syntax docs, `concurrency`). release.yml sets `queue: max`
+# so that no waiting release run is dropped (#192).
+paths:
+  .github/workflows/release.yml:
+    ignore:
+      - 'unexpected key "queue" for "concurrency" section'

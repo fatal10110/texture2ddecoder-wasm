@@ -1,32 +1,29 @@
 # Changelog
 
-This repo publishes two release lines. Each has its own section below, newest version first.
-How to cut a release is in [RELEASING.md](RELEASING.md).
+This repo publishes four npm packages. Each has its own section below, newest version first. How
+to release is in [RELEASING.md](RELEASING.md).
 
 ## Versioning policy
 
-- **Reader packages** (`unity-asset-reader`, `unity-asset-reader-texture`,
-  `unity-asset-reader-node`) version in **lockstep**: all three always carry the same version and
-  are published together, even when only one of them changed. A feature package's
-  `peerDependency` on `unity-asset-reader` is `^<major>` (for 1.x: `^1`), so any core of the same
-  major works with it.
-- **`texture2ddecoder-wasm`** versions independently on its own 1.x line. It is published only
-  when it changed since its last npm version, never just because the reader packages are released.
-  The texture package's `^` range on it names the oldest decoder it works with; that decoder is
-  published first.
-- Both lines follow [semver](https://semver.org/). For the reader packages the public API is what
-  each package's `dist/index.d.ts` exports. A breaking change to any one of them bumps the major of
-  all three, and the peer range moves with it.
+- **Every package versions on its own**: `unity-asset-reader`, `unity-asset-reader-texture`,
+  `unity-asset-reader-node` and `texture2ddecoder-wasm` each have their own version, and a package
+  is published only when its version changes. Changing the `version` in a package's
+  `package.json` on `main` is the release.
+- Each follows [semver](https://semver.org/). For the reader packages the public API is what the
+  package's `dist/index.d.ts` exports.
+- Between packages of this repo, ranges say what goes together. A feature package's
+  `peerDependency` on `unity-asset-reader` is `^<major>` (for 1.x: `^1`), so any core of that
+  major works with it; a breaking core release moves the feature packages' peer range with it.
+  The texture package's `^` range on `texture2ddecoder-wasm` names the oldest decoder it works
+  with. A package is never published before a version its ranges need is on npm.
 - Changes that are not on npm yet collect under a `### <next version> - Unreleased` heading in
-  the right section. The release replaces `Unreleased` with the publish date.
+  the package's section. The release replaces `Unreleased` with the publish date.
 
-## Reader packages
+## unity-asset-reader
 
 ### 1.0.0 - Unreleased
 
-First release of `unity-asset-reader`, `unity-asset-reader-texture` and `unity-asset-reader-node`.
-
-`unity-asset-reader` (core; isomorphic, synchronous, no WASM):
+First release. The core: isomorphic, synchronous, no WASM.
 
 - Containers: UnityFS bundles (LZ4/LZ4HC, LZMA, uncompressed blocks), legacy UnityWeb/UnityRaw,
   `UnityWebData` files, gzip-wrapped inputs, loose SerializedFiles, and `.resS`/`.resource`
@@ -54,7 +51,11 @@ First release of `unity-asset-reader`, `unity-asset-reader-texture` and `unity-a
 - 64-bit fields and path IDs are `bigint`. Unsupported input throws `UnsupportedError`, damaged
   input `CorruptError`, a missing sidecar `ResourceNotFoundError`.
 
-`unity-asset-reader-texture` (peer: `unity-asset-reader@^1`; depends on `texture2ddecoder-wasm@^1.2.3`):
+## unity-asset-reader-texture
+
+### 1.0.0 - Unreleased
+
+First release. Peer: `unity-asset-reader@^1`; depends on `texture2ddecoder-wasm@^1.2.3`.
 
 - `initTexture()` and `decodeTexture2D()`: Texture2D to RGBA, for the plain formats in TypeScript
   and the block and Crunch formats through `texture2ddecoder-wasm`, with platform byte swaps and
@@ -62,7 +63,11 @@ First release of `unity-asset-reader`, `unity-asset-reader-texture` and `unity-a
 - `decodeSprite()`: crops a Sprite out of its texture or atlas, with optional tight-mesh masking.
 - `convertPlain()` for the uncompressed formats without the decoder.
 
-`unity-asset-reader-node` (peer: `unity-asset-reader@^1`):
+## unity-asset-reader-node
+
+### 1.0.0 - Unreleased
+
+First release. Peer: `unity-asset-reader@^1`.
 
 - `loadPath(fileOrDir)`: loads a file or a directory tree from disk, merges `.split0..n` parts and
   picks up `.resS`/`.resource` sidecars.

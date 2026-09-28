@@ -1,93 +1,108 @@
-// Release version guard (#175, #182). Two release lines, each with its own tag family:
+// Release plan (#192): which packages a run of the release workflow publishes. Every package
+// versions on its own, and a release is a change of `version` in a package's package.json.
 //
-//   unity-asset-reader@<v>      the three reader packages, in lockstep
-//   texture2ddecoder-wasm@<v>   the decoder, on its own version line
+//   node scripts/check-release.mjs --base <commit>   push to main, pull_request: the packages
+//                                                   whose version differs from <commit>
+//   node scripts/check-release.mjs --unpublished     workflow_dispatch: every package
 //
-//   node scripts/check-release.mjs <tag> [--family <name>]
-//   node scripts/check-release.mjs --family <name>          (dry run off a branch)
-//
-// Prints `family=`, `version=` and `packages=` lines (for $GITHUB_OUTPUT), or exits 1 when the
-// tag, the family and the versions on disk disagree. For the readers it also fails when the
-// texture package's `texture2ddecoder-wasm` range has no version on npm yet, so the readers are
-// never published ahead of the decoder they need. The release workflow runs it before anything
-// is built.
+// Either way, a `name@version` that is on npm already is dropped. Prints one line,
+// `packages=<name@version ...>` in publish order (empty when there is nothing to release), for
+// $GITHUB_OUTPUT. Exits 1 when a package to release depends on another package of this repo
+// through a range that neither npm nor an earlier package of the same run satisfies, so nothing
+// is published ahead of what it needs. The release workflow runs it before anything is built.
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** The decoder's npm name. */
-export const DECODER = "texture2ddecoder-wasm";
+/**
+ * The published packages' directories under `packages/`, in publish order: each one only
+ * depends on packages before it.
+ */
+export const PACKAGE_DIRS = ["decoder", "core", "texture", "node"];
+
+/** The dependency fields whose ranges must be on npm before a package is published. */
+const DEPENDENCY_FIELDS = ["dependencies", "peerDependencies"];
+
+const VERSION = /^(\d+)\.(\d+)\.(\d+)(-\S+)?$/;
 
 /**
- * The release families: tag prefix -> package directories under `packages/`, in publish order
- * (dependencies first).
+ * Whether a version is in a range, for the range forms this repo uses: `*`, an exact version,
+ * and caret ranges (`^1`, `^1.2`, `^1.2.3`) with npm's semantics. A prerelease matches only
+ * an exact range.
+ * @param {string} version a plain `x.y.z` version, with an optional prerelease suffix
+ * @param {string} range the range from a `package.json`
+ * @returns {boolean}
+ * @throws {Error} on a version or range of another form, so a new form fails loudly instead of
+ *   being misread
  */
-export const FAMILIES = {
-  "unity-asset-reader": ["core", "texture", "node"],
-  [DECODER]: ["decoder"],
-};
-
-/**
- * Splits a release tag into its family and version.
- * @param {string} tag the pushed git tag, for example `unity-asset-reader@1.0.0`
- * @returns {{ family: string, version: string }}
- * @throws {Error} when the tag is not `<family>@<version>` of a known family
- */
-export function parseTag(tag) {
-  const at = tag.lastIndexOf("@");
-  const family = tag.slice(0, at);
-  const version = tag.slice(at + 1);
-  if (at <= 0 || !Object.hasOwn(FAMILIES, family) || !/^\d+\.\d+\.\d+\S*$/.test(version)) {
-    const known = Object.keys(FAMILIES).map((f) => `${f}@<version>`).join(" or ");
-    throw new Error(`tag "${tag}" is not a release tag (expected ${known})`);
-  }
-  return { family, version };
+export function satisfies(version, range) {
+  const v = VERSION.exec(version);
+  if (!v) throw new Error(`"${version}" is not an x.y.z version`);
+  if (VERSION.test(range)) return range === version;
+  if (range === "*") return v[4] === undefined;
+  const caret = /^\^(\d+)(?:\.(\d+)(?:\.(\d+))?)?$/.exec(range);
+  if (!caret) throw new Error(`unsupported range "${range}" (use *, x.y.z or ^x[.y[.z]])`);
+  if (v[4] !== undefined) return false;
+  const have = [Number(v[1]), Number(v[2]), Number(v[3])];
+  const given = caret.filter((part, i) => i > 0 && part !== undefined).length;
+  const want = [Number(caret[1]), Number(caret[2] ?? 0), Number(caret[3] ?? 0)];
+  // Lower bound: at least `want`.
+  const cmp = have.findIndex((part, i) => part !== want[i]);
+  if (cmp !== -1 && have[cmp] < want[cmp]) return false;
+  // Upper bound: the leftmost non-zero part (or the last one given) stays the same.
+  let fixed = want.findIndex((part) => part !== 0);
+  if (fixed === -1 || fixed >= given) fixed = given - 1;
+  return have.slice(0, fixed + 1).every((part, i) => part === want[i]);
 }
 
 /**
- * Checks that every package of a family carries the same version and, when a tag version is
- * given, that it is that version.
- * @param {{ name: string, version: string }[]} manifests the family's `package.json` contents
- * @param {string} [tagVersion] the version from the pushed tag; omitted for a dry run off a branch
- * @returns {string} the shared version
- * @throws {Error} naming each package's version when they differ, or the tag and the version
- */
-export function releaseVersion(manifests, tagVersion) {
-  const first = manifests[0];
-  if (!first) throw new Error("no packages to release");
-  const version = first.version;
-  if (manifests.some((pkg) => pkg.version !== version)) {
-    const list = manifests.map((pkg) => `${pkg.name}@${pkg.version}`).join(", ");
-    throw new Error(`packages do not share one version: ${list}`);
-  }
-  if (tagVersion !== undefined && tagVersion !== version) {
-    throw new Error(`tag version ${tagVersion} does not match the packages' version ${version}`);
-  }
-  return version;
-}
-
-/**
- * Checks that the texture package's decoder range is satisfied by a version already on npm.
- * @param {{ name: string, dependencies?: Record<string, string> }} texture its `package.json`
+ * The packages to release, in publish order, after the dependency check.
+ * @param {{ name: string, version: string, dependencies?: Record<string, string>,
+ *   peerDependencies?: Record<string, string> }[]} head the manifests being released, in
+ *   {@link PACKAGE_DIRS} order
+ * @param {({ version: string } | null)[] | undefined} base the same packages' manifests at the
+ *   base commit (`null` for a package that did not exist there), or `undefined` to take every
+ *   package whose version is not on npm (the manual dispatch)
  * @param {(spec: string) => string[]} view the versions npm has for a `name@range` spec
- * @throws {Error} when the range is missing or nothing on npm satisfies it
+ * @returns {{ name: string, version: string }[]} empty when nothing is to be released
+ * @throws {Error} when a package's range on another package of this repo is satisfied neither
+ *   by npm nor by a package released earlier in the same run
  */
-export function checkDecoderPublished(texture, view) {
-  const range = texture.dependencies?.[DECODER];
-  if (!range) throw new Error(`${texture.name} has no dependency on ${DECODER}`);
-  if (view(`${DECODER}@${range}`).length === 0) {
-    throw new Error(
-      `${texture.name} needs ${DECODER}@${range}, which is not on npm yet; ` +
-        `release ${DECODER} first (RELEASING.md)`,
-    );
+export function planRelease(head, base, view) {
+  if (base !== undefined && base.length !== head.length) {
+    throw new Error(`${base.length} base manifests for ${head.length} packages`);
   }
+  const changed = head.filter((pkg, i) => base === undefined || base[i]?.version !== pkg.version);
+  const release = changed.filter(
+    ({ name, version }) => !view(`${name}@${version}`).includes(version),
+  );
+  const names = new Set(head.map((pkg) => pkg.name));
+  release.forEach((pkg, i) => {
+    for (const field of DEPENDENCY_FIELDS) {
+      for (const [dep, range] of Object.entries(pkg[field] ?? {})) {
+        if (!names.has(dep)) continue;
+        const earlier = release.slice(0, i).find((p) => p.name === dep);
+        if (earlier && satisfies(earlier.version, range)) continue;
+        if (view(`${dep}@${range}`).length > 0) continue;
+        const onNpm = view(`${dep}@*`);
+        const inRun = release.find((p) => p.name === dep);
+        throw new Error(
+          `${pkg.name}@${pkg.version} needs ${dep}@${range} (${field}), but npm has ` +
+            `${onNpm.length ? onNpm.join(", ") : "no version of it"}` +
+            `${inRun ? ` and this run releases ${inRun.name}@${inRun.version}` : ""}; ` +
+            `release a matching ${dep} first (RELEASING.md)`,
+        );
+      }
+    }
+  });
+  return release.map(({ name, version }) => ({ name, version }));
 }
 
 /**
  * The versions npm has for a spec, through `npm view`.
- * @param {string} spec `name@range`
- * @returns {string[]} empty when nothing matches
+ * @param {string} spec `name@range` or `name@version`
+ * @returns {string[]} empty when nothing matches or the name is not on npm
  * @throws {Error} when npm fails for another reason than "no match" (network, registry)
  */
 export function npmView(spec) {
@@ -110,59 +125,56 @@ export function npmView(spec) {
 }
 
 /**
- * Reads a family's manifests from a checkout.
+ * Reads the published packages' manifests from the working tree.
  * @param {string} root the repository root
- * @param {string} family a key of {@link FAMILIES}
- * @returns {{ name: string, version: string, dependencies?: Record<string, string> }[]} in
- *   publish order
+ * @returns {{ name: string, version: string }[]} in {@link PACKAGE_DIRS} order
  */
-export function readManifests(root, family) {
-  return FAMILIES[family].map((dir) =>
+export function readManifests(root) {
+  return PACKAGE_DIRS.map((dir) =>
     JSON.parse(readFileSync(join(root, "packages", dir, "package.json"), "utf8")),
   );
 }
 
 /**
- * The whole guard: which family a tag (or, off a branch, the `family` option) releases, at which
- * version, and which packages.
- * @param {string} root the repository root
- * @param {{ tag?: string, family?: string }} ref the pushed tag, the family chosen for a dry run,
- *   or both (a dispatch on a tag), which must then agree
- * @param {(spec: string) => string[]} [view] npm lookup, {@link npmView} by default
- * @returns {{ family: string, version: string, packages: string[] }}
- * @throws {Error} on an unknown or disagreeing family, a version mismatch, or a decoder range
- *   that npm cannot satisfy yet
+ * Reads the published packages' manifests as they were at a commit.
+ * @param {string} root the repository root (a git checkout that has the commit)
+ * @param {string} commit the base commit, for example the push's `github.event.before`
+ * @returns {({ name: string, version: string } | null)[]} in {@link PACKAGE_DIRS} order,
+ *   `null` for a package that did not exist at the commit
+ * @throws {Error} when the commit is all zeros (a newly created branch) or not in the checkout
  */
-export function checkRelease(root, { tag, family }, view = npmView) {
-  const parsed = tag === undefined ? undefined : parseTag(tag);
-  if (family !== undefined && !Object.hasOwn(FAMILIES, family)) {
-    throw new Error(`unknown release family "${family}" (${Object.keys(FAMILIES).join(", ")})`);
+export function readManifestsAt(root, commit) {
+  const git = (...args) =>
+    execFileSync("git", ["-C", root, ...args], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+  try {
+    if (/^0+$/.test(commit)) throw new Error("no base commit");
+    git("cat-file", "-e", `${commit}^{commit}`);
+  } catch {
+    throw new Error(
+      `base commit "${commit}" is not in this checkout; release by hand with the ` +
+        `workflow_dispatch run (RELEASING.md)`,
+    );
   }
-  if (parsed && family !== undefined && parsed.family !== family) {
-    throw new Error(`tag ${tag} releases ${parsed.family}, not ${family}`);
-  }
-  const chosen = parsed?.family ?? family;
-  if (chosen === undefined) throw new Error("give a release tag or --family <name>");
-  const manifests = readManifests(root, chosen);
-  const version = releaseVersion(manifests, parsed?.version);
-  if (chosen !== DECODER) {
-    const texture = manifests.find((pkg) => pkg.name === "unity-asset-reader-texture");
-    if (!texture) throw new Error(`${chosen} has no unity-asset-reader-texture`);
-    checkDecoderPublished(texture, view);
-  }
-  return { family: chosen, version, packages: manifests.map((pkg) => pkg.name) };
+  const files = git("ls-tree", "--name-only", commit, "packages/").split("\n");
+  return PACKAGE_DIRS.map((dir) =>
+    files.includes(`packages/${dir}`)
+      ? JSON.parse(git("show", `${commit}:packages/${dir}/package.json`))
+      : null,
+  );
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const root = join(import.meta.dirname, "..");
-  const args = process.argv.slice(2);
-  const flag = args.indexOf("--family");
-  const family = flag === -1 ? undefined : args.splice(flag, 2)[1];
-  const tag = args[0] || undefined;
+  const [mode, commit] = process.argv.slice(2);
   try {
-    const release = checkRelease(root, { tag, family: family || undefined });
-    const { version, packages } = release;
-    console.log(`family=${release.family}\nversion=${version}\npackages=${packages.join(" ")}`);
+    let base;
+    if (mode === "--base" && commit) base = readManifestsAt(root, commit);
+    else if (mode !== "--unpublished") throw new Error("give --base <commit> or --unpublished");
+    const release = planRelease(readManifests(root), base, npmView);
+    console.log(`packages=${release.map((p) => `${p.name}@${p.version}`).join(" ")}`);
   } catch (err) {
     console.error(`✗ ${err instanceof Error ? err.message : err}`);
     process.exit(1);
