@@ -22,7 +22,7 @@ Save this as `extract.mjs` and run `node extract.mjs path/to/bundle-or-folder`:
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { loadPath } from "unity-asset-reader-node";
-import { initTexture, decodeTexture2D } from "unity-asset-reader-texture";
+import { isImage, decodeImage } from "unity-asset-reader-texture";
 
 /** Write `data` to `out/<path>`, creating folders. */
 function save(path, data) {
@@ -44,7 +44,6 @@ const env = loadPath(process.argv[2]);
 for (const { path, data } of env.files) save(join("files", path), data);
 
 // 2. Every asset, as JSON.
-await initTexture(); // loads the WASM texture decoder; Node.js needs no options
 for (const asset of env.assets()) {
   const name = `${asset.typeName}-${asset.pathId}`;
   console.log(name, asset.name, asset.path ?? ""); // "Texture2D-1234" "icon" "assets/ui/icon.png"
@@ -54,12 +53,13 @@ for (const asset of env.assets()) {
     console.warn(`${name}: ${error.message}`); // e.g. a Mesh in a bundle built without type trees
   }
 
-  // 3. Textures as raw RGBA, top row first.
-  if (asset.type === "Texture2D") {
-    const { data, width, height } = await decodeTexture2D(asset.reader.read());
-    save(join("textures", `${name}-${width}x${height}.rgba`), data);
+  // 3. Textures and sprites as raw RGBA, top row first. The first call loads the WASM
+  //    texture decoder; Node.js needs no options.
+  if (isImage(asset)) {
+    const { rgba, width, height } = await decodeImage(asset);
+    save(join("images", `${name}-${width}x${height}.rgba`), rgba);
     // To get a PNG, hand the pixels to an image library, e.g. sharp:
-    // await sharp(data, { raw: { width, height, channels: 4 } }).png().toFile(`${name}.png`);
+    // await sharp(rgba, { raw: { width, height, channels: 4 } }).png().toFile(`${name}.png`);
   }
 }
 console.log(`${env.files.length} files, ${env.objects.length} objects -> out/`);
@@ -75,10 +75,13 @@ What happens here:
 - `asset.data` is read when you first use it. For the common classes it comes from a hand-written
   reader, which also works without type trees; `asset.type` is then the class name, checking it
   types `data`, and its fields have TypeScript-style names (`width`, `format`, `text`; each one's
-  JSDoc names its Unity field, `m_Width`, ...). `decodeTexture2D` takes the low-level
-  `asset.reader.read()`, which keeps Unity's names. Any other class (`asset.type === "Other"`,
-  `asset.typeName === "Mesh"`) is read through its type tree, which includes your own scripts'
-  fields when the bundle was built with type trees (the Unity default).
+  JSDoc names its Unity field, `m_Width`, ...). The low-level `asset.reader.read()` keeps Unity's
+  names. Any other class (`asset.type === "Other"`, `asset.typeName === "Mesh"`) is read through
+  its type tree, which includes your own scripts' fields when the bundle was built with type trees
+  (the Unity default).
+- `isImage(asset)` is true for a Texture2D or a Sprite. `decodeImage(asset)` gives its pixels
+  (a Sprite cut out of its texture or atlas) together with `imageInfo(asset)`: size, format,
+  mip count, color space and the rest, which `imageInfo` also gives on its own, without decoding.
 - 64-bit integers, such as path ids, are always `bigint`, so JSON needs the replacer.
 
 Without Node.js file access (a server that received an upload, say), use `load()` directly, or
@@ -103,17 +106,17 @@ The core of it, in a module Worker:
 
 ```js
 import { load } from "unity-asset-reader";
-import { initTexture, decodeTexture2D } from "unity-asset-reader-texture";
+import { images } from "unity-asset-reader-texture";
 
 // The WASM files, copied with `npx texture2ddecoder-copy-wasm public/wasm`, or from a CDN.
-const ready = initTexture({ wasmPath: new URL("/wasm/", self.location.href).href });
+// images() loads them on first use.
+const wasmPath = new URL("/wasm/", self.location.href).href;
 
-self.onmessage = async ({ data: { name, bytes } }) => {
-  await ready;
-  const env = load({ name, data: bytes }); // bytes: the ArrayBuffer the page transferred
-  for (const texture of env.assets("Texture2D")) {
-    const { data, width, height } = await decodeTexture2D(texture.reader.read());
-    self.postMessage({ name: texture.name, width, height, rgba: data.buffer }, [data.buffer]);
+self.onmessage = async ({ data: { file, bytes } }) => {
+  const env = load({ name: file, data: bytes }); // bytes: the ArrayBuffer the page transferred
+  // Every Texture2D and Sprite; one that fails to decode is left out.
+  for await (const { name, rgba, width, height } of images(env, { wasmPath, onError: "skip" })) {
+    self.postMessage({ name, width, height, rgba: rgba.buffer }, [rgba.buffer]);
   }
 };
 ```

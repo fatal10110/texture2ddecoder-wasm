@@ -23,8 +23,72 @@ npm install unity-asset-reader unity-asset-reader-texture
 
 ## Usage
 
+Images are free functions over the assets of `env.assets()`:
+
 ```ts
-import { load, ClassID, type ObjectReader } from "unity-asset-reader";
+import { load } from "unity-asset-reader";
+import { isImage, imageInfo, decodeImage, images } from "unity-asset-reader-texture";
+
+const env = load([{ name: "ui.bundle", data: bundleBytes }]);
+
+for (const asset of env.assets()) {
+  if (isImage(asset)) {                     // a Texture2D or Sprite asset
+    const info = imageInfo(asset);          // sync metadata, no WASM
+    const image = await decodeImage(asset); // info + { rgba, width, height }
+  }
+}
+for await (const image of images(env)) {    // every Texture2D and Sprite, decoded
+  console.log(image.kind, image.name, image.width, image.height, image.formatName);
+}
+```
+
+- **`isImage(asset)`** is a type guard: `true` for a `Texture2D` or `Sprite` asset.
+- **`imageInfo(asset)`** describes the image without decoding it: `kind`, `name`, `path`,
+  `pathId`, `file`, `width`, `height`, `format` (the `TextureFormat` value), `formatName`
+  (`"DXT5"`), `compression` (`"none"`, `"bc"`, `"etc"`, `"etc2"`, `"eac"`, `"pvrtc"`, `"atc"`,
+  `"astc"`, `"crunch"`, or `"unknown"` for a format number `TextureFormat` does not name),
+  `mipCount`, `readable`, `colorSpace` (`"srgb"` or `"linear"`), `filterMode`, `wrapMode`
+  (`{ u, v, w }`), `platform` (the `BuildTarget`), `encodedSize` and `streamed` (the data is in
+  a `.resS`). It is synchronous, needs no WASM, and reads no image data, so a `.resS` that is not
+  loaded does not stop it. Each field's JSDoc names the Unity field it comes from.
+- For a **Sprite**, `width` and `height` are the size of the cut-out image, the encoding fields
+  are those of the texture it is cut from, and `info.sprite` adds `rect`, `textureRect`, `pivot`,
+  `border`, `pixelsPerUnit`, `packed`, `packingMode` (`"tight"` or `"rectangle"`), `rotation`
+  (a `SpritePackingRotation`), `atlas` (the SpriteAtlas' name, when it is packed into one that is
+  loaded) and `texture` (the texture's own `imageInfo`). `info.kind === "Sprite"` narrows to it.
+- **`decodeImage(asset, options?)`** returns `imageInfo(asset)` plus `rgba`: RGBA8 pixels, top
+  row first, `width * height * 4` bytes. A Sprite is cut out of its texture or atlas, as
+  `decodeSprite` does.
+- **`images(env, { onError })`** decodes every Texture2D and Sprite, in `env.assets()` order. An
+  image that fails to decode throws (`onError: "throw"`, the default) or is left out
+  (`onError: "skip"`). It gives the event loop a turn between images, so a loop on a page's main
+  thread keeps the page responsive.
+
+`decodeImage` and `images` load the WASM decoder on first use. In Node.js that needs nothing. A
+browser has to say where the WASM files are: pass `{ wasmPath }` to the first call, or call
+`initTexture({ wasmPath })` once before (see "Where the WASM files come from").
+
+In a browser, put the pixels on a canvas:
+
+```js
+const { rgba, width, height } = await decodeImage(asset, { wasmPath });
+const imageData = new ImageData(new Uint8ClampedArray(rgba.buffer, rgba.byteOffset, rgba.length), width, height);
+canvas.getContext("2d").putImageData(imageData, 0, 0);
+```
+
+In Node.js, hand the raw RGBA to the image library of your choice. For example, with
+[`sharp`](https://www.npmjs.com/package/sharp):
+`sharp(rgba, { raw: { width, height, channels: 4 } }).png().toFile("out.png")`. This package does
+not encode images itself.
+
+### The low-level API
+
+`decodeTexture2D`, `decodeSprite` and `initTexture` work on the objects of `env.objects`
+directly. They are what `decodeImage` uses, and they do not load the WASM themselves: call
+`initTexture()` once, and wait for it, before the first decode.
+
+```ts
+import { load, ClassID } from "unity-asset-reader";
 import { initTexture, decodeTexture2D, decodeSprite } from "unity-asset-reader-texture";
 
 await initTexture(); // Node.js: no options. Browsers: see "Where the WASM files come from".
@@ -40,24 +104,15 @@ for (const obj of env.objects) {
 }
 ```
 
-In a browser, put the pixels on a canvas:
-
-```js
-const image = new ImageData(new Uint8ClampedArray(data.buffer, data.byteOffset, data.length), width, height);
-canvas.getContext("2d").putImageData(image, 0, 0);
-```
-
-In Node.js, hand the raw RGBA to the image library of your choice. For example, with
-[`sharp`](https://www.npmjs.com/package/sharp):
-`sharp(data, { raw: { width, height, channels: 4 } }).png().toFile("out.png")`. This package does
-not encode images itself.
-
 ### Where the WASM files come from
 
-`initTexture()` loads `texture2ddecoder.js` and `texture2ddecoder.wasm`. Call it once and wait
-for it before the first decode. Every format needs it, the plain ones too.
+`initTexture()` loads `texture2ddecoder.js` and `texture2ddecoder.wasm`. `decodeImage` and
+`images` call it on first use with the `wasmPath` they were given; `decodeTexture2D` and
+`decodeSprite` need it called, and waited for, before the first decode. Every format needs it,
+the plain ones too.
 
-- **Node.js:** `await initTexture()`. The files are found inside the installed package.
+- **Node.js:** nothing to do, or `await initTexture()`. The files are found inside the installed
+  package.
 - **Browser, self-hosted:** copy the files into your static folder, then pass their URL:
 
   ```bash
@@ -84,14 +139,15 @@ keep it out of the Next.js bundle.
 
 ### Sprites
 
-`decodeSprite(obj, env, options?)` takes the Sprite's `ObjectReader` and the `env` that loaded it,
-because its pixels are in another object. It finds the texture through the Sprite's pointers,
-through its `SpriteAtlas` when that atlas is loaded. It cuts the sprite's rectangle out, and it
+A sprite's pixels are in another object. `decodeImage` finds it through the Sprite asset's
+`env`; `decodeSprite(obj, env, options?)` takes the Sprite's `ObjectReader` and the `env` that
+loaded it. Both find the texture through the Sprite's pointers, through its `SpriteAtlas` when
+that atlas is loaded. It cuts the sprite's rectangle out, and it
 undoes the packer's flip or rotation. So pass the bundles holding the texture and the atlas to
 the same `load()`.
 
-With `{ tightMesh: true }`, pixels outside a tight-packed sprite's mesh become transparent, as
-AssetStudio does. The default returns the whole rectangle.
+With `decodeSprite`'s `{ tightMesh: true }`, pixels outside a tight-packed sprite's mesh become
+transparent, as AssetStudio does. The default, and `decodeImage`, return the whole rectangle.
 
 ## Texture formats
 
@@ -164,7 +220,16 @@ Every export. Each one has full JSDoc (parameters, return values, what it throws
 
 | Export | What |
 |---|---|
-| `initTexture(options?)` | Load the WASM decoder. Call it once, and await it, before decoding |
+| `isImage(asset)` | Type guard: whether an asset is a `Texture2D` or `Sprite` (an `ImageAsset`) |
+| `imageInfo(asset)` | An image asset's `ImageInfo`, sync, no WASM, no image data read |
+| `decodeImage(asset, options?)` | An image asset decoded: its `ImageInfo` plus `rgba`, top row first. Loads the WASM on first use |
+| `images(env, options?)` | Async generator: every `Texture2D` and `Sprite` of `env`, decoded |
+| `ImageAsset` | `Asset<"Texture2D" \| "Sprite">` |
+| `ImageInfo`, `TextureImageInfo`, `SpriteImageInfo`, `SpriteInfo` | What `imageInfo` returns; `kind` tells the two apart |
+| `ImageCompression` | `compression`'s values |
+| `DecodedImage` | `ImageInfo & { rgba }` |
+| `DecodeImageOptions`, `ImagesOptions` | `{ wasmPath? }`, and `{ wasmPath?, onError? }` |
+| `initTexture(options?)` | Load the WASM decoder. Optional before `decodeImage` and `images`; call it once, and await it, before `decodeTexture2D` and `decodeSprite` |
 | `InitTextureOptions` | `{ wasmPath?, locateFile? }`, passed to `texture2ddecoder-wasm`'s `initialize` |
 | `decodeTexture2D(texture)` | A `Texture2D`, as `obj.read()` returns it, to RGBA, top row first |
 | `decodeSprite(obj, env, options?)` | A `Sprite` to RGBA, top row first, cut out of its texture or atlas |

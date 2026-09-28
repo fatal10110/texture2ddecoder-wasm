@@ -389,7 +389,7 @@ export function load(inputs: LoadSource | readonly LoadSource[]): Env {
     const { objects, sourceOf } = indexed();
     const assetOf = new Map<ObjectReader, Asset>();
     const assets = objects.map((object) => {
-      const asset = makeAsset(object, sourceOf.get(object)!.source, containersIndexed);
+      const asset = makeAsset(object, sourceOf.get(object)!.source, containersIndexed, env);
       assetOf.set(object, asset);
       return asset;
     });

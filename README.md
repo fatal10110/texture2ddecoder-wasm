@@ -49,9 +49,9 @@ so you never add it next to `-texture` yourself.
 ### Why they are separate
 
 - **Only textures need WASM.** The parser is about 64 KB gzipped. Decoding textures adds about
-  19 KB of JavaScript plus a 147 KB WASM module (50 KB gzipped), which has to be loaded and
-  initialized first (`await initTexture()`). An app that only reads text or script data never
-  downloads any of that.
+  19 KB of JavaScript plus a 147 KB WASM module (50 KB gzipped), which is loaded and initialized
+  before the first decode (by `decodeImage`, or `await initTexture()`). An app that only reads
+  text or script data never downloads any of that.
 - **Only disk access needs Node.js.** Reading files needs `fs`, which a browser bundle cannot
   include. Keeping it in `unity-asset-reader-node` means the parser and the texture package never
   import Node.js APIs and bundle cleanly for the browser.
@@ -72,16 +72,14 @@ npm install unity-asset-reader unity-asset-reader-texture unity-asset-reader-nod
 ```
 
 ```js
-import { initTexture, decodeTexture2D } from "unity-asset-reader-texture";
+import { images } from "unity-asset-reader-texture";
 import { loadPath } from "unity-asset-reader-node";
-
-await initTexture(); // no options: the WASM is read from the installed decoder package
 
 const env = loadPath("Build/StreamingAssets/bundles"); // a file, or a folder read recursively
 env.files; // every unpacked file: [{ path: "CAB-…", data }, { path: "CAB-….resS", data }]
-for (const asset of env.assets("Texture2D")) {
-  const { data, width, height } = await decodeTexture2D(asset.reader.read()); // RGBA
-  console.log(asset.path ?? asset.name, width, height); // "assets/ui/icon.png" 256 256
+// Every Texture2D and Sprite, decoded. The WASM decoder loads on first use.
+for await (const { rgba, width, height, path, name, formatName } of images(env)) {
+  console.log(path ?? name, width, height, formatName); // "assets/ui/icon.png" 256 256 "DXT5"
 }
 ```
 
@@ -89,7 +87,7 @@ The bytes don't have to come from disk: when they come from an upload or a downl
 `unity-asset-reader-node` and call `load(bytes)` (`bytes` is a `Uint8Array` or an `ArrayBuffer`;
 a `Buffer` is a `Uint8Array` too), or `await open(url)` to fetch them. No package here writes image files; to save a PNG, hand the
 RGBA to an image library, for example
-`sharp(data, { raw: { width, height, channels: 4 } }).png().toFile("out.png")`.
+`sharp(rgba, { raw: { width, height, channels: 4 } }).png().toFile("out.png")`.
 
 ### Browser
 
@@ -99,7 +97,7 @@ npm install unity-asset-reader unity-asset-reader-texture
 
 ```js
 import { open } from "unity-asset-reader";
-import { initTexture, decodeTexture2D } from "unity-asset-reader-texture";
+import { initTexture, isImage, imageInfo, decodeImage } from "unity-asset-reader-texture";
 
 // A browser has no package folder to read from, so tell it where the two WASM files are:
 // a CDN, as here, or your own static folder (`npx texture2ddecoder-copy-wasm public/wasm`).
@@ -107,8 +105,9 @@ await initTexture({ wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-was
 
 const env = await open("a.bundle"); // fetches it; a File from an <input> works too
 const icon = env.get("Assets/UI/Icon.png"); // an asset by its path in the Unity project
-if (icon?.type === "Texture2D") {
-  const { data, width, height } = await decodeTexture2D(icon.data); // RGBA
+if (icon && isImage(icon)) { // a Texture2D or a Sprite
+  const { formatName, mipCount } = imageInfo(icon); // metadata, no decoding
+  const { rgba, width, height } = await decodeImage(icon); // RGBA, top row first
 }
 ```
 

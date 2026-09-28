@@ -136,7 +136,8 @@ const CRUNCHED: ReadonlyMap<number, number> = new Map<number, number>([
   [TextureFormat.ETC2_RGBA8Crunched, TextureFormat.ETC2_RGBA8],
 ]);
 
-const FORMAT_NAMES: ReadonlyMap<number, string> = new Map(
+/** `TextureFormat` value -> its name. Internal: for `imageInfo` too. */
+export const FORMAT_NAMES: ReadonlyMap<number, string> = new Map(
   Object.entries(TextureFormat).map(([name, value]) => [value, name]),
 );
 
@@ -162,6 +163,24 @@ let initialized = false;
 export async function initTexture(options?: InitTextureOptions): Promise<void> {
   await initialize(options);
   initialized = true;
+}
+
+/** The {@link initTexture} call in flight, shared by concurrent auto-inits. */
+let initializing: Promise<void> | undefined;
+
+/**
+ * {@link initTexture} with `options`, unless it has already finished: the
+ * first decode's auto-init. Concurrent calls share one load; a failed one is
+ * not kept, so the next call tries again. Internal: for `decodeImage`.
+ *
+ * @throws what {@link initTexture} throws
+ */
+export async function ensureTexture(options?: InitTextureOptions): Promise<void> {
+  if (initialized) return;
+  initializing ??= initTexture(options).finally(() => {
+    initializing = undefined;
+  });
+  await initializing;
 }
 
 /**
