@@ -200,9 +200,9 @@ a texture. Its Worker is [`examples/cdn-worker.js`](examples/cdn-worker.js).
   await initTexture({ wasmPath: `${CDN}/texture2ddecoder-wasm@1/wasm` });
   ```
 
-  Pin exact versions in production. Keep `unity-asset-reader` and `unity-asset-reader-texture`
-  on the same version (`@1.0.0`): they are released together. `texture2ddecoder-wasm` has its
-  own version line; use one the texture package's range allows (`@1.2.3` or later).
+  Pin exact versions in production. Each package has its own version: pick a
+  `unity-asset-reader` that `unity-asset-reader-texture`'s peer range allows (the same major),
+  and a `texture2ddecoder-wasm` that its dependency range allows (`@1.2.3` or later).
 - **In a Worker, `texture2ddecoder-wasm` must be 1.2.3 or later.** 1.2.2 refuses to initialize in
   a Worker ([#149](https://github.com/fatal10110/texture2ddecoder-wasm/issues/149)).
 - **Try it on this repo's builds** with `node examples/serve.mjs`, a local stand-in for jsDelivr,

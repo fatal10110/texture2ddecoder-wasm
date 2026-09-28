@@ -1,6 +1,6 @@
 # AGENTS.md
 
-npm-workspaces monorepo (repo will be renamed to `unity-asset-reader`): a shared parser core, feature packages on top, and the texture decoder as a standalone package. The three reader packages ship under one version, released together; `texture2ddecoder-wasm` keeps its own version line (plan D7). The decoder lives in `packages/decoder/`.
+npm-workspaces monorepo (repo will be renamed to `unity-asset-reader`): a shared parser core, feature packages on top, and the texture decoder as a standalone package. Every package has its own version and is published when that version changes on `main` (plan D7/D8, [RELEASING.md](RELEASING.md)). The decoder lives in `packages/decoder/`.
 
 | Package | Path | State | What |
 |---|---|---|---|

@@ -61,9 +61,9 @@ so you never add it next to `-texture` yourself.
   its own before the reader existed, and it depends on nothing else here.
 - **There is one copy of the parser.** `unity-asset-reader-texture` and `-node` take
   `unity-asset-reader` as a peer dependency, so they share the copy your app installs instead of
-  bringing their own. The three `unity-asset-reader*` packages are released together, on one
-  version number. `texture2ddecoder-wasm` has its own version line; the texture package's range
-  on it says which versions work.
+  bringing their own. Each package has its own version; the feature packages' ranges on
+  `unity-asset-reader` and the texture package's range on `texture2ddecoder-wasm` say which
+  versions work together.
 
 ## Usage
 
