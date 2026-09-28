@@ -7,6 +7,11 @@ platform dependencies. Only texture decoding uses a small WASM module.
 This repository holds four npm packages. It will be renamed from `texture2ddecoder-wasm` to
 `unity-asset-reader`.
 
+**Status:** the packages are not on npm yet; their first release will be 1.0.0. The decoder was
+published as `texture2ddecoder-wasm` up to 1.2.2; its
+[README](packages/decoder/README.md#migrating-from-texture2ddecoder-wasm) says how to move to the
+new name.
+
 ## Which packages do I need?
 
 Most apps need one or two. Pick the row that matches what you do:
@@ -57,18 +62,22 @@ it, so you never add it next to `-texture` yourself.
   `unity-asset-reader` as a peer dependency, so they share the copy your app installs instead of
   bringing their own. All four packages are released together, on one version number.
 
-**Status:** the packages are not on npm yet; their first release will be 1.0.0. The decoder was
-published as `texture2ddecoder-wasm` up to 1.2.2; its
-[README](packages/decoder/README.md#migrating-from-texture2ddecoder-wasm) says how to move to the
-new name.
+## Usage
+
+### Node.js
+
+```bash
+npm install unity-asset-reader unity-asset-reader-texture unity-asset-reader-node
+```
 
 ```js
-import { load, ClassID } from "unity-asset-reader";
+import { ClassID } from "unity-asset-reader";
 import { initTexture, decodeTexture2D } from "unity-asset-reader-texture";
+import { loadPath } from "unity-asset-reader-node";
 
-await initTexture({ wasmPath: "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1/wasm" });
+await initTexture(); // no options: the WASM is read from the installed decoder package
 
-const env = load([{ name: "a.bundle", data: bytes }]); // bytes: Uint8Array
+const env = loadPath("Build/StreamingAssets/bundles"); // a file, or a folder read recursively
 env.files; // every unpacked file: [{ path: "CAB-…", data }, { path: "CAB-….resS", data }]
 for (const obj of env.objects) {
   if (obj.type === ClassID.Texture2D) {
@@ -76,6 +85,39 @@ for (const obj of env.objects) {
   }
 }
 ```
+
+The bytes don't have to come from disk: when they come from an upload or a download, skip
+`unity-asset-reader-node` and call `load([{ name: "a.bundle", data: bytes }])` (`bytes` is a
+`Uint8Array`; a `Buffer` is one too). No package here writes image files; to save a PNG, hand the
+RGBA to an image library, for example
+`sharp(data, { raw: { width, height, channels: 4 } }).png().toFile("out.png")`.
+
+### Browser
+
+```bash
+npm install unity-asset-reader unity-asset-reader-texture
+```
+
+```js
+import { load, ClassID } from "unity-asset-reader";
+import { initTexture, decodeTexture2D } from "unity-asset-reader-texture";
+
+// A browser has no package folder to read from, so tell it where the two WASM files are:
+// a CDN, as here, or your own static folder (`npx texture2ddecoder-copy-wasm public/wasm`).
+await initTexture({ wasmPath: "https://cdn.jsdelivr.net/npm/unity-asset-reader-decoder@1/wasm" });
+
+const bytes = new Uint8Array(await (await fetch("a.bundle")).arrayBuffer());
+const env = load([{ name: "a.bundle", data: bytes }]);
+for (const obj of env.objects) {
+  if (obj.type === ClassID.Texture2D) {
+    const { data, width, height } = await decodeTexture2D(obj.read()); // RGBA
+  }
+}
+```
+
+Parsing is synchronous, so a big bundle blocks the page while it loads; run it in a Web Worker.
+[`examples/cdn.html`](examples/cdn.html) does that, and the [Bundler Guide](BUNDLER_GUIDE.md) has
+the Vite and Next.js setups.
 
 ## Documentation
 
