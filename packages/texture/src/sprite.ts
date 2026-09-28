@@ -14,6 +14,7 @@ import type {
   ObjectReader,
   PPtr,
   PPtrResolution,
+  Rectf,
   Sprite,
   SpriteAtlas,
   SpriteRenderData,
@@ -126,13 +127,41 @@ export async function decodeSprite(
 }
 
 /**
- * Upstream `GetImage`'s lookup: the sprite's atlas entry when its atlas is
- * loaded, its own `m_RD` otherwise; then the texture either names. Internal:
- * exported for the tests, not from the package.
+ * Upstream `GetImage`'s lookup, with the texture read: see
+ * {@link locateSprite}. Internal: exported for the tests, not from the package.
  *
  * @throws what {@link decodeSprite} throws, but for decoding
  */
 export function findSpriteSource(obj: ObjectReader, env: Env): SpriteSource {
+  const { sprite, rect, texture, alphaTexture } = locateSprite(obj, env);
+  refuseAlphaTexture(alphaTexture, `sprite "${sprite.m_Name}" (path id ${obj.pathId})`);
+  return { sprite, rect, texture: texture.read<Texture2DData>() };
+}
+
+/** A sprite, where its pixels are, and the objects holding them. */
+export interface SpriteLocation {
+  sprite: Sprite;
+  rect: SpriteRect;
+  /** The Texture2D its pixels are in, not read. */
+  texture: ObjectReader;
+  /** The texture holding its alpha (ETC1 split alpha), when `rect` names one. */
+  alphaTexture: PPtr | undefined;
+  /** The atlas it was found through; `undefined` when `rect` is its own `m_RD`. */
+  atlas: SpriteAtlas | undefined;
+}
+
+/**
+ * Upstream `GetImage`'s lookup: the sprite's atlas entry when its atlas is
+ * loaded, its own `m_RD` otherwise; then the texture either names, found but
+ * not read, so its image data (maybe in a `.resS`) is not needed. An alpha
+ * texture is not refused here but by {@link findSpriteSource}: describing
+ * such a sprite is fine, decoding it is not. Internal: exported for
+ * `imageInfo`, not from the package.
+ *
+ * @throws what {@link decodeSprite} throws, but for decoding, for reading the
+ *   texture and for an alpha texture
+ */
+export function locateSprite(obj: ObjectReader, env: Env): SpriteLocation {
   if (obj?.type !== ClassID.Sprite) {
     throw new TypeError(
       `decodeSprite: expected the ObjectReader of a Sprite (class ${ClassID.Sprite}), ` +
@@ -155,9 +184,8 @@ export function findSpriteSource(obj: ObjectReader, env: Env): SpriteSource {
           "for its m_RenderDataKey",
       );
     }
-    refuseAlphaTexture(entry.alphaTexture, what);
-    const texture = readTexture(env, entry.texture, atlasObj, `${what}'s atlas texture`);
-    return { sprite, rect: entry, texture };
+    const texture = findTexture(env, entry.texture, atlasObj, `${what}'s atlas texture`);
+    return { sprite, rect: entry, texture, alphaTexture: entry.alphaTexture, atlas: data };
   }
 
   // Upstream falls back to m_RD for any atlas it cannot get. When that has
@@ -167,15 +195,14 @@ export function findSpriteSource(obj: ObjectReader, env: Env): SpriteSource {
   if (rd.texture.m_PathID === 0n && atlasPointer && atlas && atlas.status !== "null") {
     found(atlas, atlasPointer, `${what}'s atlas, which holds its texture,`);
   }
-  refuseAlphaTexture(rd.alphaTexture, what);
-  const texture = readTexture(env, rd.texture, obj, `${what}'s texture`);
-  return { sprite, rect: rd, texture };
+  const texture = findTexture(env, rd.texture, obj, `${what}'s texture`);
+  return { sprite, rect: rd, texture, alphaTexture: rd.alphaTexture, atlas: undefined };
 }
 
-/** The Texture2D a pointer names, read. */
-function readTexture(env: Env, pointer: PPtr, from: ObjectReader, what: string): Texture2DData {
+/** The Texture2D a pointer names. */
+function findTexture(env: Env, pointer: PPtr, from: ObjectReader, what: string): ObjectReader {
   const texture = found(env.resolve(pointer, from), pointer, what);
-  return checkClass(texture, ClassID.Texture2D, what).read<Texture2DData>();
+  return checkClass(texture, ClassID.Texture2D, what);
 }
 
 /**
@@ -280,19 +307,7 @@ export function cutSprite(
     );
   }
 
-  // Upstream widens the rectangle to whole pixels, and clips its far edges.
-  const x = Math.floor(tr.x);
-  const y = Math.floor(tr.y);
-  const right = Math.min(Math.ceil(f32(tr.x + tr.width)), image.width);
-  const top = Math.min(Math.ceil(f32(tr.y + tr.height)), image.height);
-  const width = right - x;
-  const height = top - y;
-  if (!(x >= 0 && y >= 0 && width > 0 && height > 0)) {
-    throw new CorruptError(
-      `sprite textureRect (${tr.x}, ${tr.y}) ${tr.width} x ${tr.height} does not lie in its ` +
-        `${image.width} x ${image.height} texture`,
-    );
-  }
+  const { x, y, width, height } = cutRect(tr, image.width, image.height);
 
   // Rows bottom first, as upstream holds them until its final flip.
   let out = crop(image, x, y, width, height);
@@ -306,6 +321,49 @@ export function cutSprite(
     }
   }
   return flipRows(out);
+}
+
+/**
+ * The size {@link cutSprite} cuts out of a `textureWidth x textureHeight`
+ * texture, with a `Rotate90` packing turned back. Internal: for `imageInfo`.
+ *
+ * @throws {CorruptError} when the rectangle does not lie in the texture
+ */
+export function spriteSize(
+  rect: SpriteRect,
+  textureWidth: number,
+  textureHeight: number,
+): { width: number; height: number } {
+  const { width, height } = cutRect(rect.textureRect, textureWidth, textureHeight);
+  const packed = (rect.settingsRaw & 1) === 1;
+  const turned = packed && ((rect.settingsRaw >> 2) & 0xf) === SpritePackingRotation.Rotate90;
+  return turned ? { width: height, height: width } : { width, height };
+}
+
+/**
+ * Where upstream cuts `textureRect` out of its texture: widened to whole
+ * pixels, its far edges clipped to the texture.
+ *
+ * @throws {CorruptError} when the result is empty or starts outside the texture
+ */
+function cutRect(
+  tr: Rectf,
+  textureWidth: number,
+  textureHeight: number,
+): { x: number; y: number; width: number; height: number } {
+  const x = Math.floor(tr.x);
+  const y = Math.floor(tr.y);
+  const right = Math.min(Math.ceil(f32(tr.x + tr.width)), textureWidth);
+  const top = Math.min(Math.ceil(f32(tr.y + tr.height)), textureHeight);
+  const width = right - x;
+  const height = top - y;
+  if (!(x >= 0 && y >= 0 && width > 0 && height > 0)) {
+    throw new CorruptError(
+      `sprite textureRect (${tr.x}, ${tr.y}) ${tr.width} x ${tr.height} does not lie in its ` +
+        `${textureWidth} x ${textureHeight} texture`,
+    );
+  }
+  return { x, y, width, height };
 }
 
 /** `width x height` pixels from (`x`, `y`) up, of a top-down image, rows bottom first. */

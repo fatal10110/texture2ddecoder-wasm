@@ -1,3 +1,15 @@
+export { decodeImage, imageInfo, images, isImage } from "./image.js";
+export type {
+  DecodedImage,
+  DecodeImageOptions,
+  ImageAsset,
+  ImageCompression,
+  ImageInfo,
+  ImagesOptions,
+  SpriteImageInfo,
+  SpriteInfo,
+  TextureImageInfo,
+} from "./image.js";
 export { convertPlain } from "./convert.js";
 export type { RgbaImage } from "./convert.js";
 export { decodeTexture2D, initTexture } from "./decode.js";
