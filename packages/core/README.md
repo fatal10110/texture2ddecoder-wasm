@@ -295,11 +295,11 @@ image encoding (PNG, JPEG). Texture and sprite pixels are in
 
 - **Browsers:** any browser with ES2020 (`bigint`) and `TextDecoder`. Every current browser has
   both.
-- **Node.js, ESM (`import`):** 18 or later. `open()` uses the global `fetch`, which Node.js has
-  from 18.
-- **Node.js, CommonJS (`require`):** 20.19+ or 22.12+. `lzma1` is published as ES modules only,
-  so `require("unity-asset-reader")` needs a Node.js that can `require()` an ES module
-  ([#172](https://github.com/fatal10110/texture2ddecoder-wasm/issues/172)).
+- **Node.js:** 20.19+ or 22.12+ (`engines`: `^20.19.0 || >=22.12.0`), for both `import` and
+  `require`. `lzma1` is published as ES modules only, so `require("unity-asset-reader")` needs a
+  Node.js that can `require()` an ES module
+  ([#172](https://github.com/fatal10110/texture2ddecoder-wasm/issues/172)). CI tests on 20.19.0
+  and 22.12.0.
 
 ## API reference
 

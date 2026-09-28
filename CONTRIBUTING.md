@@ -257,7 +257,8 @@ the jobs by changed paths; skipped jobs report success, so all of them can be re
 | Status check | Runs when | What |
 |---|---|---|
 | `reader (node 20)`, `reader (node 22)` | `packages/{core,texture,node}/**`, `fixtures/**`, `scripts/**`, root config | `npm ci && npm run verify` (build, test, `check:browser`, no-C# guard) |
-| `decoder` | `packages/decoder/**`, lockfile | `build:wasm` (Docker), `build:rollup`, `npm test -w texture2ddecoder-wasm`; checks out submodules |
+| `reader floor (node 20.19.0)`, `reader floor (node 22.12.0)` | same as `reader` | The lowest versions of the reader packages' `engines` (#172): `npm ci && npm run verify`, then `node scripts/check-node-floor.mjs` (`import` and `require()` of the three packages) |
+| `decoder` | `packages/decoder/**`, lockfile | `build:wasm` (Docker), `build:rollup`, `npm test -w texture2ddecoder-wasm`; checks out submodules. Then `scripts/check-node-floor.mjs` with the WASM (`initTexture()` and decodes) on Node.js 20.19.0 and 22.12.0 |
 
 Run the reader job locally with `npm ci && npm run verify`.
 

@@ -21,6 +21,12 @@ to release is in [RELEASING.md](RELEASING.md).
 
 ## unity-asset-reader
 
+### 1.0.1 - 2026-09-28
+
+- `engines` is `^20.19.0 || >=22.12.0`, was `>=18.0.0`. `require("unity-asset-reader")` needs a
+  Node.js that can `require()` an ES module, because the LZMA decoder `lzma1` is published as ES
+  modules only; Node.js 18 is end-of-life. CI tests on 20.19.0 and 22.12.0 (#172).
+
 ### 1.0.0 - 2026-09-28
 
 First release. The core: isomorphic, synchronous, no WASM.
@@ -60,6 +66,13 @@ First release. The core: isomorphic, synchronous, no WASM.
 
 ## unity-asset-reader-texture
 
+### 1.0.1 - 2026-09-28
+
+- `engines` is `^20.19.0 || >=22.12.0`, was `>=18.0.0`. In Node.js, `initTexture()` loads
+  `texture2ddecoder-wasm`'s ES-module glue code, which Node.js below 20.19 refuses (`Cannot use
+  'import.meta' outside a module`), and `require()` needs the same Node.js as
+  `unity-asset-reader`. CI tests on 20.19.0 and 22.12.0 (#172).
+
 ### 1.0.0 - 2026-09-28
 
 First release. Peer: `unity-asset-reader@^1`; depends on `texture2ddecoder-wasm@^1.2.3`.
@@ -78,6 +91,11 @@ First release. Peer: `unity-asset-reader@^1`; depends on `texture2ddecoder-wasm@
   ones that fail instead of stopping (#185).
 
 ## unity-asset-reader-node
+
+### 1.0.1 - 2026-09-28
+
+- `engines` is `^20.19.0 || >=22.12.0`, was `>=18.0.0`, the same as `unity-asset-reader`, which
+  `require()` needs. CI tests on 20.19.0 and 22.12.0 (#172).
 
 ### 1.0.0 - 2026-09-28
 

@@ -42,10 +42,11 @@ jobs:
           else
             echo "reader=false" >> "$GITHUB_OUTPUT"
           fi
-          # The decoder job also runs the texture package's decode tests (#119) and the
-          # examples/ smoke test (#35), so it runs for what they build from: core, texture,
-          # fixtures, the reader build config and the examples.
-          if echo "$files" | grep -qE '^(packages/(decoder|core|texture)/|fixtures/|examples/|\.github/|package(-lock)?\.json$|tsconfig[^/]*\.json$|rollup\.reader\.mjs$)'; then
+          # The decoder job also runs the texture package's decode tests (#119), the
+          # examples/ smoke test (#35) and the Node.js floor check (#172), so it runs for what
+          # they build from: core, texture, fixtures, the reader build config, the examples
+          # and the floor check script.
+          if echo "$files" | grep -qE '^(packages/(decoder|core|texture)/|fixtures/|examples/|scripts/check-node-floor\.mjs$|\.github/|package(-lock)?\.json$|tsconfig[^/]*\.json$|rollup\.reader\.mjs$)'; then
             echo "decoder=true" >> "$GITHUB_OUTPUT"
           else
             echo "decoder=false" >> "$GITHUB_OUTPUT"
@@ -70,9 +71,33 @@ jobs:
       - run: npm ci
       - run: npm run verify
 
+  # The lowest Node.js versions the reader packages' `engines` admits (#172): the same verify,
+  # then `import` and `require()` of the three packages' builds. No WASM here, so the smoke
+  # check skips the decode; the decoder job runs it with the WASM on these versions.
+  # scripts/tests/engines.test.mjs keeps this matrix equal to `engines`.
+  reader-floor:
+    name: reader floor (node ${{ matrix.node }})
+    needs: changes
+    if: needs.changes.outputs.reader == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["20.19.0", "22.12.0"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run verify
+      - run: node scripts/check-node-floor.mjs
+
   # Rebuilds the WASM (Docker, needs the C++ submodule) and runs the decoder tests, then the
   # texture package's tests, whose decode tests need that WASM and skip in `reader` (#119),
-  # then the examples/cdn.html smoke test in Chromium (#35).
+  # then the examples/cdn.html smoke test in Chromium (#35), then the Node.js floor check with
+  # the WASM (#172).
   decoder:
     name: decoder
     needs: changes
@@ -106,3 +131,19 @@ jobs:
           name: smoke-test-results
           path: examples/test-results/
           if-no-files-found: ignore
+      # initTexture() and a decode, with `import` and `require()`, on the lowest Node.js
+      # versions of the reader packages' `engines` (#172), with the WASM built above.
+      # Keep these equal to the reader-floor matrix. Core and texture dist/ come from above.
+      - run: npm run build -w unity-asset-reader-node
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.19.0"
+      - run: node scripts/check-node-floor.mjs
+        env:
+          REQUIRE_WASM: "1"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.12.0"
+      - run: node scripts/check-node-floor.mjs
+        env:
+          REQUIRE_WASM: "1"

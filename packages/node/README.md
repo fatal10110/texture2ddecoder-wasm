@@ -84,8 +84,10 @@ build with its own call to keep them apart.
 
 ## Requirements
 
-Node.js 18+ for `import`. `require()` needs Node.js 20.19+ or 22.12+, because
-`unity-asset-reader`'s LZMA dependency is published as ES modules only.
+Node.js 20.19+ or 22.12+ (`engines`: `^20.19.0 || >=22.12.0`), for both `import` and
+`require`. `require()` needs a Node.js that can `require()` an ES module, because
+`unity-asset-reader`'s LZMA dependency is published as ES modules only. CI tests on 20.19.0 and
+22.12.0.
 
 ## API reference
 

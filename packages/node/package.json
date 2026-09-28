@@ -1,6 +1,6 @@
 {
   "name": "unity-asset-reader-node",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Node.js adapter for unity-asset-reader: file and directory loading with sidecar resolution.",
   "license": "MIT",
   "main": "dist/index.cjs",
@@ -42,6 +42,6 @@
     "directory": "packages/node"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "^20.19.0 || >=22.12.0"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "unity-asset-reader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Browser-first Unity AssetBundle parser: isomorphic, synchronous, zero platform dependencies.",
   "license": "MIT",
   "main": "dist/index.cjs",
@@ -39,7 +39,7 @@
     "directory": "packages/core"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "^20.19.0 || >=22.12.0"
   },
   "dependencies": {
     "fflate": "^0.8.3",
