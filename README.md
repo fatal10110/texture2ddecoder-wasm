@@ -34,8 +34,10 @@ so you never add it next to `-texture` yourself.
   pixels.
 - **[`unity-asset-reader-texture`](packages/texture/README.md)** turns the `Texture2D` and
   `Sprite` objects that the parser reads into RGBA pixels. It parses nothing itself: you pass it
-  an asset's `data` from `unity-asset-reader`. It decodes plain formats (RGBA32, RGB565, ...) in
-  TypeScript and block-compressed ones (BC, ETC, ASTC, PVRTC, ...) through the decoder's WASM.
+  an asset from `unity-asset-reader` (`decodeImage(asset)`), or give the low-level
+  `decodeTexture2D` what `asset.reader.read()` returns. It decodes plain formats (RGBA32, RGB565,
+  ...) in TypeScript and block-compressed ones (BC, ETC, ASTC, PVRTC, ...) through the decoder's
+  WASM.
 - **[`unity-asset-reader-node`](packages/node/README.md)** gets Unity files off the disk.
   `loadPath()` reads a file or a whole folder, merges split files (`.split0`, `.split1`, ...),
   picks up `.resS` / `.resource` sidecars, and hands everything to the parser's `load()`. It
