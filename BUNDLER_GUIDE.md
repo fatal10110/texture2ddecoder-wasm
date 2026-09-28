@@ -160,6 +160,12 @@ here: with 1.2.3 and earlier, the build fails with `Can't resolve 'module'`
    }
    ```
 
+On the server, in a route handler, `initTexture()` takes no options, as in
+[Node.js](#nodejs-esm-and-commonjs). No `next.config.js` change is needed either.
+`next build --webpack` needs `texture2ddecoder-wasm` 1.2.5 or later: with 1.2.4 and earlier,
+`initTexture()` fails with `TypeError: a is not a function`
+([#202](https://github.com/fatal10110/texture2ddecoder-wasm/issues/202)).
+
 ## CDN, no bundler
 
 [`examples/cdn.html`](examples/cdn.html) is a complete page: pick a bundle, list its objects, draw
@@ -224,6 +230,7 @@ installed location.
 | `Failed to load WASM module from ...` | The two files are not at that URL. Run `npx texture2ddecoder-copy-wasm public/wasm`, and check that `<wasmPath>/texture2ddecoder.js` opens in the browser. |
 | `Browser environment requires wasmPath parameter` | `initTexture()` without options only works in Node.js. |
 | `Can't resolve 'module'`, `Cannot find module 'unknown'` or `Cannot find module 'http://…/texture2ddecoder.js'` (Next.js) | `texture2ddecoder-wasm` 1.2.3 or earlier ([#171](https://github.com/fatal10110/texture2ddecoder-wasm/issues/171)). Update it to 1.2.4 or later: `npm update texture2ddecoder-wasm`. |
+| `TypeError: a is not a function` from `initTexture()` in a Next.js route handler (`next build --webpack`) | `texture2ddecoder-wasm` 1.2.4 or earlier ([#202](https://github.com/fatal10110/texture2ddecoder-wasm/issues/202)). Update it to 1.2.5 or later, or add `serverExternalPackages: ["texture2ddecoder-wasm"]` to `next.config.js`. |
 | `decodeTexture2D: the texture decoder is not initialized` | Await `initTexture()` before the first decode. Plain formats need it too. |
 | `ERR_REQUIRE_ESM` on `lzma1` | Node.js below 20.19 / 22.12 cannot `require()` it. Use `import`, or a newer Node.js. |
 | `Cannot use 'import.meta' outside a module` from `initTexture()` | Node.js below 20.19. Upgrade. |
