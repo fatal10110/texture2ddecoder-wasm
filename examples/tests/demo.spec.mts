@@ -281,6 +281,25 @@ test("sprites: preview and sprite info; decode all images", async ({ page }) => 
     await page.locator("#gallery").getByRole("button", { name: "tight" }).first().click();
     await expect(page.locator("#details h3").first()).toHaveText(/^(Texture2D|Sprite) "tight"$/);
   });
+
+  await test.step("opening another file during a decode drops the old decode", async () => {
+    const total = objectCount("lz4/main", "lz4/shared", "lz4/texture");
+    const option = page.locator("#sample option").filter({ hasText: /MonoBehaviour, TextAsset/ });
+    await page.selectOption("#sample", (await option.getAttribute("value"))!);
+    // Both in one task: the decode is still running when the open starts.
+    await page.evaluate(() => {
+      document.getElementById("decode-all")!.click();
+      (document.getElementById("sample-form") as HTMLFormElement).requestSubmit();
+    });
+    await expect(page.locator("#status")).toHaveText(new RegExp(`^${total} assets in `), {
+      timeout: LOAD_TIMEOUT,
+    });
+    // Once the old decode has answered, none of it reached the page.
+    await expect(page.getByRole("button", { name: "Decode all images" })).toBeEnabled();
+    await expect(page.locator("#gallery li")).toHaveCount(0);
+    await expect(page.locator("#batch-status")).toHaveText("");
+    await expect(page.locator("#batch-progress")).toBeHidden();
+  });
 });
 
 test("block-compressed textures decode through the WASM", async ({ page }) => {

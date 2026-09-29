@@ -292,7 +292,8 @@ const handlers = {
 
   /**
    * `images(env, { onError: "skip" })`: decode every Texture2D and Sprite,
-   * posting a thumbnail per image as it is done.
+   * posting a thumbnail per image as it is done. Stops early when another
+   * `open` replaces this load; the page drops that reply.
    */
   async decodeAll(lib, _args, progress) {
     const { env, indexOf } = loaded();
@@ -303,6 +304,7 @@ const handlers = {
     let decoded = 0;
     progress({ done: 0, total });
     for await (const image of lib.images(env, { onError: "skip" })) {
+      if (current?.env !== env) break;
       decoded++;
       const key = assetKey(image.file, image.pathId);
       const thumb = thumbnail(image.rgba, image.width, image.height, 96);

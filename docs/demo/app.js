@@ -196,9 +196,15 @@ let assets = [];
 let selected = -1;
 /** Whether an open has started: from then on the status line is its. */
 let opened = false;
+/**
+ * Counts opens. A reply that started under an earlier load (a batch decode, a
+ * details request) is dropped: its asset indexes point into another list.
+ */
+let loadId = 0;
 
 async function openSources(sources, what) {
   opened = true;
+  loadId++;
   setStatus("busy", `Opening ${what}...`);
   $("details").replaceChildren(el("p", { class: "muted" }, "Choose an asset."));
   $("gallery").replaceChildren();
@@ -333,8 +339,10 @@ $("get-form").addEventListener("submit", async (event) => {
   event.preventDefault();
   const path = $("get-path").value.trim();
   if (path === "") return;
+  const load = loadId;
   try {
     const { index } = await call("get", { path });
+    if (load !== loadId) return;
     if (index < 0) {
       setStatus("ready", `env.get: no loaded bundle lists "${path}".`);
       return;
@@ -342,7 +350,7 @@ $("get-form").addEventListener("submit", async (event) => {
     setStatus("ready", `env.get("${path}") is ${assets[index].typeName} "${assets[index].name}".`);
     await select(index);
   } catch (error) {
-    setStatus("error", errorText(error));
+    if (load === loadId) setStatus("error", errorText(error));
   }
 });
 
@@ -360,15 +368,16 @@ async function select(index) {
   const asset = assets[index];
   panel.replaceChildren(el("p", { class: "muted" }, `Reading ${asset.typeName} "${asset.name}"...`));
   const request = ++detailsRequest;
+  const load = loadId;
   let result;
   try {
     result = await call("details", { index });
   } catch (error) {
-    if (request !== detailsRequest) return;
+    if (request !== detailsRequest || load !== loadId) return;
     panel.replaceChildren(heading(asset), el("p", { class: "error", role: "alert" }, errorText(error)));
     return;
   }
-  if (request !== detailsRequest) return; // another asset was chosen meanwhile
+  if (request !== detailsRequest || load !== loadId) return; // another asset or file was chosen meanwhile
   panel.replaceChildren(heading(asset), ...renderDetails(result));
   panel.focus({ preventScroll: true });
 }
@@ -518,6 +527,7 @@ $("decode-all").addEventListener("click", async () => {
   const progress = $("batch-progress");
   const note = $("batch-status");
   const gallery = $("gallery");
+  const load = loadId;
   button.disabled = true;
   gallery.replaceChildren();
   progress.hidden = false;
@@ -529,6 +539,7 @@ $("decode-all").addEventListener("click", async () => {
       {},
       {
         onProgress: ({ done, total, image }) => {
+          if (load !== loadId) return; // another file was opened: openSources cleared the batch
           progress.max = Math.max(total, 1);
           progress.value = done;
           note.textContent = `${done} of ${total}`;
@@ -554,10 +565,11 @@ $("decode-all").addEventListener("click", async () => {
         },
       },
     );
+    if (load !== loadId) return;
     progress.value = progress.max;
     note.textContent = `${result.decoded} decoded, ${result.skipped} skipped (of ${result.total}).`;
   } catch (error) {
-    note.textContent = errorText(error);
+    if (load === loadId) note.textContent = errorText(error);
   } finally {
     button.disabled = false;
   }
