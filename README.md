@@ -4,6 +4,8 @@ Read Unity AssetBundles in the browser and in Node.js: unpack them, read their o
 decode their textures and sprites to RGBA. The parser is TypeScript with no WASM and no
 platform dependencies. Only texture decoding uses a small WASM module.
 
+**Live demo:** [fatal10110.github.io/texture2ddecoder-wasm](https://fatal10110.github.io/texture2ddecoder-wasm/): open a bundle in your browser, browse its assets, preview textures and sprites, read text and script data.
+
 This repository holds four npm packages. It will be renamed from `texture2ddecoder-wasm` to
 `unity-asset-reader`.
 
