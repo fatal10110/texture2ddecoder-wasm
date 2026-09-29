@@ -1,0 +1,507 @@
+/* unity-asset-reader demo page (docs/index.html). Light and dark follow the system. */
+:root {
+  color-scheme: light dark;
+  --bg: #f6f7f9;
+  --panel: #ffffff;
+  --text: #1b1f24;
+  --muted: #5b6470;
+  --border: #d9dde3;
+  --accent: #0b62d6;
+  --accent-text: #ffffff;
+  --accent-hover: #084ea9;
+  --row-hover: #eef3fb;
+  --selected: #dce8fb;
+  --code-bg: #f0f2f5;
+  --busy-bg: #fff4d6;
+  --busy-text: #6b4e00;
+  --ready-bg: #e3f5e8;
+  --ready-text: #145c2a;
+  --error-bg: #fde7e9;
+  --error-text: #8a1020;
+  --check-a: #d6d9de;
+  --check-b: #ffffff;
+  --key: #6b3fb3;
+  --string: #0f6b3a;
+  --number: #0b55b8;
+  --literal: #a1461a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111418;
+    --panel: #1a1e24;
+    --text: #e4e7eb;
+    --muted: #9aa3ae;
+    --border: #313843;
+    --accent: #4d94ff;
+    --accent-text: #0b1320;
+    --accent-hover: #7aafff;
+    --row-hover: #222a35;
+    --selected: #243752;
+    --code-bg: #232932;
+    --busy-bg: #3a3014;
+    --busy-text: #f3d68a;
+    --ready-bg: #173222;
+    --ready-text: #9fe0b4;
+    --error-bg: #3d1a1f;
+    --error-text: #ffb3bc;
+    --check-a: #2b3038;
+    --check-b: #3a404a;
+    --key: #c5a3ff;
+    --string: #8fdca9;
+    --number: #8cc2ff;
+    --literal: #ffb088;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
+}
+
+a {
+  color: var(--accent);
+}
+
+code,
+pre,
+.mono {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.9em;
+}
+
+pre {
+  background: var(--code-bg);
+  padding: 12px;
+  border-radius: 6px;
+  overflow: auto;
+  max-height: 480px;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+header.site {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  align-items: flex-end;
+  justify-content: space-between;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 16px 8px;
+}
+
+header.site h1 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.tagline {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+header.site nav {
+  display: flex;
+  gap: 16px;
+}
+
+main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 8px 16px 48px;
+  display: grid;
+  gap: 16px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  min-width: 0;
+}
+
+.panel h2 {
+  margin: 0 0 12px;
+  font-size: 1.15rem;
+}
+
+.panel h3 {
+  margin: 16px 0 8px;
+  font-size: 1rem;
+}
+
+.open-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stack button {
+  align-self: flex-start;
+}
+
+.dropzone {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dropzone.over {
+  border-color: var(--accent);
+  background: var(--row-hover);
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+  color: inherit;
+}
+
+input[type="search"],
+input[type="text"],
+select,
+textarea {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  max-width: 100%;
+}
+
+textarea {
+  resize: vertical;
+}
+
+button {
+  background: var(--accent);
+  color: var(--accent-text);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 5px 14px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--accent-hover);
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+button.link {
+  background: none;
+  color: var(--accent);
+  padding: 0;
+  border: 0;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-word;
+}
+
+.status {
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+.status[data-state="busy"] {
+  background: var(--busy-bg);
+  color: var(--busy-text);
+}
+
+.status[data-state="ready"] {
+  background: var(--ready-bg);
+  color: var(--ready-text);
+}
+
+.status[data-state="error"],
+.error {
+  background: var(--error-bg);
+  color: var(--error-text);
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+.status[data-state="error"] {
+  white-space: pre-wrap;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 0.87rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.workspace {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  grid-template-areas:
+    "assets details"
+    "batch batch";
+}
+
+.workspace[hidden] {
+  display: none;
+}
+
+.assets {
+  grid-area: assets;
+}
+
+.details {
+  grid-area: details;
+}
+
+.batch {
+  grid-area: batch;
+}
+
+@media (max-width: 960px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "assets"
+      "details"
+      "batch";
+  }
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: flex-end;
+  margin-bottom: 8px;
+}
+
+.toolbar label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.87rem;
+}
+
+.toolbar .grow {
+  flex: 1 1 240px;
+}
+
+.table-wrap {
+  overflow: auto;
+  max-height: 70vh;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  /* Narrow screens scroll the table sideways inside .table-wrap, not the page. */
+  min-width: 680px;
+  font-size: 0.87rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  z-index: 1;
+}
+
+td.path,
+td.file {
+  word-break: break-all;
+}
+
+td.id {
+  white-space: nowrap;
+}
+
+td.num,
+th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+tbody tr:hover {
+  background: var(--row-hover);
+}
+
+tbody tr[aria-selected="true"] {
+  background: var(--selected);
+}
+
+.details {
+  align-self: start;
+}
+
+@media (min-width: 961px) {
+  .details {
+    position: sticky;
+    top: 16px;
+    max-height: calc(100vh - 32px);
+    overflow: auto;
+  }
+}
+
+.preview-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+canvas.checker,
+.gallery canvas {
+  max-width: 100%;
+  image-rendering: pixelated;
+  background: repeating-conic-gradient(var(--check-a) 0% 25%, var(--check-b) 0% 50%) 0 0 / 16px
+    16px;
+  border: 1px solid var(--border);
+}
+
+dl.info {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 2px 12px;
+  margin: 8px 0;
+  font-size: 0.9rem;
+}
+
+dl.info dt {
+  color: var(--muted);
+}
+
+dl.info dd {
+  margin: 0;
+  word-break: break-word;
+}
+
+.tree,
+.tree ul {
+  list-style: none;
+  margin: 0;
+  padding-left: 16px;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.85rem;
+}
+
+.tree {
+  padding-left: 0;
+  background: var(--code-bg);
+  border-radius: 6px;
+  padding: 8px;
+  overflow: auto;
+}
+
+.tree summary {
+  cursor: pointer;
+}
+
+.tree .key {
+  color: var(--key);
+}
+
+.tree .string {
+  color: var(--string);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.tree .number,
+.tree .bigint {
+  color: var(--number);
+}
+
+.tree .literal {
+  color: var(--literal);
+}
+
+.tree .note {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.gallery {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  align-items: start;
+  gap: 8px;
+}
+
+.gallery button {
+  width: 100%;
+  height: 100%;
+  background: var(--code-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  font-size: 0.8rem;
+  word-break: break-all;
+}
+
+.gallery button:hover {
+  background: var(--row-hover);
+}
+
+.gallery canvas {
+  width: auto;
+  height: auto;
+  max-height: 96px;
+}
+
+progress {
+  width: 200px;
+  max-width: 100%;
+}

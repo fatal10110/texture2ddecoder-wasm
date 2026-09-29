@@ -200,7 +200,7 @@ Each item that brings a decoder or writer ships as its own package on top of cor
 - Goldens generated **once**, committed. The oracle is not a dependency of the package or CI.
 - Typetree comparison normalization (both sides): int64 → decimal string; floats compared by float32 bit pattern (NaN/-0 safe), not by printed text; byte arrays → hex or hash.
 - Fixtures: small bundles per (compression × editor version × texture family), zipped like `samples.zip`, built with own Unity Editor projects.
-- Browser: M0 esbuild guard + one Playwright smoke loading `examples/cdn.html` (M3). No per-feature browser suite.
+- Browser: M0 esbuild guard + one Playwright smoke loading `examples/cdn.html` (M3), and one Playwright test of the GitHub Pages demo `docs/index.html` (#209). No per-feature browser suite.
 
 ## 6. Risks
 

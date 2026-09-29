@@ -8,6 +8,7 @@ Examples of the reader packages used together. Not published.
 | [`cdn-worker.js`](cdn-worker.js) | The Worker `cdn.html` runs the reader in. |
 | [`serve.mjs`](serve.mjs) | Static server with a local stand-in for jsDelivr, for trying the page on this repo's builds. |
 | [`tests/cdn.spec.mts`](tests/cdn.spec.mts) | The Playwright smoke test of `cdn.html` (plan §5). |
+| [`tests/demo.spec.mts`](tests/demo.spec.mts) | The Playwright test of the GitHub Pages demo, [`docs/index.html`](../docs/index.html) (#209). |
 
 ## `cdn.html`
 
@@ -56,8 +57,9 @@ node examples/serve.mjs              # then open http://127.0.0.1:8080/
 package's browser ESM entry in `node_modules`, and rewrites the bare imports of
 import statements the way jsDelivr does. The version in a URL is ignored, and
 the local build is served. It listens on `127.0.0.1` only, and serves only the
-packages `cdn-worker.js` loads and their dependencies; anything else under
-`node_modules` or the repo is a 404. `scripts/tests/serve-examples.test.mjs`
+packages the pages' Workers load and their dependencies, this folder, `docs/`
+(the demo, at `/docs/?local`) and `fixtures/bundles/` (the demo's samples);
+anything else under `node_modules` or the repo is a 404. `scripts/tests/serve-examples.test.mjs`
 covers this.
 
 ## Smoke test
@@ -96,3 +98,19 @@ CDN_LIVE=1 npm run test:smoke        # cdn.html without ?local
 
 If core is loaded twice, `CORE_VERSION` in `cdn-worker.js` is not the version
 the texture package's `/+esm` build imports.
+
+## The demo page test
+
+`npm run test:smoke` also runs [`tests/demo.spec.mts`](tests/demo.spec.mts),
+against `docs/index.html?local` (the GitHub Pages demo): its Worker takes the
+packages from `serve.mjs` and its samples from `/fixtures/bundles/`. It opens
+the samples and checks the asset table, its filters and `env.get`, image
+previews and their `imageInfo`, a TextAsset's text, a MonoBehaviour's fields
+(64-bit values exact), raw audio, video and font bytes, "decode all images",
+an error message, and that the Worker loads one copy of core. Every expected
+value comes from `fixtures/goldens.json`.
+
+`CDN_LIVE=1 npm run test:smoke` opens the demo without `?local`: packages from
+jsDelivr, samples from jsDelivr's GitHub endpoint on `main`. The demo imports
+the `@1` lines and reads the exact versions from the headers of jsDelivr's
+texture build, so it needs no edit after a release.
