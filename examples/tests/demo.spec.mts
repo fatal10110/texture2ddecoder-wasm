@@ -300,6 +300,41 @@ test("sprites: preview and sprite info; decode all images", async ({ page }) => 
     await expect(page.locator("#batch-status")).toHaveText("");
     await expect(page.locator("#batch-progress")).toBeHidden();
   });
+
+  await test.step("of two opens, the later one wins even when the earlier ends last", async () => {
+    const total = objectCount("lz4/main", "lz4/shared", "lz4/texture");
+    // The sprite sample answers late, after the script sample has loaded.
+    await page.route("**/sprite/sprites", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await route.continue();
+    });
+    const value = async (label: RegExp) =>
+      (await page.locator("#sample option").filter({ hasText: label }).getAttribute("value"))!;
+    const [sprites, script] = [await value(/^Sprites/), await value(/MonoBehaviour, TextAsset/)];
+    await page.evaluate(
+      ([first, second]) => {
+        const select = document.getElementById("sample") as HTMLSelectElement;
+        const form = document.getElementById("sample-form") as HTMLFormElement;
+        select.value = first!;
+        form.requestSubmit();
+        select.value = second!;
+        form.requestSubmit();
+      },
+      [sprites, script],
+    );
+    await expect(page.locator("#status")).toHaveText(new RegExp(`^${total} assets in `), {
+      timeout: LOAD_TIMEOUT,
+    });
+    // After the sprite sample has come back too, the page and the Worker still hold the script sample.
+    await page.waitForTimeout(1500);
+    await expect(page.locator("#status")).toHaveText(new RegExp(`^${total} assets in `));
+    await expect(page.locator("#assets tbody tr")).toHaveCount(total);
+    await choose(page, "TextAsset", "hello");
+    await expect(page.locator("#text-content")).toHaveText(
+      typetreeOf("lz4/shared", "hello").m_Script as string,
+    );
+    await page.unroute("**/sprite/sprites");
+  });
 });
 
 test("block-compressed textures decode through the WASM", async ({ page }) => {

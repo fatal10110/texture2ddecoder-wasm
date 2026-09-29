@@ -61,6 +61,8 @@ const ready = (async () => {
 
 /** The last load: its env, its assets in `env.assets()` order, and each asset's index. */
 let current;
+/** Counts opens: when two overlap, the later one is kept even if the earlier ends last. */
+let opens = 0;
 
 /** Largest array or byte run sent to the page whole; longer ones are cut, with a count. */
 const MAX_ITEMS = 256;
@@ -191,8 +193,10 @@ function thumbnail(rgba, width, height, max) {
 const handlers = {
   /** Open files (`File`s) or URLs with `open()` and list every asset. */
   async open(lib, { sources }) {
+    const mine = ++opens;
     current = undefined;
     const env = await lib.open(sources);
+    if (mine !== opens) return { stale: true }; // the page drops it too
     const assets = [...env.assets()];
     const indexOf = new Map(assets.map((asset, i) => [assetKey(asset.file, asset.pathId), i]));
     current = { env, assets, indexOf };

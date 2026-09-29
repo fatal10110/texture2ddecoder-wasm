@@ -204,7 +204,7 @@ let loadId = 0;
 
 async function openSources(sources, what) {
   opened = true;
-  loadId++;
+  const load = ++loadId;
   setStatus("busy", `Opening ${what}...`);
   $("details").replaceChildren(el("p", { class: "muted" }, "Choose an asset."));
   $("gallery").replaceChildren();
@@ -214,6 +214,7 @@ async function openSources(sources, what) {
   try {
     const started = performance.now();
     const result = await call("open", { sources });
+    if (load !== loadId) return; // a later open owns the page now
     const ms = (performance.now() - started).toFixed(0);
     assets = result.assets;
     showAssets(result.files);
@@ -229,6 +230,7 @@ async function openSources(sources, what) {
       `${assets.length} assets in ${result.files.length} files, read in ${ms} ms.`,
     );
   } catch (error) {
+    if (load !== loadId) return;
     assets = [];
     $("workspace").hidden = true;
     setStatus("error", errorText(error));
