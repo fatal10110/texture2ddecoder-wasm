@@ -132,3 +132,132 @@ test("decoder README links CONTRIBUTING.md through the repo URL", () => {
     checkRepoTarget(readme, target.slice(REPO_BLOB.length));
   }
 });
+
+// #208: the support tables say what the code supports, so they are checked
+// against the code's own lists: the class reader registry, the texture
+// package's format maps and the WASM bindings. A table that leaves one out, or
+// lists one the code does not have, fails.
+
+/** A Markdown section: the lines after `heading`, up to the next heading of its level or higher. */
+function section(markdown, heading) {
+  const level = heading.match(/^#+/)[0].length;
+  const lines = markdown.replace(/^```[\s\S]*?^```$/gm, "").split("\n");
+  const start = lines.indexOf(heading);
+  assert.ok(start >= 0, `no "${heading}" heading`);
+  const next = lines.findIndex((line, i) => i > start && (line.match(/^(#+) /)?.[1].length ?? 99) <= level);
+  return lines.slice(start + 1, next < 0 ? undefined : next).join("\n");
+}
+
+/**
+ * Cell `column` (1 is the first) of every body row of every Markdown table in `text`
+ * (header and rule skipped).
+ */
+function tableCells(text, column = 1) {
+  const cells = [];
+  let row = 0;
+  for (const line of text.split("\n")) {
+    row = line.startsWith("|") ? row + 1 : 0;
+    if (row > 2) cells.push(line.split("|")[column].trim());
+  }
+  return cells;
+}
+
+/** A top-level `const` of a TypeScript source, from `const <name>` to its closing `]);` or `};`. */
+function declaration(source, name) {
+  const start = source.search(new RegExp(`^(?:export )?const ${name}\\b`, "m"));
+  assert.ok(start >= 0, `no const ${name}`);
+  const length = source.slice(start).search(/^(?:\]\);|\}(?: as const)?;)$/m);
+  assert.ok(length > 0, `no end to const ${name}`);
+  return source.slice(start, start + length);
+}
+
+/** The keys of packages/core's `CLASS_READERS`: the classes with a hand-written reader. */
+function classReaders() {
+  const body = declaration(read("packages/core/src/classes/registry.ts"), "CLASS_READERS");
+  const names = [...body.split("= {")[1].matchAll(/^ {2}(\w+): /gm)].map((m) => m[1]);
+  assert.ok(names.length > 0, "no entries found in CLASS_READERS");
+  return names;
+}
+
+/** Every name of packages/core's `TextureFormat`. */
+function textureFormats() {
+  const body = declaration(read("packages/core/src/classes/TextureFormat.ts"), "TextureFormat");
+  const names = [...body.matchAll(/^ {2}(\w+): \d+,$/gm)].map((m) => m[1]);
+  assert.ok(names.length > 0, "no entries found in TextureFormat");
+  return names;
+}
+
+/** The `TextureFormat`s packages/texture decodes: the keys of its plain, block and Crunch maps. */
+function decodedFormats() {
+  const convert = read("packages/texture/src/convert.ts");
+  const decode = read("packages/texture/src/decode.ts");
+  const keys = (body) => [...body.matchAll(/\[TextureFormat\.(\w+),/g)].map((m) => m[1]);
+  const names = [
+    ...keys(declaration(convert, "BYTES_PER_PIXEL")),
+    ...keys(declaration(decode, "BLOCK")),
+    ...keys(declaration(decode, "CRUNCHED")),
+  ];
+  assert.ok(names.length > 0, "no decoded formats found in packages/texture");
+  return names;
+}
+
+/** Every identifier written in backticks in `text`. */
+function codeNames(text) {
+  return new Set([...text.matchAll(/`(\w+)`/g)].map((m) => m[1]));
+}
+
+const sorted = (names) => [...names].sort();
+const ROOT_SUPPORT = "## Supported formats and Unity versions";
+
+test("core README: the Classes table lists exactly the classes of CLASS_READERS", () => {
+  const table = section(read(PACKAGE_READMES.core), "### Classes");
+  const rows = tableCells(table).map((cell) => cell.match(/^`(\w+)`/)?.[1] ?? cell);
+  assert.deepEqual(sorted(rows), sorted(classReaders()));
+});
+
+test("core README: the version-stripped table lists exactly the classes of CLASS_READERS", () => {
+  const table = section(read(PACKAGE_READMES.core), "### Version-stripped files");
+  const rows = tableCells(table).map((cell) => cell.match(/^`(\w+)`$/)?.[1] ?? cell);
+  assert.deepEqual(sorted(rows), sorted(classReaders()));
+});
+
+test("root README: the supported formats section names every class of CLASS_READERS", () => {
+  const named = codeNames(section(read("README.md"), ROOT_SUPPORT));
+  const missing = classReaders().filter((name) => !named.has(name));
+  assert.deepEqual(missing, [], `README.md does not name ${missing.join(", ")}`);
+});
+
+test("texture README: the format table lists exactly the TextureFormats the package decodes", () => {
+  const all = new Set(textureFormats());
+  const decoded = decodedFormats();
+  const unknown = decoded.filter((name) => !all.has(name));
+  assert.deepEqual(unknown, [], `decoded formats missing from TextureFormat: ${unknown}`);
+  // Only the Formats column counts: other cells name formats too (the 3DS row's decoder).
+  const formats = tableCells(section(read(PACKAGE_READMES.texture), "## Texture formats"), 2);
+  const listed = [...codeNames(formats.join(" "))].filter((name) => all.has(name));
+  assert.deepEqual(sorted(listed), sorted(decoded));
+});
+
+test("texture and root README: every TextureFormat not decoded is listed as not supported", () => {
+  const decoded = new Set(decodedFormats());
+  const refused = textureFormats().filter((name) => !decoded.has(name));
+  assert.ok(refused.length > 0, "every TextureFormat decodes: update this test");
+  for (const [doc, heading] of [
+    [PACKAGE_READMES.texture, "## Not supported"],
+    ["README.md", ROOT_SUPPORT],
+  ]) {
+    const named = codeNames(section(read(doc), heading));
+    const missing = refused.filter((name) => !named.has(name));
+    assert.deepEqual(missing, [], `${doc}: "${heading}" does not list ${missing.join(", ")}`);
+  }
+});
+
+test("decoder README: Supported Formats has one row per function the WASM exports", () => {
+  const bindings = read("packages/decoder/wasm_bindings.cpp");
+  const exported = [...bindings.matchAll(/^\s*function\("(\w+)"/gm)].map((m) => m[1]);
+  assert.ok(exported.length > 0, "no function() bindings in wasm_bindings.cpp");
+  const table = section(read("packages/decoder/README.md"), "## Supported Formats");
+  const rows = table.split("\n").filter((line) => line.startsWith("|")).slice(2);
+  const functions = rows.map((row) => row.split("|")[2].trim().match(/^`(\w+)`$/)?.[1] ?? row);
+  assert.deepEqual(sorted(functions), sorted(exported));
+});

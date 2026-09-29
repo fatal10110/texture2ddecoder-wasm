@@ -148,6 +148,17 @@ the same `load()`.
 With `decodeSprite`'s `{ tightMesh: true }`, pixels outside a tight-packed sprite's mesh become
 transparent, as AssetStudio does. The default, and `decodeImage`, return the whole rectangle.
 
+What is supported, and what it is tested on (sprites built by 2019.4.41f2 and 6000.3.25f1):
+
+| Sprite | Support |
+|---|---|
+| Cut from its own texture, inline or in the `.resS` | Yes, at any rectangle and pivot, with a border |
+| Packed into a `SpriteAtlas` (Sprite Atlas V1 fixtures), tight or rectangle packing | Yes, when the atlas is loaded |
+| Packer rotation `FlipHorizontal`, `FlipVertical`, `Rotate180` | Undone |
+| Packer rotation `Rotate90` | Undone as AssetStudio does; no fixture ([#160](https://github.com/fatal10110/texture2ddecoder-wasm/issues/160)) |
+| Pixels outside a tight mesh | Transparent with `decodeSprite`'s `{ tightMesh: true }` |
+| Alpha texture (ETC1 split alpha), variant atlas (`downscaleMultiplier` other than 1) | Refused |
+
 ## Texture formats
 
 `decodeTexture2D` decodes the first mip level. Every format below is checked against pixels from
@@ -157,16 +168,19 @@ generated block data; no current editor writes those formats.
 
 | Group | Formats | Decoded by | Tested on |
 |---|---|---|---|
-| Plain | `Alpha8`, `ARGB4444`, `RGB24`, `RGBA32`, `ARGB32`, `RGB565`, `R16`, `RGBA4444`, `BGRA32`, `RHalf`, `RGHalf`, `RGBAHalf`, `RFloat`, `RGFloat`, `RGBAFloat`, `RGB9e5Float`, `YUY2` | TypeScript | editor-built, all 17 |
-| BCn | `DXT1`, `DXT5`, `BC4`, `BC5`, `BC6H`, `BC7` | WASM | editor-built |
-| ETC / EAC | `ETC_RGB4`, `ETC2_RGB`, `ETC2_RGBA1`, `ETC2_RGBA8`, `EAC_R`, `EAC_RG` | WASM | editor-built |
-| | `EAC_R_SIGNED`, `EAC_RG_SIGNED` | WASM | synthetic |
-| | `ETC_RGB4_3DS`, `ETC_RGBA8_3DS` | WASM (same decoder as `ETC_RGB4` / `ETC2_RGBA8`) | not separately |
-| PVRTC | `PVRTC_RGB2`, `PVRTC_RGBA2`, `PVRTC_RGB4`, `PVRTC_RGBA4` | WASM | editor-built (2019.4) |
-| ASTC | `ASTC_RGB_4x4` to `ASTC_RGB_12x12` (Unity's `ASTC_4x4` ...), `ASTC_HDR_4x4`, `ASTC_HDR_12x12` | WASM | editor-built |
-| | `ASTC_RGBA_4x4` to `ASTC_RGBA_12x12`, `ASTC_HDR_5x5` to `ASTC_HDR_10x10` | WASM (same decoder) | not separately |
-| ATC | `ATC_RGB4`, `ATC_RGBA8` | WASM | synthetic |
-| Crunch | `DXT1Crunched`, `DXT5Crunched`, `ETC_RGB4Crunched`, `ETC2_RGBA8Crunched` | WASM | editor-built (Unity's crunch, 2017.3+) |
+| Plain | `Alpha8`, `ARGB4444`, `RGB24`, `RGBA32`, `ARGB32`, `RGB565`, `R16`, `RGBA4444`, `BGRA32`, `RHalf`, `RGHalf`, `RGBAHalf`, `RFloat`, `RGFloat`, `RGBAFloat`, `RGB9e5Float`, `YUY2` | TypeScript | editor-built (6000.3), all 17 |
+| BC | `DXT1` (BC1), `DXT5` (BC3), `BC4`, `BC5`, `BC6H`, `BC7` | WASM `decode_bc1`, `decode_bc3` to `decode_bc7` | editor-built (6000.3) |
+| ETC | `ETC_RGB4` (ETC1), `ETC2_RGB`, `ETC2_RGBA1`, `ETC2_RGBA8` | WASM `decode_etc1`, `decode_etc2`, `decode_etc2a1`, `decode_etc2a8` | editor-built (6000.3) |
+| | `ETC_RGB4_3DS`, `ETC_RGBA8_3DS` | WASM, the decoder of `ETC_RGB4` / `ETC2_RGBA8` | `ETC_RGB4` / `ETC2_RGBA8` fixture data |
+| EAC | `EAC_R`, `EAC_RG` | WASM `decode_eacr`, `decode_eacrg` | editor-built (6000.3) |
+| | `EAC_R_SIGNED`, `EAC_RG_SIGNED` | WASM `decode_eacr_signed`, `decode_eacrg_signed` | synthetic |
+| PVRTC | `PVRTC_RGB2`, `PVRTC_RGBA2`, `PVRTC_RGB4`, `PVRTC_RGBA4` | WASM `decode_pvrtc` | editor-built (2019.4) |
+| ATC | `ATC_RGB4`, `ATC_RGBA8` | WASM `decode_atc_rgb4`, `decode_atc_rgba8` | synthetic |
+| ASTC | `ASTC_RGB_4x4`, `ASTC_RGB_5x5`, `ASTC_RGB_6x6`, `ASTC_RGB_8x8`, `ASTC_RGB_10x10`, `ASTC_RGB_12x12` (Unity's `ASTC_4x4` ... `ASTC_12x12`), `ASTC_HDR_4x4`, `ASTC_HDR_12x12` | WASM `decode_astc` | editor-built (6000.3) |
+| | `ASTC_RGBA_4x4`, `ASTC_RGBA_5x5`, `ASTC_RGBA_6x6`, `ASTC_RGBA_8x8`, `ASTC_RGBA_10x10`, `ASTC_RGBA_12x12`, `ASTC_HDR_5x5`, `ASTC_HDR_6x6`, `ASTC_HDR_8x8`, `ASTC_HDR_10x10` | WASM `decode_astc` | fixture data of the `ASTC_RGB_*` format of the same block size |
+| Crunch | `DXT1Crunched`, `DXT5Crunched`, `ETC_RGB4Crunched`, `ETC2_RGBA8Crunched` | WASM `unpack_unity_crunch` (or `unpack_crunch`, see below), then the block decoder | editor-built (6000.3; Unity's crunch, 2017.3+) |
+
+Every other `TextureFormat` is refused (see [Not supported](#not-supported)).
 
 Details worth knowing:
 
@@ -185,7 +199,12 @@ Details worth knowing:
   refused.
 - **Xbox 360:** the byte order of `ARGB4444`, `RGB565`, `DXT1` and `DXT5` is swapped back.
 - **PS4, PS5:** refused. Their textures can be tiled, and no reference implementation detiles them
-  yet.
+  yet ([#130](https://github.com/fatal10110/texture2ddecoder-wasm/issues/130)).
+- **Every other build target** (Windows, macOS, Linux, Android, iOS, WebGL, ...): the image data
+  is decoded as stored.
+
+No fixture editor here has the Switch or Xbox 360 module, so those two are tested on generated
+data checked against UnityPy, not on real console builds.
 
 ## Not supported
 
@@ -196,6 +215,7 @@ Each of these throws `UnsupportedError`, whose `kind` and `found` say what was r
 - Textures built for PS4 or PS5.
 - Sprites with an alpha texture (ETC1 split alpha), and sprites of a variant atlas (a
   `downscaleMultiplier` other than 1).
+- With `tightMesh`, a sprite mesh whose positions are not 32-bit floats.
 
 Not provided at all: mip levels other than the first; the `Cubemap`, `Texture2DArray` and
 `Texture3D` classes; image encoding (PNG, JPEG).
