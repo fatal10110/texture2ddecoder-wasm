@@ -97,6 +97,16 @@ Node.js 20.19+ or 22.12+ (`engines`: `^20.19.0 || >=22.12.0`), for both `import`
 
 Full JSDoc is in the bundled `index.d.ts`.
 
+## Acknowledgements
+
+- [AssetStudio](https://github.com/Razviar/assetstudio) (MIT, © Perfare, RazTools, Razviar):
+  `loadPath()`'s file handling (split files, sidecar lookup) is hand-ported from its
+  `AssetsManager.cs`, `ImportHelper.cs` and `ResourceReader.cs`.
+- [UnityPy](https://github.com/K0lb3/UnityPy) (MIT, © K0lb3): generates the test goldens.
+
+The full list, and a comparison with similar npm packages, is in the
+[repository README](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/README.md#acknowledgements).
+
 ## License
 
 MIT. `loadPath()` ports parts of AssetStudio (MIT); see

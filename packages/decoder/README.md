@@ -27,7 +27,7 @@ console.log([...decoded.slice(0, 4)]); // [0, 0, 255, 255] — BGRA, not RGBA
 
 For real assets, supply compressed texture payloads and the matching dimensions/format. Browser initialization and WASM asset paths are covered in the [Quick Start Guide](QUICK_START.md).
 
-Same codecs as [Perfare's Texture2DDecoder](https://github.com/Perfare/AssetStudio/tree/master/Texture2DDecoder) (AssetStudio) and the formats covered by [K0lb3/texture2ddecoder](https://github.com/K0lb3/texture2ddecoder) (Python + native) — this package ships them as WASM so you can decode in **browser + Node** without native deps.
+Same codecs as [Perfare's Texture2DDecoder](https://github.com/Perfare/AssetStudio/tree/master/Texture2DDecoderNative) (AssetStudio) and the formats covered by [K0lb3/texture2ddecoder](https://github.com/K0lb3/texture2ddecoder) (Python + native) — this package ships them as WASM so you can decode in **browser + Node** without native deps.
 
 ## Features
 
@@ -488,15 +488,18 @@ The build script ([scripts/build-wasm.sh](scripts/build-wasm.sh)) automatically:
 
 This project is licensed under MIT.
 
-Inspired by [K0lb3's texture2ddecoder](https://github.com/K0lb3/texture2ddecoder) Python library.
+The decoders are the C++ sources of [K0lb3's texture2ddecoder](https://github.com/K0lb3/texture2ddecoder)
+(MIT, © K0lb3), included as a git submodule and compiled to WebAssembly with
+[Emscripten](https://github.com/emscripten-core/emscripten) (MIT or University of Illinois/NCSA),
+which also generates the JavaScript loader in `wasm/`.
 
 The texture compression codecs were derived from the following sources:
 
 | Codec          | License       | Source                                                                                                                                |
 | -------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| ATC            | MIT           | [Perfare/AssetStudio - Texture2DDecoderNative/atc.cpp](https://github.com/Perfare/AssetStudio/tree/master/atc.cpp)                    |
+| ATC            | MIT           | [Perfare/AssetStudio - Texture2DDecoderNative/atc.cpp](https://github.com/Perfare/AssetStudio/blob/master/Texture2DDecoderNative/atc.cpp) |
 | ASTC           | MIT           | [Ishotihadus/mikunyan - ext/decoders/native/astc.c](https://github.com/Ishotihadus/mikunyan/tree/master/ext/decoders/native/astc.c)   |
-| BCn            | MIT           | [Perfare/AssetStudio - Texture2DDecoderNative/bcn.cpp](https://github.com/Perfare/AssetStudio/tree/master/bcn.cpp)                    |
+| BCn            | MIT           | [Perfare/AssetStudio - Texture2DDecoderNative/bcn.cpp](https://github.com/Perfare/AssetStudio/blob/master/Texture2DDecoderNative/bcn.cpp) |
 | ETC            | MIT           | [Ishotihadus/mikunyan - ext/decoders/native/etc.c](https://github.com/Ishotihadus/mikunyan/tree/master/ext/decoders/native/etc.c)     |
 | f16            | MIT           | [Maratyszcza/FP16](https://github.com/Maratyszcza/FP16)                                                                               |
 | PVRTC          | MIT           | [Ishotihadus/mikunyan - ext/decoders/native/pvrtc.c](https://github.com/Ishotihadus/mikunyan/tree/master/ext/decoders/native/pvrtc.c) |
@@ -505,9 +508,10 @@ The texture compression codecs were derived from the following sources:
 
 ## Related Projects
 
-- [texture2ddecoder](https://github.com/K0lb3/texture2ddecoder) - Python wrapper (original inspiration)
+- [texture2ddecoder](https://github.com/K0lb3/texture2ddecoder) - the C++ decoders this package compiles, with Python bindings
 - [AssetStudio](https://github.com/Perfare/AssetStudio) - Original C++ texture decoders
 - [UnityPy](https://github.com/K0lb3/UnityPy) - Unity asset extraction tool
+- [unity-asset-reader-texture](https://www.npmjs.com/package/unity-asset-reader-texture) - decodes Unity `Texture2D` and `Sprite` assets with this package; the [repository README](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/README.md#comparison-with-other-packages) compares it with similar npm packages
 
 ## Contributing
 

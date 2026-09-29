@@ -385,6 +385,23 @@ For tools that work below `load()`:
 | `BinaryReader`, `Endian` | Bounds-checked reader over a `Uint8Array`, little- or big-endian |
 | `UnsupportedError`, `CorruptError`, `ResourceNotFoundError` | See [Errors](#errors) |
 
+## Acknowledgements
+
+- [AssetStudio](https://github.com/Razviar/assetstudio) (MIT, © Perfare, RazTools, Razviar): the
+  bundle, SerializedFile, type tree and class readers are hand-ported from it; each ported file
+  names its source.
+- [UnityPy](https://github.com/K0lb3/UnityPy) (MIT, © K0lb3): generates the test goldens, and is
+  the source of the UnityFS header version gates, the `[SerializeReference]` registry reading and
+  the common-string table.
+- [AssetRipper TypeTreeDumps](https://github.com/AssetRipper/TypeTreeDumps) and
+  [Tpk](https://github.com/AssetRipper/Tpk) (Tpk: MIT): indirectly, the type tree data in
+  UnityPy's TPK table, which the common strings and several version gates come from.
+- [fflate](https://github.com/101arrowz/fflate) (MIT) for gzip and zlib, and
+  [lzma1](https://github.com/xseman/lzma1) (MIT) for LZMA: the two runtime dependencies.
+
+The full list, and a comparison with similar npm packages, is in the
+[repository README](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/README.md#acknowledgements).
+
 ## License
 
 MIT. This package is a derivative port of AssetStudio (MIT) and uses UnityPy (MIT) as a secondary

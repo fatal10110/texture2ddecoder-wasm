@@ -237,6 +237,24 @@ Every export. Each one has full JSDoc (parameters, return values, what it throws
 | `convertPlain(data, width, height, format)` | One plain-format image to RGBA, rows **as stored** (bottom row first). No console layouts undone. `decodeTexture2D` is usually what you want |
 | `RgbaImage` | `{ data, width, height }`: 4 bytes per pixel, R G B A |
 
+## Acknowledgements
+
+- [AssetStudio](https://github.com/Razviar/assetstudio) (MIT, © Perfare, RazTools, Razviar): the
+  plain texture conversion, the choice of block decoder per format, the Xbox 360 byte swap, the
+  vertical flip, and sprite cropping, rotation and the tight-mesh mask are hand-ported from it.
+- [UnityPy](https://github.com/K0lb3/UnityPy) (MIT, © K0lb3): generates the test goldens, and is
+  the source of the Switch texture deswizzle, which is based in turn on
+  [AssetsTools.NET](https://github.com/nesrak1/AssetsTools.NET)'s `SwitchSwizzle.cs` (MIT,
+  © nesrak1).
+- [ImageSharp.Drawing](https://github.com/SixLabors/ImageSharp.Drawing) (Apache-2.0, © Six Labors):
+  the tight-mesh triangle fill is a modified translation of parts of it.
+- [`texture2ddecoder-wasm`](https://www.npmjs.com/package/texture2ddecoder-wasm) (MIT): the block
+  and Crunch decoding, which is [K0lb3's texture2ddecoder](https://github.com/K0lb3/texture2ddecoder)
+  compiled to WASM with [Emscripten](https://github.com/emscripten-core/emscripten).
+
+The full list, and a comparison with similar npm packages, is in the
+[repository README](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/README.md#acknowledgements).
+
 ## License
 
 `MIT AND Apache-2.0`. The package is MIT, except the sprite tight-mesh fill in `decodeSprite`. That
