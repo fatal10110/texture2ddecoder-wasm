@@ -254,7 +254,8 @@ hand-written byte layout in this package's tests.
 hand-written reader for the classes below. Those readers also work on bundles built without type
 trees (`BuildAssetBundleOptions.DisableWriteTypeTree`). The table lists the main fields of
 `asset.data` (the type in brackets); the JSDoc of each type has every field, with its Unity name.
-"From" is the first Unity version whose layout the reader knows; an older one is refused.
+"From" is the first Unity version whose layout the reader knows. The other readers refuse an older
+version; `Texture2D` has no floor: it reads any older version with its oldest layout.
 
 | Class | Main fields of `asset.data` | From | Fixture |
 |---|---|---|---|
@@ -263,7 +264,7 @@ trees (`BuildAssetBundleOptions.DisableWriteTypeTree`). The table lists the main
 | `MonoBehaviour` (`MonoBehaviourFields`) | `script` (the `MonoScript` pointer), `gameObject`, `enabled`, `name`, and `fields`: every field of the script, with a type tree only | Any | Yes |
 | `MonoScript` (`MonoScriptFields`) | `className`, `namespace`, `assemblyName` | 3.4 | Yes |
 | `Material` (`MaterialFields`) | `shader` pointer, keywords, and `savedProperties`: `texEnvs` (texture slots), `floats`, `ints`, `colors` | 3.4 | Yes |
-| `Texture2D` (`Texture2DFields`) | `width`, `height`, `format` (a `TextureFormat`), `mipCount`, `textureSettings`, `platform` and `imageData`, still encoded (inline or from the `.resS`). Decode it with [`unity-asset-reader-texture`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/texture/README.md) | 3.4 | Yes |
+| `Texture2D` (`Texture2DFields`) | `width`, `height`, `format` (a `TextureFormat`), `mipCount`, `textureSettings`, `platform` and `imageData`, still encoded (inline or from the `.resS`). Decode it with [`unity-asset-reader-texture`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/texture/README.md) | Any (gates from 2.6; tested from 3.4) | Yes |
 | `Sprite` (`SpriteFields`) | `rect`, `pivot`, `border`, `pixelsToUnits`, `renderData` (texture area and mesh). Cut it out with `unity-asset-reader-texture` | 4.3 | 2019.4, 6000.3 |
 | `SpriteAtlas` (`SpriteAtlasFields`) | `packedSprites` and `renderDataMap`. Refused from 6000.6 on, whose layout is not ported | 2017.1 | 2019.4, 6000.3 |
 | `AudioClip` (`AudioClipFields`) | `channels`, `frequency`, `length`, `compressionFormat` and `audioData`: the sound bank as stored (usually FSB5), not decoded | 3.4 | Yes |
@@ -282,7 +283,7 @@ throws `UnsupportedError` for them. The class readers are for player builds; see
 |---|---|
 | **Tested** on editor-built fixtures | **2019.4.41f2, 2020.3.30f1 and 6000.3.25f1**: SerializedFile formats 21 and 22, UnityFS formats 7 and 8, LZ4, LZMA and uncompressed blocks, with and without type trees, and version-stripped |
 | Tested on unit tests only | The class readers' version gates from 3.4 to 6000.6 and their refusals below; SerializedFile formats 6, 8 and 15 |
-| Handled in code, no test | The rest of SerializedFile formats 2 to 22 |
+| Handled in code, no test | The rest of SerializedFile formats 2 to 22; `Texture2D`'s layouts before 3.4 (gates at 2.6 and 3.0) |
 
 A class reader reads a version newer than its newest gate (6000.5) with the newest layout it
 knows. `readTypeTree()` does not depend on the Unity version, so it reads every format from 2 to
@@ -315,7 +316,8 @@ and throws `UnsupportedError` (kind `"Unity version"`) otherwise:
 | `MovieTexture` | Refused |
 
 The version-stripped fixtures, in formats 21 and 22, hold a `TextAsset`, a `Material`,
-`AudioClip`s, a `VideoClip`, a `Font` and the font's `Texture2D`. The other rows are unit tests.
+`AudioClip`s, a `VideoClip`, a `Font`, the font's `Texture2D` and the bundle's `AssetBundle`.
+The other rows are unit tests.
 
 ### Not supported
 
@@ -327,9 +329,9 @@ Each of these throws `UnsupportedError` naming what it found:
   that modified the format.
 - One bundle that unpacks to more than `0x7fffffff` bytes (2 GiB).
 - A class reader for a version it has no layout for: before its "From" version in
-  [Classes](#classes), `SpriteAtlas` from 6000.6 on, or a version-stripped file where the bytes do
-  not decide the layout ([Version-stripped files](#version-stripped-files)). `readTypeTree()`
-  still works on such files.
+  [Classes](#classes) (`Texture2D` has none), `SpriteAtlas` from 6000.6 on, or a
+  version-stripped file where the bytes do not decide the layout
+  ([Version-stripped files](#version-stripped-files)). `readTypeTree()` still works on such files.
 - An editor file (`BuildTarget.NoTarget`) read by the reader of `Texture2D`, `MovieTexture`,
   `MonoScript`, `MonoBehaviour`, `Sprite`, `SpriteAtlas` or `AudioClip`, or by `Material`'s from
   Unity 2022.1 on: those read player data only. `readTypeTree()` reads editor files.

@@ -164,7 +164,9 @@ The short answer. The full tables, with what each claim is tested on, are in the
   layouts from Unity 3.4 (`Sprite` from 4.3, `VideoClip` from 5.6, `SpriteAtlas` from 2017.1) up
   to 6000.5, and read a newer version with the newest layout they know; `SpriteAtlas` refuses
   6000.6 and later. A class reader refuses a version older than its first layout;
-  `readTypeTree()` still reads such an object.
+  `readTypeTree()` still reads such an object. `Texture2D` is the exception: it has no floor,
+  with gates at 2.6 and 3.0 that no test covers, and reads any older version with its oldest
+  layout.
 - **Version-stripped files** (`AssetBundleStripUnityVersion`): type tree reads work. A class
   reader reads the object when its bytes or the SerializedFile format decide the layout, and
   refuses it otherwise: `Texture2D`, `MovieTexture` and `MonoScript` always; `Material`,
