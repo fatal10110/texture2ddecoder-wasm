@@ -148,13 +148,16 @@ function section(markdown, heading) {
   return lines.slice(start + 1, next < 0 ? undefined : next).join("\n");
 }
 
-/** The first cell of every body row of every Markdown table in `text` (header and rule skipped). */
-function firstCells(text) {
+/**
+ * Cell `column` (1 is the first) of every body row of every Markdown table in `text`
+ * (header and rule skipped).
+ */
+function tableCells(text, column = 1) {
   const cells = [];
   let row = 0;
   for (const line of text.split("\n")) {
     row = line.startsWith("|") ? row + 1 : 0;
-    if (row > 2) cells.push(line.split("|")[1].trim());
+    if (row > 2) cells.push(line.split("|")[column].trim());
   }
   return cells;
 }
@@ -208,13 +211,13 @@ const ROOT_SUPPORT = "## Supported formats and Unity versions";
 
 test("core README: the Classes table lists exactly the classes of CLASS_READERS", () => {
   const table = section(read(PACKAGE_READMES.core), "### Classes");
-  const rows = firstCells(table).map((cell) => cell.match(/^`(\w+)`/)?.[1] ?? cell);
+  const rows = tableCells(table).map((cell) => cell.match(/^`(\w+)`/)?.[1] ?? cell);
   assert.deepEqual(sorted(rows), sorted(classReaders()));
 });
 
 test("core README: the version-stripped table lists exactly the classes of CLASS_READERS", () => {
   const table = section(read(PACKAGE_READMES.core), "### Version-stripped files");
-  const rows = firstCells(table).map((cell) => cell.match(/^`(\w+)`$/)?.[1] ?? cell);
+  const rows = tableCells(table).map((cell) => cell.match(/^`(\w+)`$/)?.[1] ?? cell);
   assert.deepEqual(sorted(rows), sorted(classReaders()));
 });
 
@@ -229,10 +232,9 @@ test("texture README: the format table lists exactly the TextureFormats the pack
   const decoded = decodedFormats();
   const unknown = decoded.filter((name) => !all.has(name));
   assert.deepEqual(unknown, [], `decoded formats missing from TextureFormat: ${unknown}`);
-  const table = section(read(PACKAGE_READMES.texture), "## Texture formats").split(
-    "\nDetails worth knowing",
-  )[0];
-  const listed = [...codeNames(table)].filter((name) => all.has(name));
+  // Only the Formats column counts: other cells name formats too (the 3DS row's decoder).
+  const formats = tableCells(section(read(PACKAGE_READMES.texture), "## Texture formats"), 2);
+  const listed = [...codeNames(formats.join(" "))].filter((name) => all.has(name));
   assert.deepEqual(sorted(listed), sorted(decoded));
 });
 
