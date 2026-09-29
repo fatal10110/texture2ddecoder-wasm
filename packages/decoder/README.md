@@ -40,36 +40,32 @@ Same codecs as [Perfare's Texture2DDecoder](https://github.com/Perfare/AssetStud
 
 ## Supported Formats
 
-### BCn (Block Compression)
+One function per format family. Each takes the raw block data and the image size and resolves to
+BGRA, 4 bytes per pixel, or `null` when the data does not decode. The two Crunch functions
+unpack to the block data underneath, which you then pass to that format's decoder.
 
-- BC1 (DXT1) - RGB compression
-- BC3 (DXT5) - RGBA compression. Colour always decodes in 4-colour mode, per S3TC ([#137](https://github.com/fatal10110/texture2ddecoder-wasm/issues/137)), so on c0 <= c1 blocks it differs from AssetStudio and K0lb3/texture2ddecoder
-- BC4 - Single channel compression
-- BC5 - Dual channel compression
-- BC6 - HDR compression
-- BC7 - High quality compression
-
-### ETC (Ericsson Texture Compression)
-
-- ETC1 - RGB compression
-- ETC2 - Improved RGB compression
-- ETC2A1 - RGB + 1-bit alpha
-- ETC2A8 - RGB + 8-bit alpha
-
-### EAC (Ericsson Alpha Compression)
-
-- EAC R11 - Single channel
-- EAC R11 (signed) - Single channel signed
-- EAC RG11 - Dual channel
-- EAC RG11 (signed) - Dual channel signed
-
-### Other Formats
-
-- **PVRTC** - PowerVR Texture Compression (2bpp and 4bpp)
-- **ASTC** - Adaptive Scalable Texture Compression (various block sizes)
-- **ATC** - AMD Texture Compression (RGB4 and RGBA8)
-- **Crunch** - Crunch compressed textures
-- **Unity Crunch** - Unity's variant of Crunch compression
+| Format | Function | Notes |
+|---|---|---|
+| BC1 (DXT1) | `decode_bc1` | |
+| BC3 (DXT5) | `decode_bc3` | Colour always decodes in 4-colour mode, per S3TC ([#137](https://github.com/fatal10110/texture2ddecoder-wasm/issues/137)), so on c0 <= c1 blocks it differs from AssetStudio and K0lb3/texture2ddecoder |
+| BC4 | `decode_bc4` | One channel |
+| BC5 | `decode_bc5` | Two channels |
+| BC6H | `decode_bc6` | |
+| BC7 | `decode_bc7` | |
+| ETC1 | `decode_etc1` | |
+| ETC2 RGB | `decode_etc2` | |
+| ETC2 RGB A1 | `decode_etc2a1` | 1-bit alpha |
+| ETC2 RGBA8 | `decode_etc2a8` | 8-bit alpha |
+| EAC R11 | `decode_eacr` | |
+| EAC R11 signed | `decode_eacr_signed` | |
+| EAC RG11 | `decode_eacrg` | |
+| EAC RG11 signed | `decode_eacrg_signed` | |
+| PVRTC 2 bpp and 4 bpp | `decode_pvrtc` | `is2bpp` picks the mode |
+| ASTC | `decode_astc` | The block size is `blockWidth` x `blockHeight` |
+| ATC RGB4 | `decode_atc_rgb4` | |
+| ATC RGBA8 | `decode_atc_rgba8` | |
+| Crunch | `unpack_crunch` | Unpacks to the block data it wraps |
+| Unity Crunch (Unity 2017.3+) | `unpack_unity_crunch` | Unpacks to the block data it wraps |
 
 ## Installation
 

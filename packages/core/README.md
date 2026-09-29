@@ -229,16 +229,24 @@ Nothing returns partial or garbage data without an error.
 
 ## Supported
 
+Each row is checked against the code. In "Tested on", "fixture" means a bundle built by the Unity editor
+([`fixtures/`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/fixtures/README.md)),
+"generated" a container written by UnityPy's bundle writer around made-up bytes, and "unit test" a
+hand-written byte layout in this package's tests.
+
 ### Containers and compression
 
-| Input | Support |
-|---|---|
-| UnityFS | Yes: uncompressed, LZMA, LZ4 and LZ4HC blocks; blocks info at the end (flag `0x80`); 2019.4+ block padding (flag `0x200`) |
-| UnityWeb, UnityRaw (legacy web player bundles) | Yes: the old level layout and the format 6 archive layout, LZMA-compressed (UnityWeb) or not (UnityRaw) |
-| `UnityWebData1.0` (WebGL `.data`) | Yes, and a bundle inside it is opened too |
-| A gzip-wrapped file | Yes: unwrapped, then opened as whatever is inside |
-| A loose SerializedFile (`.assets`, `level0`, `globalgamemanagers`) and `.resS` / `.resource` files | Yes |
-| SerializedFile format versions | 2 to 22 are ported. See [Tested range](#tested-range) |
+| Input | Support | Tested on |
+|---|---|---|
+| UnityFS | Formats 6, 7 and 8. Blocks info at the end (flag `0x80`), 2019.4+ block padding (flag `0x200`), the 16-byte header padding of format 7 and of 2019.4.15+ format 6 | Fixtures (formats 7 and 8), generated (format 6) |
+| UnityWeb, UnityRaw (legacy web player bundles) | The old level layout and the format 6 archive layout, LZMA-compressed (UnityWeb) or not (UnityRaw) | Generated (formats 2 and 3), unit tests (formats 4 and 6) |
+| `UnityWebData1.0` (WebGL `.data`) | Yes, and a bundle inside it is opened too | Generated |
+| A gzip-wrapped file | Unwrapped, then opened as whatever is inside | Generated |
+| A loose SerializedFile (`.assets`, `level0`, `globalgamemanagers`) | Yes | Fixtures' SerializedFile nodes, read on their own |
+| `.resS` / `.resource` resource files, loose or bundle nodes | Yes: `Texture2D`, `AudioClip` and `VideoClip` read their data from them | Fixtures |
+| Split files (`.split0`, `.split1`, ...) | Pass the joined file to `load()`; [`unity-asset-reader-node`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/node/README.md)'s `loadPath()` joins them | Unit tests of `-node` |
+| Bundle block compression | None, LZMA, LZ4, LZ4HC (LZ4HC blocks decode as LZ4) | Fixtures (none, LZMA, LZ4), generated |
+| SerializedFile format versions | 2 to 22, little- and big-endian. See [Unity versions](#unity-versions) | Fixtures (21, 22), unit tests (6, 8, 15) |
 
 ### Classes
 
@@ -246,32 +254,68 @@ Nothing returns partial or garbage data without an error.
 hand-written reader for the classes below. Those readers also work on bundles built without type
 trees (`BuildAssetBundleOptions.DisableWriteTypeTree`). The table lists the main fields of
 `asset.data` (the type in brackets); the JSDoc of each type has every field, with its Unity name.
+"From" is the first Unity version whose layout the reader knows; an older one is refused.
 
-| Class | Main fields of `asset.data` |
+| Class | Main fields of `asset.data` | From | Fixture |
+|---|---|---|---|
+| `AssetBundle` (`AssetBundleFields`) | `container`: asset path to object, the bundle's table of contents; `preloadTable`, `dependencies` | 3.4 | Yes |
+| `TextAsset` (`TextAssetFields`) | `bytes`: the file as stored; `text`: those bytes decoded as UTF-8 (on first use) | 3.4 | Yes |
+| `MonoBehaviour` (`MonoBehaviourFields`) | `script` (the `MonoScript` pointer), `gameObject`, `enabled`, `name`, and `fields`: every field of the script, with a type tree only | Any | Yes |
+| `MonoScript` (`MonoScriptFields`) | `className`, `namespace`, `assemblyName` | 3.4 | Yes |
+| `Material` (`MaterialFields`) | `shader` pointer, keywords, and `savedProperties`: `texEnvs` (texture slots), `floats`, `ints`, `colors` | 3.4 | Yes |
+| `Texture2D` (`Texture2DFields`) | `width`, `height`, `format` (a `TextureFormat`), `mipCount`, `textureSettings`, `platform` and `imageData`, still encoded (inline or from the `.resS`). Decode it with [`unity-asset-reader-texture`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/texture/README.md) | 3.4 | Yes |
+| `Sprite` (`SpriteFields`) | `rect`, `pivot`, `border`, `pixelsToUnits`, `renderData` (texture area and mesh). Cut it out with `unity-asset-reader-texture` | 4.3 | 2019.4, 6000.3 |
+| `SpriteAtlas` (`SpriteAtlasFields`) | `packedSprites` and `renderDataMap`. Refused from 6000.6 on, whose layout is not ported | 2017.1 | 2019.4, 6000.3 |
+| `AudioClip` (`AudioClipFields`) | `channels`, `frequency`, `length`, `compressionFormat` and `audioData`: the sound bank as stored (usually FSB5), not decoded | 3.4 | Yes |
+| `VideoClip` (`VideoClipFields`) | `width`, `height`, `frameRate`, `frameCount` and `videoData`: the video file as imported (e.g. WebM, MP4), not decoded | 5.6 | Yes |
+| `Font` (`FontFields`) | `fontData`: the TrueType/OpenType file; `fontNames`, `fontSize`, `characterRects` | 3.4 | Yes |
+| `MovieTexture` (`MovieTextureFields`) | `movieData` (the Ogg Theora file), `loop`, `audioClip` | 3.4 | No, unit tests only |
+
+"Yes" is all three fixture editors. Every other class (`GameObject`, `Transform`, `Mesh`,
+`AnimationClip`, ...) comes from its type tree. In a bundle without type trees, `obj.read()`
+throws `UnsupportedError` for them. The class readers are for player builds; see
+[Not supported](#not-supported) for the editor files they refuse.
+
+### Unity versions
+
+| | Unity versions |
 |---|---|
-| `AssetBundle` (`AssetBundleFields`) | `container`: asset path to object, the bundle's table of contents; `preloadTable`, `dependencies` |
-| `TextAsset` (`TextAssetFields`) | `bytes`: the file as stored; `text`: those bytes decoded as UTF-8 (on first use) |
-| `MonoBehaviour` (`MonoBehaviourFields`) | `script` (the `MonoScript` pointer), `gameObject`, `enabled`, `name`, and `fields`: every field of the script, with a type tree only |
-| `MonoScript` (`MonoScriptFields`) | `className`, `namespace`, `assemblyName` |
-| `Material` (`MaterialFields`) | `shader` pointer, keywords, and `savedProperties`: `texEnvs` (texture slots), `floats`, `ints`, `colors` |
-| `Texture2D` (`Texture2DFields`) | `width`, `height`, `format` (a `TextureFormat`), `mipCount`, `textureSettings`, `platform` and `imageData`, still encoded (inline or from the `.resS`). Decode it with [`unity-asset-reader-texture`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/texture/README.md) |
-| `Sprite` (`SpriteFields`), `SpriteAtlas` (`SpriteAtlasFields`) | `rect`, `pivot`, `border`, `pixelsToUnits`, `renderData` (texture area and mesh); an atlas' `packedSprites` and `renderDataMap`. Cut them out with `unity-asset-reader-texture` |
-| `AudioClip` (`AudioClipFields`) | `channels`, `frequency`, `length`, `compressionFormat` and `audioData`: the sound bank as stored (usually FSB5), not decoded |
-| `VideoClip` (`VideoClipFields`) | `width`, `height`, `frameRate`, `frameCount` and `videoData`: the video file as imported (e.g. WebM, MP4), not decoded |
-| `Font` (`FontFields`) | `fontData`: the TrueType/OpenType file; `fontNames`, `fontSize`, `characterRects` |
-| `MovieTexture` (`MovieTextureFields`) | `movieData` (the Ogg Theora file), `loop`, `audioClip`; no fixture covers it yet |
+| **Tested** on editor-built fixtures | **2019.4.41f2, 2020.3.30f1 and 6000.3.25f1**: SerializedFile formats 21 and 22, UnityFS formats 7 and 8, LZ4, LZMA and uncompressed blocks, with and without type trees, and version-stripped |
+| Tested on unit tests only | The class readers' version gates from 3.4 to 6000.6 and their refusals below; SerializedFile formats 6, 8 and 15 |
+| Handled in code, no test | The rest of SerializedFile formats 2 to 22 |
 
-Every other class (`GameObject`, `Transform`, `Mesh`, `AnimationClip`, ...) comes from its type
-tree. In a bundle without type trees, `obj.read()` throws `UnsupportedError` for them.
+A class reader reads a version newer than its newest gate (6000.5) with the newest layout it
+knows. `readTypeTree()` does not depend on the Unity version, so it reads every format from 2 to
+22.
 
-### Tested range
+A SerializedFile of format 6 or older records no Unity version. In a bundle it takes the
+bundle's `unityRevision`. A loose one has version `[0, 0, 0, 0]`, and the class readers treat it
+as a version-stripped file (below).
 
-The parser is ported for every version its upstream handles. It is **tested** on bundles built
-with Unity **2019.4.41f2, 2020.3.30f1 and 6000.3.25f1**: SerializedFile **formats 21 and 22**,
-UnityFS format 7 and 8, with LZ4, LZMA and uncompressed blocks, with and without type trees, and
-version-stripped (`AssetBundleStripUnityVersion`). UnityFS format 6, UnityWeb, UnityRaw,
-`UnityWebData` and gzip are tested on generated containers whose contents are not real
-SerializedFiles. SerializedFile formats 20 and older are ported but no test bundle covers them.
+### Version-stripped files
+
+A bundle built with `AssetBundleStripUnityVersion` records `"0.0.0"` as its Unity version, in
+the bundle header and in each SerializedFile. `readTypeTree()` reads it as usual. Each class
+reader reads such an object only when its bytes or the SerializedFile format leave one layout,
+and throws `UnsupportedError` (kind `"Unity version"`) otherwise:
+
+| Class | Version-stripped |
+|---|---|
+| `AssetBundle` | Read, format 16 and later |
+| `TextAsset` | Read, format 7 and later |
+| `MonoBehaviour` | Read |
+| `MonoScript` | Refused |
+| `Material` | Read in formats 18 to 21 (Unity 2019), refused otherwise |
+| `Texture2D` | Refused |
+| `Sprite` | Read in formats 18 to 21 (Unity 2019), refused otherwise |
+| `SpriteAtlas` | Read in formats 18 to 21 (Unity 2019), refused otherwise |
+| `AudioClip` | Read, format 18 and later |
+| `VideoClip` | Read, format 21 and later |
+| `Font` | Read, format 16 and later |
+| `MovieTexture` | Refused |
+
+The version-stripped fixtures, in formats 21 and 22, hold a `TextAsset`, a `Material`,
+`AudioClip`s, a `VideoClip`, a `Font` and the font's `Texture2D`. The other rows are unit tests.
 
 ### Not supported
 
@@ -282,10 +326,13 @@ Each of these throws `UnsupportedError` naming what it found:
 - Encrypted bundles (UnityCN and other game-specific encryption), and the containers of games
   that modified the format.
 - One bundle that unpacks to more than `0x7fffffff` bytes (2 GiB).
-- A class reader for a version it has no layout for: before Unity 3.4, or a version-stripped file
-  where the bytes do not decide the layout. `readTypeTree()` still works on such files.
-- An editor file (`BuildTarget.NoTarget`) read by `Texture2D`'s or `MonoScript`'s reader, which
-  read player data only.
+- A class reader for a version it has no layout for: before its "From" version in
+  [Classes](#classes), `SpriteAtlas` from 6000.6 on, or a version-stripped file where the bytes do
+  not decide the layout ([Version-stripped files](#version-stripped-files)). `readTypeTree()`
+  still works on such files.
+- An editor file (`BuildTarget.NoTarget`) read by the reader of `Texture2D`, `MovieTexture`,
+  `MonoScript`, `MonoBehaviour`, `Sprite`, `SpriteAtlas` or `AudioClip`, or by `Material`'s from
+  Unity 2022.1 on: those read player data only. `readTypeTree()` reads editor files.
 
 Out of scope for this package: decoding audio, video or meshes; writing or repacking bundles;
 image encoding (PNG, JPEG). Texture and sprite pixels are in

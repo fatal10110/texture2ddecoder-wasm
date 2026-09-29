@@ -131,18 +131,60 @@ the Vite and Next.js setups.
 - [`examples/`](examples/README.md): a CDN page that reads a bundle in a Worker and draws its
   textures.
 
-## At a glance
+## Supported formats and Unity versions
 
-| | |
+The short answer. The full tables, with what each claim is tested on, are in the package READMEs:
+[containers, compression, classes and Unity versions](packages/core/README.md#supported),
+[texture formats, platforms and sprites](packages/texture/README.md#texture-formats), and
+[`texture2ddecoder-wasm`'s block formats](packages/decoder/README.md#supported-formats).
+
+| | Supported |
 |---|---|
-| Containers | UnityFS, UnityWeb, UnityRaw, `UnityWebData` (WebGL `.data`), gzip, loose SerializedFiles and `.resS` |
-| Compression | LZ4, LZ4HC, LZMA, none |
-| Objects | Any class through its type tree. Hand-written readers for `AssetBundle`, `TextAsset`, `MonoBehaviour`, `MonoScript`, `Material`, `Texture2D`, `Sprite`, `SpriteAtlas`, `AudioClip`, `VideoClip`, `Font` and `MovieTexture` also read bundles built without type trees |
-| Textures | Plain formats in TypeScript; BC1–7, ETC1/2, EAC, PVRTC, ASTC, ATC and Crunch through WASM. Output is RGBA |
-| Tested on | Bundles built with Unity 2019.4, 2020.3 and 6000.3 (SerializedFile formats 21 and 22) |
-| Not supported | LZHAM, brotli, zstd, `UnityArchive`, encrypted bundles; audio, video and mesh decoding; writing bundles |
+| Containers | UnityFS; UnityWeb and UnityRaw (legacy web player bundles); `UnityWebData1.0` (a WebGL `.data` file); a gzip-wrapped file; loose SerializedFiles (`.assets`, `level0`, `globalgamemanagers`); `.resS` and `.resource` resource files. Split files (`.split0`, `.split1`, ...) through `unity-asset-reader-node` |
+| Bundle compression | None, LZ4, LZ4HC, LZMA |
+| SerializedFile formats | 2 to 22, little- and big-endian |
+| Classes | Any class, through its type tree. A hand-written reader, which also reads bundles built without type trees, for `AssetBundle`, `TextAsset`, `MonoBehaviour`, `MonoScript`, `Material`, `Texture2D`, `Sprite`, `SpriteAtlas`, `AudioClip`, `VideoClip`, `Font` and `MovieTexture` |
+| Texture formats | 17 plain formats (`RGBA32`, `RGB565`, `RHalf`, `RGB9e5Float`, `YUY2`, ...) in TypeScript. Through WASM: BC1 (`DXT1`), BC3 (`DXT5`), BC4 to BC7; ETC1, ETC2 and their 3DS variants; EAC R and RG, signed too; PVRTC 2 and 4 bpp; ATC; ASTC LDR and HDR at 4x4 to 12x12; Crunch (`DXT1Crunched`, `DXT5Crunched`, `ETC_RGB4Crunched`, `ETC2_RGBA8Crunched`). Output is RGBA8, top row first, first mip level |
+| Sprites | Cut out of their texture, or of their `SpriteAtlas` when it is loaded; packer flips and rotations undone; optional transparency outside a tight mesh |
+| Platforms | Xbox 360 textures are byte-swapped back and Switch textures deswizzled. Textures of every other build target are decoded as stored, except PS4 and PS5 ones, which are refused ([#130](https://github.com/fatal10110/texture2ddecoder-wasm/issues/130)) |
+| Runtimes | Browsers and Web Workers (ES2020, WebAssembly for textures); Node.js `^20.19.0 \|\| >=22.12.0`, `import` and `require` |
 
-The full matrices are in the package READMEs.
+### Unity versions
+
+- **Tested on editor-built bundles:** Unity **2019.4.41f2**, **2020.3.30f1** and **6000.3.25f1**.
+  That is SerializedFile formats 21 and 22 and UnityFS formats 7 and 8, with LZ4, LZMA and
+  uncompressed blocks, with and without type trees, and version-stripped. PVRTC comes from
+  2019.4 only (Unity 6 no longer writes it), sprites and atlases from 2019.4 and 6000.3.
+- **Tested on generated or hand-written bytes only:** the class readers' version gates from
+  Unity 3.4 to 6000.6; SerializedFile formats 6, 8 and 15; UnityFS format 6; UnityWeb and
+  UnityRaw formats 2, 3, 4 and 6; `UnityWebData` and gzip. No real Unity build of those versions
+  or containers is in the tests.
+- **Handled in code:** SerializedFile formats 2 to 22 (Unity 2020.1 to 6000.x write 22). Type
+  tree reads work on every one of them, whatever the Unity version. The class readers know the
+  layouts from Unity 3.4 (`Sprite` from 4.3, `VideoClip` from 5.6, `SpriteAtlas` from 2017.1) up
+  to 6000.5, and read a newer version with the newest layout they know; `SpriteAtlas` refuses
+  6000.6 and later. A class reader refuses a version older than its first layout;
+  `readTypeTree()` still reads such an object.
+- **Version-stripped files** (`AssetBundleStripUnityVersion`): type tree reads work. A class
+  reader reads the object when its bytes or the SerializedFile format decide the layout, and
+  refuses it otherwise: `Texture2D`, `MovieTexture` and `MonoScript` always; `Material`,
+  `Sprite` and `SpriteAtlas` outside formats 18 to 21, so in every file from Unity 2020.1 on.
+  The table per class is in [the core README](packages/core/README.md#version-stripped-files).
+
+### Not supported
+
+Each of these throws `UnsupportedError`, naming what it found:
+
+- Compression: LZHAM, brotli (a WebGL build's `.br` files), zstd.
+- Containers: `UnityArchive`, zip archives, encrypted bundles (UnityCN and other game-specific
+  encryption).
+- Texture formats: `DXT3`, `ARGBFloat`, `RGBFloat`, `BGR24`, `R8`, `RG16`, `RG32`, `RGB48`,
+  `RGBA64`. Textures built for PS4 or PS5. Sprites with an alpha texture (ETC1 split alpha) or
+  from a variant atlas.
+
+Not provided at all: decoding audio, video or meshes; mip levels other than the first; the
+`Cubemap`, `Texture2DArray` and `Texture3D` classes; image encoding (PNG, JPEG); writing or
+repacking bundles.
 
 ## Development
 
