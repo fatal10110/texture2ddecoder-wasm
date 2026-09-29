@@ -23,7 +23,7 @@ console.log(decoded.length); // 64 bytes: 4 x 4 pixels x 4 channels
 console.log([...decoded.slice(0, 4)]); // [0, 0, 255, 255] — BGRA, not RGBA
 ```
 
-**Live demo:** [fatal10110.github.io/texture2ddecoder-wasm](https://fatal10110.github.io/texture2ddecoder-wasm/)
+**Live demo:** [fatal10110.github.io/texture2ddecoder-wasm/decoder.html](https://fatal10110.github.io/texture2ddecoder-wasm/decoder.html)
 
 For real assets, supply compressed texture payloads and the matching dimensions/format. Browser initialization and WASM asset paths are covered in the [Quick Start Guide](QUICK_START.md).
 
