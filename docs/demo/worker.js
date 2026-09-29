@@ -197,7 +197,12 @@ const handlers = {
     const indexOf = new Map(assets.map((asset, i) => [assetKey(asset.file, asset.pathId), i]));
     current = { env, assets, indexOf };
     return {
-      files: env.files.map(({ path, data }) => ({ path, size: data.length })),
+      // `resource`: matched no Unity format, so `open()` kept it as a resource file (as upstream does).
+      files: env.files.map(({ path, data }) => ({
+        path,
+        size: data.length,
+        resource: lib.detectFileType(data) === "resource",
+      })),
       assets: assets.map((asset, i) => row(lib, asset, i)),
     };
   },

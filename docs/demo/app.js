@@ -217,6 +217,13 @@ async function openSources(sources, what) {
     const ms = (performance.now() - started).toFixed(0);
     assets = result.assets;
     showAssets(result.files);
+    // Input that is no Unity file loads without an error, as a resource file: say so.
+    const unknown = result.files.filter((f) => f.resource);
+    if (assets.length === 0 && unknown.length > 0) {
+      const names = unknown.map((f) => f.path).join(", ");
+      setStatus("error", `0 assets. ${names}: not a Unity bundle or serialized file (kept as a resource file).`);
+      return;
+    }
     setStatus(
       "ready",
       `${assets.length} assets in ${result.files.length} files, read in ${ms} ms.`,

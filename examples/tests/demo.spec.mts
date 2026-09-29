@@ -372,6 +372,18 @@ test("an error is shown with its class and message", async ({ page }) => {
   await expect(page.locator("#status")).toHaveText(/^CorruptError: broken\.bundle: /);
 });
 
+test("a file that is not a Unity file is named, not shown as a success", async ({ page }) => {
+  await page.setInputFiles("#file", {
+    name: "notes.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("these are not the bytes of a Unity file\n"),
+  });
+  await expect(page.locator("#status")).toHaveAttribute("data-state", "error");
+  await expect(page.locator("#status")).toHaveText(
+    /^0 assets\. notes\.txt: not a Unity bundle or serialized file \(kept as a resource file\)\.$/,
+  );
+});
+
 test("the raw decoder demo is still there, and linked", async ({ page }) => {
   await page.getByRole("link", { name: "Raw decoder demo" }).click();
   await expect(page).toHaveURL(/\/docs\/decoder\.html$/);
