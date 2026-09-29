@@ -1,4 +1,4 @@
-// examples/serve.mjs (#35): serves only what cdn-worker.js loads, survives bad URLs,
+// examples/serve.mjs (#35, #209): serves only what the pages' Workers load, survives bad URLs,
 // and rewrites import statements only.
 import assert from "node:assert/strict";
 import { request } from "node:http";
@@ -49,9 +49,19 @@ test("nothing outside the served packages is reachable", async () => {
     "/npm/fflate/%2E%2E/%2E%2E/package.json",
     "/npm/typescript/package.json",
     "/examples/..%2Fpackage.json",
+    "/docs/..%2Fpackage.json",
+    "/fixtures/bundles/..%2Fgoldens.json",
+    "/fixtures/goldens.json",
   ]) {
     assert.equal((await get(path)).status, 404, path);
   }
+});
+
+test("serves the docs/ demo and the fixture bundles its samples load (#209)", async () => {
+  assert.equal((await get("/docs/")).status, 200);
+  assert.equal((await get("/docs/demo/worker.js")).status, 200);
+  assert.equal((await get("/docs/decoder.html")).status, 200);
+  assert.equal((await get("/fixtures/bundles/editor/6000.3.25f1/lz4/main")).status, 200);
 });
 
 test("a malformed escape is a 400, and the server keeps running", async () => {

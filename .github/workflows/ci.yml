@@ -43,10 +43,10 @@ jobs:
             echo "reader=false" >> "$GITHUB_OUTPUT"
           fi
           # The decoder job also runs the texture package's decode tests (#119), the
-          # examples/ smoke test (#35) and the Node.js floor check (#172), so it runs for what
-          # they build from: core, texture, fixtures, the reader build config, the examples
-          # and the floor check script.
-          if echo "$files" | grep -qE '^(packages/(decoder|core|texture)/|fixtures/|examples/|scripts/check-node-floor\.mjs$|\.github/|package(-lock)?\.json$|tsconfig[^/]*\.json$|rollup\.reader\.mjs$)'; then
+          # Playwright tests of examples/ (#35) and of the docs/ demo (#209), and the Node.js
+          # floor check (#172), so it runs for what they build from: core, texture, fixtures,
+          # the reader build config, the examples, the demo page and the floor check script.
+          if echo "$files" | grep -qE '^(packages/(decoder|core|texture)/|fixtures/|examples/|docs/demo/|docs/[^/]*\.html$|scripts/check-node-floor\.mjs$|\.github/|package(-lock)?\.json$|tsconfig[^/]*\.json$|rollup\.reader\.mjs$)'; then
             echo "decoder=true" >> "$GITHUB_OUTPUT"
           else
             echo "decoder=false" >> "$GITHUB_OUTPUT"
@@ -96,7 +96,8 @@ jobs:
 
   # Rebuilds the WASM (Docker, needs the C++ submodule) and runs the decoder tests, then the
   # texture package's tests, whose decode tests need that WASM and skip in `reader` (#119),
-  # then the examples/cdn.html smoke test in Chromium (#35), then the Node.js floor check with
+  # then the Playwright tests of examples/cdn.html (#35) and the docs/ demo (#209) in Chromium,
+  # then the Node.js floor check with
   # the WASM (#172).
   decoder:
     name: decoder
@@ -120,8 +121,9 @@ jobs:
       - run: npm test -w unity-asset-reader-texture
         env:
           REQUIRE_WASM: "1"
-      # The examples/cdn.html smoke test (#35). It runs here because initTexture loads
-      # the WASM even for a plain-format texture, and this is the job that builds it.
+      # The Playwright tests: examples/cdn.html (#35) and the docs/ demo page (#209). They
+      # run here because initTexture loads the WASM even for a plain-format texture, and
+      # this is the job that builds it.
       # Core and texture dist/ come from the steps above.
       - run: npx playwright install --with-deps chromium
       - run: npm run test:smoke

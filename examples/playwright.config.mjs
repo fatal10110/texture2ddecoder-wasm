@@ -1,5 +1,6 @@
-// Playwright config for the one browser smoke test (plan §5): examples/cdn.html,
-// served by serve.mjs with this repo's builds standing in for jsDelivr.
+// Playwright config for the browser tests (plan §5): examples/cdn.html and the
+// GitHub Pages demo docs/index.html (#209), served by serve.mjs with this repo's
+// builds standing in for jsDelivr.
 //
 //   npm run build && npm run test:smoke          (needs the WASM in
 //   packages/decoder/wasm/ and a Playwright Chromium)

@@ -1,16 +1,18 @@
-// Static server for the examples, plus a stand-in for jsDelivr's `/+esm` endpoint
-// that serves this repo's own builds. Used by the Playwright smoke test and for
-// trying `cdn.html` before the reader packages are on npm (#45).
+// Static server for the examples and the docs/ demo, plus a stand-in for
+// jsDelivr's `/+esm` endpoint that serves this repo's own builds. Used by the
+// Playwright tests and for trying the pages on this repo's builds (#45, #209).
 //
 //   npm run build && node examples/serve.mjs      then open http://127.0.0.1:8080/
 //
 // Routes:
 //   /examples/<file>       the files in this directory, as they are
+//   /docs/<file>           the GitHub Pages site (the demo, docs/index.html), as it is
+//   /fixtures/bundles/<f>  the fixture bundles, which the demo's samples load with `?local`
 //   /npm/<name>/+esm       redirect to the package's browser ESM entry
 //   /npm/<name>/<path>     a file of node_modules/<name>, bare imports in .js/.mjs
 //                          rewritten to /npm/<dep>/+esm, as jsDelivr does
 //
-// Only the packages cdn-worker.js loads are served (SERVED), and only on 127.0.0.1.
+// Only the packages the pages' Workers load are served (SERVED), and only on 127.0.0.1.
 // No COOP/COEP or any other special header: the page must work without them (D6).
 import { createServer } from "node:http";
 import { readFileSync, realpathSync, statSync } from "node:fs";
@@ -19,6 +21,9 @@ import { fileURLToPath } from "node:url";
 
 const EXAMPLES = dirname(fileURLToPath(import.meta.url));
 const NODE_MODULES = join(EXAMPLES, "..", "node_modules");
+/** The GitHub Pages site (docs/index.html, the demo) and the fixture bundles its samples load. */
+const DOCS = join(EXAMPLES, "..", "docs");
+const FIXTURE_BUNDLES = join(EXAMPLES, "..", "fixtures", "bundles");
 
 /** npm package name, unscoped: nothing served here needs a scope. */
 const NPM_NAME = /^[a-z0-9][a-z0-9._-]*$/;
@@ -43,6 +48,7 @@ const TYPES = {
   ".json": "application/json; charset=utf-8",
   ".wasm": "application/wasm",
   ".md": "text/markdown; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
 };
 
 /** `file` if it is a file inside `root` (symlinks resolved), else undefined. */
@@ -89,6 +95,13 @@ export function rewriteBareImports(source) {
       (_, head, quote, spec, tail) => `${head}${quote}/npm/${spec}/+esm${quote}${tail}`,
     );
 }
+
+/** URL prefix -> folder served as it is. */
+const STATIC = [
+  ["/examples/", EXAMPLES],
+  ["/docs/", DOCS],
+  ["/fixtures/bundles/", FIXTURE_BUNDLES],
+];
 
 function send(res, status, body, type = "text/plain; charset=utf-8") {
   res.writeHead(status, { "Content-Type": type, "Cache-Control": "no-store" });
@@ -138,8 +151,10 @@ export function createExamplesServer() {
       return res.end();
     }
     if (pathname.startsWith("/npm/")) return serveNpm(res, pathname.slice(5));
-    if (pathname.startsWith("/examples/")) {
-      const file = inside(EXAMPLES, join(EXAMPLES, pathname.slice(10)));
+    for (const [prefix, root] of STATIC) {
+      if (!pathname.startsWith(prefix)) continue;
+      const rest = pathname.slice(prefix.length);
+      const file = inside(root, join(root, rest === "" ? "index.html" : rest));
       if (file !== undefined) {
         return send(res, 200, readFileSync(file), TYPES[extname(file)] ?? "application/octet-stream");
       }
@@ -152,5 +167,6 @@ if (process.argv[1] !== undefined && realpathSync(process.argv[1]) === fileURLTo
   const port = Number(process.env.PORT ?? 8080);
   createExamplesServer().listen(port, "127.0.0.1", () => {
     console.log(`examples: http://127.0.0.1:${port}/examples/cdn.html?local`);
+    console.log(`demo:     http://127.0.0.1:${port}/docs/?local`);
   });
 }
