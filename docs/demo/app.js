@@ -206,7 +206,14 @@ async function openSources(sources, what) {
   opened = true;
   const load = ++loadId;
   setStatus("busy", `Opening ${what}...`);
-  $("details").replaceChildren(el("p", { class: "muted" }, "Choose an asset."));
+  $("workspace").hidden = true;
+  $("details").replaceChildren(
+    el("div", { class: "empty-state" },
+      el("span", { class: "empty-icon", "aria-hidden": "true" }, "▧"),
+      el("h3", {}, "Select an asset"),
+      el("p", { class: "muted" }, "Choose a name from the list to preview its image or inspect its data."),
+    ),
+  );
   $("gallery").replaceChildren();
   $("batch-status").textContent = "";
   $("batch-progress").hidden = true;
@@ -233,6 +240,7 @@ async function openSources(sources, what) {
     if (load !== loadId) return;
     assets = [];
     $("workspace").hidden = true;
+    $("intro").hidden = false;
     setStatus("error", errorText(error));
   }
 }
@@ -284,6 +292,8 @@ $("sample-form").addEventListener("submit", (event) => {
 
 function showAssets(files) {
   $("workspace").hidden = false;
+  $("intro").hidden = assets.length > 0;
+  $("open-controls").open = assets.length === 0;
   $("files").textContent = `Files: ${files.map((f) => `${f.path} (${bytesText(f.size)})`).join(", ")}`;
 
   const counts = new Map();
@@ -337,12 +347,19 @@ function renderRows() {
   $("asset-count").textContent =
     shown.length === assets.length ? `(${assets.length})` : `(${shown.length} of ${assets.length})`;
   const note = $("row-note");
+  $("empty-assets").hidden = shown.length > 0;
   note.hidden = shown.length <= MAX_ROWS;
   note.textContent = `Showing the first ${MAX_ROWS} of ${shown.length}; filter to see the rest.`;
 }
 
 $("filter").addEventListener("input", renderRows);
 $("type-filter").addEventListener("change", renderRows);
+$("clear-filters").addEventListener("click", () => {
+  $("filter").value = "";
+  $("type-filter").value = "";
+  renderRows();
+  $("filter").focus();
+});
 
 $("get-form").addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -389,6 +406,9 @@ async function select(index) {
   if (request !== detailsRequest || load !== loadId) return; // another asset or file was chosen meanwhile
   panel.replaceChildren(heading(asset), ...renderDetails(result));
   panel.focus({ preventScroll: true });
+  if (matchMedia("(max-width: 960px)").matches) {
+    panel.scrollIntoView({ behavior: "instant", block: "start" });
+  }
 }
 
 function heading(asset) {
@@ -396,12 +416,12 @@ function heading(asset) {
     "div",
     {},
     el("h3", {}, `${asset.typeName} "${asset.name}"`),
-    infoList([
+    el("details", { class: "metadata" }, el("summary", {}, "Asset information"), infoList([
       ["path", "Container path", asset.path ?? "(none)"],
       ["pathId", "Path ID", asset.pathId],
       ["file", "File", asset.file],
       ["byteSize", "Object size", bytesText(asset.byteSize)],
-    ]),
+    ])),
   );
 }
 
@@ -461,10 +481,10 @@ function renderImage(result) {
     const sprite = info.sprite;
     const rect = (r) => `x ${r.x}, y ${r.y}, ${r.width} x ${r.height}`;
     out.push(
-      el("h3", {}, "Image"),
       el(
-        "div",
+        "details",
         { id: "image-info" },
+        el("summary", {}, "Image information"),
         infoList([
           ["kind", "Kind", info.kind],
           ["size", "Size", `${info.width} x ${info.height}`],
@@ -498,30 +518,49 @@ function renderImage(result) {
     out.push(el("p", { class: "error", role: "alert" }, errorText(result.error)));
     return out;
   }
-  const canvas = el("canvas", { id: "preview", class: "checker" });
+  const canvas = el("canvas", { id: "preview", "aria-label": "Decoded image preview" });
   drawRgba(canvas, result.rgba, result.width, result.height);
-  // Small images are scaled up, pixelated, to be visible.
   const scale = Math.max(1, Math.floor(256 / Math.max(result.width, result.height, 1)));
   canvas.style.width = `${result.width * scale}px`;
+  const stage = el("div", {
+    id: "preview-stage", class: "preview-stage", dataset: { background: "checker" },
+    tabindex: 0, "aria-label": "Image preview; scroll to inspect a zoomed image",
+  }, canvas);
+  const zoom = el("select", {
+    "aria-label": "Zoom",
+    onchange: () => {
+      const fit = zoom.value === "fit";
+      canvas.style.width = `${result.width * (fit ? scale : Number(zoom.value))}px`;
+      canvas.style.maxWidth = fit ? "100%" : "none";
+    },
+  }, ...[["fit", "Fit"], ["1", "100%"], ["2", "200%"], ["4", "400%"]].map(
+    ([value, label]) => el("option", { value }, label),
+  ));
+  const background = el("select", {
+    "aria-label": "Background",
+    onchange: () => { stage.dataset.background = background.value; },
+  }, ...[["checker", "Checkerboard"], ["dark", "Dark"], ["light", "Light"]].map(
+    ([value, label]) => el("option", { value }, label),
+  ));
   const name = (info?.name || "image").replace(/[\\/:*?"<>|]/g, "_");
-  out.push(
+  out.unshift(
     el(
       "div",
       { class: "preview-wrap" },
-      canvas,
+      el("div", { class: "preview-toolbar" },
+        el("label", {}, "Zoom", zoom),
+        el("label", {}, "Background", background),
+        el("button", {
+          type: "button",
+          disabled: result.width === 0 || result.height === 0,
+          onclick: () => canvas.toBlob((blob) => blob && download(blob, `${name}.png`), "image/png"),
+        }, "Download PNG"),
+      ),
+      stage,
       el(
         "p",
         { class: "muted small" },
         `${result.width} x ${result.height}, decoded in ${result.ms.toFixed(1)} ms.`,
-      ),
-      el(
-        "button",
-        {
-          type: "button",
-          disabled: result.width === 0 || result.height === 0,
-          onclick: () => canvas.toBlob((blob) => blob && download(blob, `${name}.png`), "image/png"),
-        },
-        "Download PNG",
       ),
     ),
   );
