@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
-    <title>unity-asset-reader demo</title>
+    <title>Unity asset explorer · unity-asset-reader</title>
     <meta
       name="description"
       content="Open Unity AssetBundles in the browser: list their assets, preview textures and sprites, read text, script data, audio, video and fonts."
@@ -15,11 +15,7 @@
   <body>
     <header class="site">
       <div>
-        <h1>unity-asset-reader</h1>
-        <p class="tagline">
-          Read Unity AssetBundles in the browser. Everything runs on this page, in a Web Worker;
-          no file leaves your machine.
-        </p>
+        <a class="brand" href="./">unity-asset-reader <span> / explorer</span></a>
       </div>
       <nav aria-label="Links">
         <a href="https://github.com/fatal10110/texture2ddecoder-wasm">GitHub</a>
@@ -29,32 +25,51 @@
     </header>
 
     <main>
-      <section class="panel" aria-labelledby="open-heading">
-        <h2 id="open-heading">Open</h2>
-        <div class="open-grid">
-          <div id="dropzone" class="dropzone">
-            <label for="file">
-              <strong>Drop files here</strong> or choose them: a bundle, or loose
-              <code>.assets</code> files with their <code>.resS</code> / <code>.resource</code>.
-            </label>
-            <input id="file" type="file" multiple />
-          </div>
-          <form id="url-form" class="stack">
-            <label for="url">Or open a URL (several: one per line)</label>
-            <textarea
-              id="url"
-              rows="2"
-              spellcheck="false"
-              placeholder="https://example.com/ui.bundle"
-            ></textarea>
-            <button type="submit">Open URL</button>
-          </form>
-          <form id="sample-form" class="stack">
-            <label for="sample">Or try a sample bundle from this repository</label>
-            <select id="sample"></select>
-            <button type="submit">Try a sample</button>
-          </form>
+      <section class="intro" id="intro" aria-labelledby="intro-heading">
+        <div>
+          <p class="eyebrow">Unity asset explorer</p>
+          <h1 id="intro-heading">See what's inside<br />your bundle.</h1>
+          <p class="tagline">Browse assets, inspect script data, and preview textures and sprites.
+            Open your own files or start with a sample.</p>
+          <p class="privacy"><span aria-hidden="true">●</span> Files stay on your device. No uploads.</p>
         </div>
+        <div class="bundle-art" aria-hidden="true">
+          <div class="pixel-tile"></div>
+          <span class="art-label">Texture2D / RGBA32</span>
+        </div>
+      </section>
+      <section class="panel opener" aria-label="Open a bundle">
+        <details id="open-controls" open>
+          <summary>Open a bundle</summary>
+          <div class="open-grid">
+            <div id="dropzone" class="dropzone">
+              <label for="file">
+                <span class="upload-icon" aria-hidden="true">↥</span>
+                <strong>Drop your files here</strong>
+                <span>Bundles, .assets, and their .resS / .resource files</span>
+              </label>
+              <input id="file" type="file" multiple />
+            </div>
+            <form id="sample-form" class="stack sample-card">
+              <span class="eyebrow">No bundle handy?</span>
+              <label for="sample">Explore a sample</label>
+              <select id="sample"></select>
+              <button type="submit">Try a sample</button>
+              <span class="muted small">Small bundles built with our own Unity project.</span>
+            </form>
+            <form id="url-form" class="stack url-card">
+              <label for="url">Open from a URL</label>
+              <textarea
+                id="url"
+                rows="2"
+                spellcheck="false"
+                placeholder="https://example.com/ui.bundle"
+              ></textarea>
+              <button type="submit">Open URL</button>
+              <span class="muted small">One URL per line. The server must allow browser access (CORS).</span>
+            </form>
+          </div>
+        </details>
         <p id="status" class="status" role="status" aria-live="polite" data-state="busy">
           Loading the reader...
         </p>
@@ -65,7 +80,7 @@
           <h2 id="assets-heading">Assets <span id="asset-count" class="muted"></span></h2>
           <div class="toolbar">
             <label>
-              <span>Filter</span>
+              <span>Search assets</span>
               <input id="filter" type="search" placeholder="name, path, path id..." />
             </label>
             <label>
@@ -75,7 +90,7 @@
           </div>
           <form id="get-form" class="toolbar">
             <label class="grow">
-              <span>Container path (<code>env.get</code>)</span>
+              <span>Find by asset path</span>
               <input
                 id="get-path"
                 type="text"
@@ -87,7 +102,10 @@
             <datalist id="paths"></datalist>
             <button type="submit">Find</button>
           </form>
-          <p id="files" class="muted small"></p>
+          <details class="file-list">
+            <summary>Loaded files</summary>
+            <p id="files" class="muted small"></p>
+          </details>
           <div class="table-wrap">
             <table id="assets">
               <caption class="visually-hidden">
@@ -106,21 +124,30 @@
               <tbody></tbody>
             </table>
           </div>
+          <div id="empty-assets" class="empty-state" hidden>
+            <h3>No matching assets</h3>
+            <p class="muted">Try another name or asset type.</p>
+            <button id="clear-filters" type="button">Clear filters</button>
+          </div>
           <p id="row-note" class="muted small" hidden></p>
         </section>
 
         <section class="panel details" aria-labelledby="details-heading">
-          <h2 id="details-heading">Details</h2>
+          <h2 id="details-heading">Preview &amp; details</h2>
           <div id="details" tabindex="-1">
-            <p class="muted">Choose an asset.</p>
+            <div class="empty-state">
+              <span class="empty-icon" aria-hidden="true">▧</span>
+              <h3>Select an asset</h3>
+              <p class="muted">Choose a name from the list to preview its image or inspect its data.</p>
+            </div>
           </div>
         </section>
 
         <section class="panel batch" aria-labelledby="batch-heading">
-          <h2 id="batch-heading">All images</h2>
+          <h2 id="batch-heading">Image gallery</h2>
           <p class="muted small">
-            <code>images(env, &#123; onError: "skip" &#125;)</code> decodes every Texture2D and
-            Sprite; an image that fails is skipped.
+            Preview all textures and sprites together. Select a thumbnail to inspect it.
+            Images that cannot be decoded are skipped.
           </p>
           <div class="toolbar">
             <button id="decode-all" type="button">Decode all images</button>
@@ -132,8 +159,8 @@
         </section>
       </div>
 
-      <section class="panel" aria-labelledby="how-heading">
-        <h2 id="how-heading">How this page works</h2>
+      <details class="panel developer">
+        <summary>Use the reader in your project</summary>
         <p>
           No bundler and no install: a module Worker imports the published packages from
           jsDelivr and posts plain data to the page. Parsing is synchronous, so in the Worker a big
@@ -161,7 +188,8 @@ for (const asset of env.assets()) {
 }
 const icon = env.get("Assets/UI/Icon.png");</code></pre>
         <p class="muted small" id="versions"></p>
-      </section>
+      </details>
     </main>
+    <footer>unity-asset-reader · Browser-based inspection, powered by TypeScript &amp; WebAssembly</footer>
   </body>
 </html>

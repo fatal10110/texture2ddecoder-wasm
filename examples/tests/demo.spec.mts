@@ -284,6 +284,7 @@ test("sprites: preview and sprite info; decode all images", async ({ page }) => 
 
   await test.step("opening another file during a decode drops the old decode", async () => {
     const total = objectCount("lz4/main", "lz4/shared", "lz4/texture");
+    await page.locator("#open-controls > summary").click();
     const option = page.locator("#sample option").filter({ hasText: /MonoBehaviour, TextAsset/ });
     await page.selectOption("#sample", (await option.getAttribute("value"))!);
     // Both in one task: the decode is still running when the open starts.
@@ -417,6 +418,39 @@ test("a file that is not a Unity file is named, not shown as a success", async (
   await expect(page.locator("#status")).toHaveText(
     /^0 assets\. notes\.txt: not a Unity bundle or serialized file \(kept as a resource file\)\.$/,
   );
+});
+
+test("image controls resize the preview without changing the downloaded pixels", async ({ page }) => {
+  await openSample(page, /MonoBehaviour, TextAsset/, objectCount("lz4/main", "lz4/shared", "lz4/texture"));
+  await choose(page, "Texture2D", "checker");
+  const texture = goldenTexture("lz4/texture", "checker");
+  await page.getByLabel("Zoom", { exact: true }).selectOption("2");
+  await expect(page.locator("#preview")).toHaveCSS("width", `${texture.width * 2}px`);
+  await page.getByLabel("Background").selectOption("dark");
+  await expect(page.locator("#preview-stage")).toHaveAttribute("data-background", "dark");
+  await page.getByLabel("Zoom", { exact: true }).selectOption("fit");
+  await expect(page.locator("#preview")).toHaveCSS("max-width", "100%");
+  await expectPreview(page, texture.width, texture.height, texture.rgbaSha256!);
+  const [png] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: "Download PNG" }).click(),
+  ]);
+  const bytes = await downloadBytes(png);
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  expect([view.getUint32(16), view.getUint32(20)]).toEqual([texture.width, texture.height]);
+});
+
+test("empty filters can be cleared and the explorer fits a mobile screen", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openSample(page, /MonoBehaviour, TextAsset/, objectCount("lz4/main", "lz4/shared", "lz4/texture"));
+  await expect(page.locator("#open-controls > summary")).toBeVisible();
+  await expect(page.locator("#sample")).toBeHidden();
+  await page.fill("#filter", "no-such-asset");
+  await expect(page.locator("#empty-assets")).toBeVisible();
+  await page.getByRole("button", { name: "Clear filters" }).click();
+  await expect(page.locator("#assets tbody tr")).toHaveCount(objectCount("lz4/main", "lz4/shared", "lz4/texture"));
+  await expect(page.locator("#empty-assets")).toBeHidden();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
 
 test("the raw decoder demo is still there, and linked", async ({ page }) => {
