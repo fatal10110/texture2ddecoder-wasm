@@ -1,71 +1,36 @@
 # unity-asset-reader
 
-Read Unity AssetBundles in the browser and in Node.js: unpack them, read their objects, and
-decode their textures and sprites to RGBA. The parser is TypeScript with no WASM and no
-platform dependencies. Only texture decoding uses a small WASM module.
+Read Unity AssetBundles in your browser or Node.js. Browse assets, read text and script data,
+and turn textures and sprites into RGBA pixels.
 
-**Live demo:** [fatal10110.github.io/texture2ddecoder-wasm](https://fatal10110.github.io/texture2ddecoder-wasm/): open a bundle in your browser, browse its assets, preview textures and sprites, read text and script data.
+**[Try the live demo](https://fatal10110.github.io/texture2ddecoder-wasm/)** — open a bundle,
+browse its contents, and preview its textures and sprites.
 
-This repository holds four npm packages. It will be renamed from `texture2ddecoder-wasm` to
-`unity-asset-reader`.
+The parser is written in TypeScript. Compressed texture decoding uses WebAssembly.
+You do not need Unity, .NET, or a native application installed.
 
-**Status:** the three `unity-asset-reader*` packages are not on npm yet; their first release will
-be 1.0.0. `texture2ddecoder-wasm` is on npm (1.2.2); its next release is 1.2.3.
+## Choose your packages
 
-## Which packages do I need?
-
-Most apps need one or two. Pick the row that matches what you do:
-
-| You want to | Install |
+| What you need | Packages |
 |---|---|
-| Read bundles in a browser, a Worker or Node.js: unpack them, list their objects, read text, your scripts' data, and raw audio, video and font bytes | `unity-asset-reader` |
-| Do that, and also get textures and sprites as pixels | `unity-asset-reader` + `unity-asset-reader-texture` |
-| Do either of the above in Node.js, on files and folders on disk | add `unity-asset-reader-node` |
-| Decode raw compressed texture blocks you already have, with no Unity files around them | `texture2ddecoder-wasm` alone |
+| Read bundles and their assets | `unity-asset-reader` |
+| Decode textures and sprites too | `unity-asset-reader` + `unity-asset-reader-texture` |
+| Load files or folders from disk | Add `unity-asset-reader-node` |
+| Decode raw texture blocks without reading Unity files | `texture2ddecoder-wasm` |
 
-`texture2ddecoder-wasm` is a dependency of `unity-asset-reader-texture` and is installed with it,
-so you never add it next to `-texture` yourself.
+The texture package installs `texture2ddecoder-wasm` automatically.
 
-### What each package does
+- **[Core](packages/core/README.md):** unpack bundles, list assets, and read their data.
+  Use `load(bytes)` for bytes you already have or `await open(url)` to fetch a file.
+- **[Textures](packages/texture/README.md):** convert `Texture2D` and `Sprite` assets to
+  RGBA pixels with `await decodeImage(asset)`.
+- **[Node.js](packages/node/README.md):** load a file or folder with `loadPath()`, including
+  split bundles and resource sidecars.
+- **[Standalone decoder](packages/decoder/README.md):** decode compressed texture blocks
+  to **BGRA**. It does not read Unity files.
 
-- **[`unity-asset-reader`](packages/core/README.md)**, the parser. It takes bytes
-  (`Uint8Array`), or fetches them for you with `open()`, and gives back the unpacked files and the
-  assets in them. It is plain TypeScript: synchronous parsing, with no WASM and no Node.js APIs,
-  so it runs the same everywhere. For a
-  `Texture2D` it reads the header fields and the still-encoded `imageData`, but it never decodes
-  pixels.
-- **[`unity-asset-reader-texture`](packages/texture/README.md)** turns the `Texture2D` and
-  `Sprite` objects that the parser reads into RGBA pixels. It parses nothing itself: you pass it
-  an asset from `unity-asset-reader` (`decodeImage(asset)`), or give the low-level
-  `decodeTexture2D` what `asset.reader.read()` returns. It decodes plain formats (RGBA32, RGB565,
-  ...) in TypeScript and block-compressed ones (BC, ETC, ASTC, PVRTC, ...) through the decoder's
-  WASM.
-- **[`unity-asset-reader-node`](packages/node/README.md)** gets Unity files off the disk.
-  `loadPath()` reads a file or a whole folder, merges split files (`.split0`, `.split1`, ...),
-  picks up `.resS` / `.resource` sidecars, and hands everything to the parser's `load()`. It
-  returns the same `Env` as `load()`, so everything after that works the same.
-- **[`texture2ddecoder-wasm`](packages/decoder/README.md)** is the WASM decoder for compressed
-  texture blocks: [Texture2DDecoder](https://github.com/K0lb3/texture2ddecoder) built to WASM. It
-  knows nothing about Unity files: you call the function for a format (`decode_bc1`,
-  `decode_astc`, ...) with raw block data, a width and a height, and it gives back BGRA. Use it on
-  its own only when you already have that raw data.
-
-### Why they are separate
-
-- **Only textures need WASM.** The parser is about 64 KB gzipped. Decoding textures adds about
-  19 KB of JavaScript plus a 147 KB WASM module (50 KB gzipped), which is loaded and initialized
-  before the first decode (by `decodeImage`, or `await initTexture()`). An app that only reads
-  text or script data never downloads any of that.
-- **Only disk access needs Node.js.** Reading files needs `fs`, which a browser bundle cannot
-  include. Keeping it in `unity-asset-reader-node` means the parser and the texture package never
-  import Node.js APIs and bundle cleanly for the browser.
-- **The decoder stands on its own.** It is useful without any Unity parsing, it was published on
-  its own before the reader existed, and it depends on nothing else here.
-- **There is one copy of the parser.** `unity-asset-reader-texture` and `-node` take
-  `unity-asset-reader` as a peer dependency, so they share the copy your app installs instead of
-  bringing their own. Each package has its own version; the feature packages' ranges on
-  `unity-asset-reader` and the texture package's range on `texture2ddecoder-wasm` say which
-  versions work together.
+Install only what you need: reading text or script data does not load the texture decoder.
+Each package has its own version.
 
 ## Usage
 
@@ -204,53 +169,10 @@ Building the WASM decoder (`npm run build:wasm`) needs Docker. See
 [docs/unity-asset-reader-plan.md](docs/unity-asset-reader-plan.md), and the rules for changes are
 in [docs/unity-asset-reader-rules.md](docs/unity-asset-reader-rules.md).
 
-## Comparison with other packages
+## Compare libraries
 
-Other npm packages also read Unity files or decode Unity textures. The table lists the ones found
-by searching npm for `unity assetbundle`, `unityfs`, `unity texture`, `assetstudio`,
-`unity serializedfile` and `texture2ddecoder`, as of **2026-09-29**. Every cell comes from the
-package's npm metadata (`npm view <name>`: license, dependencies, last publish, unpacked size) or
-from its README on npmjs.com; the Sources column says which. "Not stated" means the source does
-not say, not that the package cannot do it.
-
-| Package | License | Runtime | WASM or native parts | Reads | Texture decoding | Bundles without type trees | Last publish | Size and approach | Sources |
-|---|---|---|---|---|---|---|---|---|---|
-| **`unity-asset-reader`** (+ `-texture`, `-node`) | MIT (`-texture`: MIT AND Apache-2.0) | Browser, Worker, Node.js 20.19+ / 22.12+ | Parser: none (TypeScript; `fflate`, `lzma1`). Textures: the `texture2ddecoder-wasm` WASM module | UnityFS, UnityWeb, UnityRaw, `UnityWebData`, gzip, loose SerializedFiles, `.resS`; LZ4, LZ4HC, LZMA; any class through its type tree | `Texture2D` and `Sprite` to RGBA: plain formats, BC1, BC3–BC7, ETC/EAC, PVRTC, ASTC, ATC, Crunch | Yes, for the 12 classes with hand-written readers | 2026-09-28 (1.0.1) | 781 KB + 206 KB + 241 KB (decoder) unpacked. Synchronous parse, bytes in, objects out; writes no files | This repo |
-| [`@arkntools/unity-js`](https://www.npmjs.com/package/@arkntools/unity-js) | **AGPL-3.0** | Node.js; browser with a `Buffer` polyfill | WASM through `@arkntools/unity-js-tools` (Rust: `lz4_flex`, `texture2ddecoder`); audio through `@arkntools/fmod` and `@arkntools/lame-wasm` | AssetBundles. Classes listed: TextAsset, Texture2D, Sprite, SpriteAtlas, MonoBehaviour, MonoScript, AudioClip, Material; Spine export; a game-specific `BundleEnv.ARKNIGHTS` option. The README says only "the minimum implementation required for the project" is done | Texture2D and Sprite to PNG (jimp), with a separate alpha texture merged in | Not stated | 2026-08-21 (5.3.0) | 765 KB unpacked, 14 dependencies (jimp, jszip, aes-js, ...). Async `loadAssetBundle()` | npm metadata, npm README, [unity-js-tools README](https://www.npmjs.com/package/@arkntools/unity-js-tools) |
-| [`unityfs-js`](https://www.npmjs.com/package/unityfs-js) | MIT | Browser and Node.js (ES modules) | LZ4 and LZMA WASM inlined as base64, with a pure-JS fallback; no npm dependencies; Three.js injected by the caller for GLB export | UnityFS bundles, `.assets`, `.resS` / `.resource`. Exports TextAsset, Texture2D, Sprite, AudioClip (FSB5 to WAV/OGG), Mesh (OBJ), SkinnedMeshRenderer (GLB), Live2D models and motions; edits TextAsset, Texture2D and MonoBehaviour fields and repacks bundles | DXT1–5, BC7, ETC1/2, EAC, Crunch, to PNG, RGBA, canvas or Blob | Not stated (a `unityRevision` option helps align type trees in some old or version-less files) | 2026-08-25 (0.2.8) | 4.1 MB unpacked. Async `load()` to an `AssetManager`; README in Chinese | npm metadata, npm README |
-| [`node-asset-studio-mod-js`](https://www.npmjs.com/package/node-asset-studio-mod-js) | MIT | Node.js 22+ only (worker threads), ES modules | Embedded WASM (ASTC decoder, SPIRV-Tools, Assimp); no npm dependencies | Built on `unityfs-js` 0.2.8. Exports Texture2D and Sprite (PNG), Texture2DArray, TextAsset, Font, Shader (inspection text), Mesh (OBJ), models (FBX), MonoBehaviour (JSON), AudioClip (WAV), VideoClip, MovieTexture, Live2D | Texture2D and Sprite to PNG; adds ASTC, BC4/5/6H, PVRTC and half/float formats to `unityfs-js`'s | `dump` fails without an embedded type tree | 2026-09-28 (0.1.7) | 10.4 MB unpacked. Async API over Node workers; writes files or returns buffers | npm metadata, npm README |
-| [`node-asset-studio-mod`](https://www.npmjs.com/package/node-asset-studio-mod) | MIT | Node.js with the **.NET 9 runtime** | Downloads the native AssetStudioMod CLI at install | Whatever the [AssetStudioMod](https://github.com/aelurum/AssetStudio) CLI exports: textures, sprites, text, MonoBehaviour, font, shader, audio, video, mesh, animator | Through the CLI | Through the CLI | 2026-09-07 (1.0.5) | 32 KB unpacked, plus the CLI and .NET. Wraps the CLI | npm metadata, npm README |
-| [`@tootallnate/unity-asset`](https://www.npmjs.com/package/@tootallnate/unity-asset) | MIT | Not stated (no README) | None listed; depends on `@tootallnate/bntx` | SerializedFiles only (the `CAB-…` files inside a bundle, not the bundle container): header, type table, object table, and objects as JSON through their type trees | Not stated | No: it walks the type tree | 2026-06-14 (0.1.0) | 226 KB unpacked | npm metadata, [CHANGELOG](https://github.com/TooTallNate/switch-tools/blob/main/packages/unity-asset/CHANGELOG.md) |
-| [`@lego-fan9/asset-studio-web`](https://www.npmjs.com/package/@lego-fan9/asset-studio-web) | MIT | Browser only | Not stated | "A variant of AssetStudio written in TypeScript"; the README says it is early, with no stable API | Not stated | Not stated | 2026-06-16 (0.2.3) | 561 KB unpacked, depends on `@lunapaint/png-codec` | npm metadata, npm README |
-| [`texture2ddecoder.js`](https://www.npmjs.com/package/texture2ddecoder.js) | MIT | ES modules and CommonJS; runtime not stated | WASM build of [K0lb3's texture2ddecoder](https://github.com/K0lb3/texture2ddecoder) | No Unity files: raw texture blocks only | BC1–7 (BC2 from Pillow), ATC, ETC/EAC, ASTC, PVRTC, Crunch, to BGRA | n/a | 2026-04-12 (1.1.0) | 221 KB unpacked | npm metadata, npm README |
-
-Last published before 2022, so not in the table: [`shibunyan`](https://www.npmjs.com/package/shibunyan)
-(MIT, 2021-03: mikunyan in TypeScript, UnityFS and UnityRaw, a few plain texture formats and
-ETC1), [`unity-asset-server`](https://www.npmjs.com/package/unity-asset-server) (MIT, 2021-11:
-Node.js, with AssetStudio's native Texture2DDecoder DLL through `ffi-napi`) and
-[`unity-parser`](https://www.npmjs.com/package/unity-parser) (MIT, 2016-12: written for one game on
-Unity 5.1.2f).
-
-**Where others do more.** `unityfs-js` and `node-asset-studio-mod-js` export audio (FSB5 to WAV),
-meshes (OBJ, GLB, FBX), Live2D and shaders; this library exports none of these, and hands out
-audio and video only as raw bytes. `unityfs-js` also edits and repacks bundles; this library only
-reads. `@arkntools/unity-js` exports Spine data and converts FSB audio to MP3 and WAV.
-`node-asset-studio-mod` gets everything the AssetStudioMod CLI does, at the cost of .NET.
-`texture2ddecoder.js` decodes BC2 (DXT3), which `texture2ddecoder-wasm` does not.
-
-**Where this library does more.** The parser is synchronous and has no WASM and no platform
-APIs, so it runs unchanged in a browser, a Worker and Node.js, and an app that reads no textures
-never loads WASM. Of the maintained packages above, it is the only one whose README says it reads
-the UnityWeb and UnityRaw containers and WebGL `.data` files, or objects from bundles built
-without type trees (through its 12 hand-written readers). Its output is checked against goldens
-produced by UnityPy on bundles built with three Unity editors. It is MIT (plus Apache-2.0 for the
-sprite mesh fill in `-texture`), so it can ship in closed-source web apps.
-
-**Why this library does not derive from `@arkntools/unity-js`.** It is AGPL-3.0: code derived
-from it would put this package, and every web app that ships it, under the AGPL. This project
-never copies, imports or tests against it; its row above comes only from its npm metadata and
-README. The reader packages are ported from AssetStudio (MIT) instead, with UnityPy (MIT) as the
-test oracle.
+See [the feature and format comparison](COMPARISON.md) for a ✓ / ✗ table of Unity readers
+and texture decoders.
 
 ## Acknowledgements
 
