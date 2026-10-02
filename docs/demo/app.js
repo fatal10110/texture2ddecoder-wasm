@@ -6,13 +6,20 @@
 // Playwright test, examples/tests/demo.spec.mts).
 const LOCAL = new URLSearchParams(location.search).has("local");
 
-// Samples are fixtures of this repository, built with our own Unity project
-// (fixtures/README.md), served by jsDelivr's GitHub endpoint.
+// Our technical fixtures stay local in tests. Public examples are fetched at
+// runtime from pinned revisions; third-party bundle data is never committed.
 const SAMPLE_BASE = LOCAL
   ? new URL("/fixtures/bundles/editor/6000.3.25f1/", location.href).href
   : "https://cdn.jsdelivr.net/gh/fatal10110/texture2ddecoder-wasm@main/fixtures/bundles/editor/6000.3.25f1/";
 
 const SAMPLES = [
+  {
+    label: "Brick wall: a textured cube (Unity 5, 85 KB)",
+    urls: ["https://raw.githubusercontent.com/FiaDot/Unity5AssetBundleDemo/875ea8291326ba514998e4025737776f74944e96/Assets/StreamingAssets/WIN/resource_asset"],
+    source: "https://github.com/FiaDot/Unity5AssetBundleDemo/tree/875ea8291326ba514998e4025737776f74944e96",
+    license: "https://github.com/FiaDot/Unity5AssetBundleDemo/blob/875ea8291326ba514998e4025737776f74944e96/LICENSE",
+    credit: "FiaDot / LEE GUNHO — Unity5AssetBundleDemo. ",
+  },
   {
     label: "A script's data, text and a texture (MonoBehaviour, TextAsset, Texture2D, Mesh)",
     files: ["lz4/main", "lz4/shared", "lz4/texture"],
@@ -280,10 +287,19 @@ $("url-form").addEventListener("submit", (event) => {
 
 const sampleSelect = $("sample");
 SAMPLES.forEach((sample, i) => sampleSelect.append(el("option", { value: String(i) }, sample.label)));
+function showSampleCredit() {
+  const sample = SAMPLES[Number(sampleSelect.value)];
+  $("sample-credit").replaceChildren(...(sample.source
+    ? [sample.credit, el("a", { href: sample.source }, "Source"), " · ",
+      el("a", { href: sample.license }, "MIT license")]
+    : ["Technical fixtures built with our own Unity project."]));
+}
+sampleSelect.addEventListener("change", showSampleCredit);
+showSampleCredit();
 $("sample-form").addEventListener("submit", (event) => {
   event.preventDefault();
   const sample = SAMPLES[Number(sampleSelect.value)];
-  const urls = sample.files.map((file) => SAMPLE_BASE + file);
+  const urls = sample.urls ?? sample.files.map((file) => SAMPLE_BASE + file);
   openSources(urls, `the sample "${sample.label}"`);
 });
 

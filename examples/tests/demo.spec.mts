@@ -10,7 +10,8 @@
 // jsDelivr, samples from jsDelivr's GitHub endpoint (`main`). That needs the
 // network and checks what is published, so CI does not run it.
 //
-// Every expected value comes from fixtures/goldens.json (the UnityPy oracle, R12).
+// Fixture expectations come from fixtures/goldens.json (the UnityPy oracle, R12).
+// The opt-in public sample smoke test checks usability, not golden pixel values.
 import { expect, test, type Download, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
@@ -147,6 +148,21 @@ async function downloadBytes(download: Download): Promise<Uint8Array> {
   for await (const chunk of (await download.createReadStream())!) chunks.push(chunk as Buffer);
   return new Uint8Array(Buffer.concat(chunks));
 }
+
+test("public brick sample has attribution and a usable image preview", async ({ page }) => {
+  test.skip(!LIVE, "External samples are fetched only in the opt-in live smoke test.");
+  await expect(page.locator("#sample option:checked")).toHaveText(/Brick wall/);
+  await expect(page.locator("#sample-credit")).toContainText("FiaDot / LEE GUNHO");
+  await expect(page.locator("#sample-credit a").last()).toHaveText("MIT license");
+  await page.getByRole("button", { name: "Try a sample" }).click();
+  await expect(page.locator("#status")).toHaveText(/^\d+ assets in /, { timeout: LOAD_TIMEOUT });
+  await choose(page, "Texture2D", "texture");
+  await expect.poll(() => page.evaluate(() => window.recorded.previews.length)).toBeGreaterThan(0);
+  const image = await page.evaluate(() => window.recorded.previews.at(-1)!);
+  expect(image.width).toBeGreaterThan(8);
+  expect(image.height).toBeGreaterThan(8);
+  expect(new Set(image.data.filter((_, i) => i % 4 === 0)).size).toBeGreaterThan(8);
+});
 
 test("a script's data, text and a texture: table, env.get, image, TextAsset, MonoBehaviour", async ({
   page,
