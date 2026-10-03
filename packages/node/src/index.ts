@@ -4,7 +4,14 @@
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
-import { CorruptError, load, type Env, type LoadInput } from "unity-asset-reader";
+import {
+  CorruptError,
+  detectFileType,
+  load,
+  readSerializedFile,
+  type Env,
+  type LoadInput,
+} from "unity-asset-reader";
 
 /**
  * One part of a file Unity split for size (`<name>.split0`, `.split1`, ...):
@@ -28,8 +35,11 @@ const SPLIT_PART = /^(.+)\.split(0|[1-9]\d*)$/;
  * `sharedassets0.assets.resS` and `sharedassets0.resource`), matched ignoring
  * case as `load()` matches resource names. Those are the names Unity gives a
  * loose file's resource files, so `readResource()` and `obj.read()` find a
- * texture's or clip's bulk data without the caller passing it. Nothing else in
- * the directory is read: to load more, pass the directory.
+ * texture's or clip's bulk data without the caller passing it. A loose
+ * SerializedFile also loads the files its `m_Externals` name, with their
+ * sidecars and split parts, transitively. Names match ignoring case and only
+ * in this directory; subfolders are never searched. Missing externals are
+ * skipped, so their pointers remain unresolved. Unrelated files are not read.
  *
  * **Split files** (`<name>.split0` ... `.splitN`, as Unity writes large files
  * for Android) are merged, parts in numeric order, into one input named
@@ -73,16 +83,58 @@ export function loadPath(fileOrDir: string): Env {
   const dir = dirname(fileOrDir);
   const own = basename(fileOrDir);
   const target = SPLIT_PART.exec(own)?.[1] ?? own;
+  const names = readdirSync(dir);
+  const inputs = readFileInputs(dir, names, target);
+  const loaded = new Set(inputs.map((input) => input.name.toLowerCase()));
+
+  // Walk inputs as a queue: each newly found loose file can name more files.
+  // Bundles resolve their nodes in core and do not add disk dependencies here.
+  for (let at = 0; at < inputs.length; at++) {
+    const input = inputs[at]!;
+    const data = input.data instanceof Uint8Array ? input.data : new Uint8Array(input.data);
+    if (detectFileType(data) !== "serialized") continue;
+    let externals;
+    try {
+      externals = readSerializedFile(data).externals;
+    } catch (error) {
+      if (error instanceof Error) error.message = `${join(dir, input.name)}: ${error.message}`;
+      throw error;
+    }
+    for (const external of externals) {
+      const key = external.fileName.toLowerCase();
+      if (loaded.has(key)) continue;
+      const match = names.find((name) =>
+        (SPLIT_PART.exec(name)?.[1] ?? name).toLowerCase() === key &&
+        statSync(join(dir, name), { throwIfNoEntry: false })?.isFile());
+      if (match !== undefined) {
+        const externalName = SPLIT_PART.exec(match)?.[1] ?? match;
+        const unread = names.filter((name) =>
+          !loaded.has((SPLIT_PART.exec(name)?.[1] ?? name).toLowerCase()));
+        for (const next of readFileInputs(dir, unread, externalName)) {
+          loaded.add(next.name.toLowerCase());
+          inputs.push(next);
+        }
+      }
+      // Remember missing files too, so repeated references do not retry them.
+      loaded.add(key);
+    }
+  }
+  inputs.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+  return load(inputs);
+}
+
+/** Read one neighboring file with its sidecars, merging any split parts. */
+function readFileInputs(dir: string, names: readonly string[], target: string): LoadInput[] {
   const sidecars = [`${target}.resS`, `${stem(target)}.resource`].map((n) => n.toLowerCase());
   // Match names first, so an unrelated entry next to the file is never
   // touched; then keep the matches that are files or links to files, as
   // upstream's `File.Exists` does (a folder named `main.resS` is no sidecar).
-  const wanted = readdirSync(dir).filter((name) => {
+  const wanted = names.filter((name) => {
     const merged = SPLIT_PART.exec(name)?.[1] ?? name;
     if (merged !== target && !sidecars.includes(merged.toLowerCase())) return false;
     return statSync(join(dir, name)).isFile();
   });
-  return load(readInputs(dir, wanted));
+  return readInputs(dir, wanted);
 }
 
 /**
