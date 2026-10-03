@@ -26,7 +26,7 @@ import {
   unpack_unity_crunch,
 } from "texture2ddecoder-wasm";
 import { BuildTarget, CorruptError, TextureFormat, UnsupportedError } from "unity-asset-reader";
-import type { Texture2DData } from "unity-asset-reader";
+import type { ObjectReader, Texture2DData } from "unity-asset-reader";
 import { convertPlain, type RgbaImage } from "./convert.js";
 import { deswizzle, refuseTiledPlatform, switchLayout, xbox360Swap } from "./platform.js";
 
@@ -39,6 +39,25 @@ export interface InitTextureOptions {
   wasmPath?: string;
   /** Emscripten's `locateFile`, for the `.wasm` binary; overrides the default lookup. */
   locateFile?: (path: string, prefix: string) => string;
+}
+
+/**
+ * Decode a Texture2D object, reusing the caller's pixels when supplied.
+ * Internal: shared by `decodeSprite` and `decodeImage`, not a package export.
+ *
+ * @param reader the Texture2D object; its identity is the map key
+ * @param decodedTextures caller-owned, top-row-first RGBA textures
+ * @throws what `reader.read()` and {@link decodeTexture2D} throw on a cache miss
+ */
+export async function decodeTextureObject(
+  reader: ObjectReader,
+  decodedTextures?: Map<ObjectReader, RgbaImage>,
+): Promise<RgbaImage> {
+  const cached = decodedTextures?.get(reader);
+  if (cached) return cached;
+  const image = await decodeTexture2D(reader.read<Texture2DData>());
+  decodedTextures?.set(reader, image);
+  return image;
 }
 
 type Decode = (data: Uint8Array, width: number, height: number) => Promise<Uint8Array | null>;

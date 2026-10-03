@@ -312,7 +312,9 @@ const handlers = {
     const total = order.size;
     let decoded = 0;
     progress({ done: 0, total });
-    for await (const image of lib.images(env, { onError: "skip" })) {
+    // Retain each atlas only for this batch; every sprite reuses its decoded pixels.
+    const decodedTextures = new Map();
+    for await (const image of lib.images(env, { onError: "skip", decodedTextures })) {
       if (current?.env !== env) break;
       decoded++;
       const key = assetKey(image.file, image.pathId);

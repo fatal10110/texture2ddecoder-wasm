@@ -77,6 +77,9 @@ First release. The core: isomorphic, synchronous, no WASM.
 
 ### 1.0.2 - Unreleased
 
+- Add a caller-owned `decodedTextures` map to `decodeSprite`, `decodeImage` and `images`,
+  so sequential sprite decodes reuse their atlas pixels. The demo retains textures for
+  its "Decode all images" batch only (#154).
 - Update repository metadata and documentation links after the GitHub repository rename to
   `fatal10110/unity-asset-reader` (#199).
 

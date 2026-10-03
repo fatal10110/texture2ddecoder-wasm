@@ -19,6 +19,7 @@ import {
   type Env,
   type ObjectReader,
   type Sprite,
+  type Texture2DData,
 } from "unity-asset-reader";
 import {
   fixtureNames,
@@ -36,7 +37,9 @@ import {
   type DecodedImage,
   type ImageInfo,
 } from "../src/image.js";
-import { cutSprite, spriteSize } from "../src/sprite.js";
+import { cutSprite, decodeSprite, locateSprite, spriteSize } from "../src/sprite.js";
+import { decodeTexture2D, initTexture } from "../src/decode.js";
+import type { RgbaImage } from "../src/convert.js";
 import { usage } from "./types/usage.js";
 
 // As in decode.test.ts: without the WASM (built with Docker) only the tests
@@ -529,6 +532,93 @@ wasmTest("decodeImage of a texture whose .resS is not loaded: ResourceNotFoundEr
 });
 
 // --- images() ------------------------------------------------------------------------
+
+for (const fixture of SPRITE_FIXTURES) {
+  wasmTest(`${fixture}: caller-owned textures decode each atlas once for all its sprites`, async () => {
+    await initTexture();
+    const env = loadEnv(fixture);
+    const groups = new Map<ObjectReader, Asset<"Sprite">[]>();
+    for (const asset of env.assets("Sprite")) {
+      const { texture, atlas } = locateSprite(asset.reader, env);
+      if (!atlas) continue;
+      const group = groups.get(texture) ?? [];
+      group.push(asset);
+      groups.set(texture, group);
+    }
+    assert.ok(groups.size > 0);
+    const decodedTextures = new Map<ObjectReader, RgbaImage>();
+    for (const [texture, sprites] of groups) {
+      assert.ok(sprites.length > 1, "the atlas must be shared by multiple sprites");
+      const expected = [];
+      for (const asset of sprites) expected.push(await decodeSprite(asset.reader, env));
+      // Decode the first sprite normally, then change the actual encoded pixels.
+      // A second decode would produce different pixels; a reused atlas must not.
+      assert.deepStrictEqual(
+        await decodeSprite(sprites[0]!.reader, env, { decodedTextures }), expected[0],
+      );
+      const cached = decodedTextures.get(texture);
+      assert.ok(cached, "the caller's map owns the decoded atlas");
+      const encoded = texture.read<Texture2DData>().imageData;
+      encoded.fill(0);
+      const changed = await decodeTexture2D(texture.read<Texture2DData>());
+      assert.notDeepStrictEqual(changed.data, cached.data);
+      for (const [i, asset] of sprites.entries()) {
+        const image = await decodeSprite(asset.reader, env, { decodedTextures });
+        assert.deepStrictEqual(image, expected[i], asset.name);
+        assert.equal(
+          sha256(reverseRows(image.data, image.width)), goldenRgba(fixture, asset), asset.name,
+        );
+        assert.strictEqual(decodedTextures.get(texture), cached);
+      }
+    }
+    assert.equal(decodedTextures.size, groups.size);
+  });
+}
+
+wasmTest("images(): caller-owned textures retain the golden pixels and skip repeat decoding", async () => {
+  const env = loadEnv(SPRITES);
+  const decodedTextures = new Map<ObjectReader, RgbaImage>();
+  let compared = 0;
+  for await (const image of images(env, { decodedTextures })) {
+    const asset = [...env.assets("Texture2D", "Sprite")].find((a) => a.pathId === image.pathId)!;
+    assert.equal(sha256(reverseRows(image.rgba, image.width)), goldenRgba(SPRITES, asset));
+    compared++;
+    // Every newly decoded texture is now in the map; zero its source bytes.
+    // Subsequent sprites (or the Texture2D itself) must reuse the original pixels.
+    for (const texture of decodedTextures.keys()) texture.read<Texture2DData>().imageData.fill(0);
+  }
+  assert.equal(compared, [...env.assets("Texture2D", "Sprite")].length);
+  assert.equal(decodedTextures.size, [...env.assets("Texture2D")].length);
+});
+
+wasmTest("decodeImage: cache keys distinguish identical path IDs in different envs", async () => {
+  const a = [...loadEnv(PLAIN).assets("Texture2D")].find((a) => a.name === "RGBA32")!;
+  const b = [...loadEnv(PLAIN).assets("Texture2D")].find((a) => a.name === "RGBA32")!;
+  assert.equal(a.pathId, b.pathId);
+  b.reader.read<Texture2DData>().imageData.fill(0);
+  const decodedTextures = new Map<ObjectReader, RgbaImage>();
+  const first = await decodeImage(a, { decodedTextures });
+  const second = await decodeImage(b, { decodedTextures });
+  assert.notDeepStrictEqual(first.rgba, second.rgba);
+  assert.equal(decodedTextures.size, 2);
+  assert.strictEqual((await decodeImage(a, { decodedTextures })).rgba, first.rgba);
+});
+
+wasmTest("decodeImage: failed decodes are not retained and clearing the map permits a new decode", async () => {
+  const { asset, setFormat } = patchable();
+  const decodedTextures = new Map<ObjectReader, RgbaImage>();
+  setFormat(TextureFormat.DXT3);
+  await assert.rejects(decodeImage(asset, { decodedTextures }), UnsupportedError);
+  assert.equal(decodedTextures.size, 0);
+  setFormat(TextureFormat.RGBA32);
+  const first = await decodeImage(asset, { decodedTextures });
+  assert.equal(decodedTextures.size, 1);
+  asset.reader.read<Texture2DData>().imageData.fill(0);
+  assert.strictEqual((await decodeImage(asset, { decodedTextures })).rgba, first.rgba);
+  assert.notDeepStrictEqual((await decodeImage(asset)).rgba, first.rgba, "no implicit cache");
+  decodedTextures.clear();
+  assert.notDeepStrictEqual((await decodeImage(asset, { decodedTextures })).rgba, first.rgba);
+});
 
 wasmTest("images(): an unsupported format throws by default, is left out with skip", async () => {
   const { env, asset, setFormat } = patchable();

@@ -81,6 +81,35 @@ In Node.js, hand the raw RGBA to the image library of your choice. For example, 
 `sharp(rgba, { raw: { width, height, channels: 4 } }).png().toFile("out.png")`. This package does
 not encode images itself.
 
+### Reuse an atlas across sprites
+
+Pass a caller-owned `decodedTextures` map to `decodeImage`, `images` or `decodeSprite` to
+decode each shared texture once across sequential calls. Keys are the Texture2D
+`ObjectReader`s from `env.objects`; values are `RgbaImage`s from `decodeTexture2D`, RGBA with
+the top row first. A missing entry is decoded and added only on success. You can also put
+already-decoded textures in the map before calling.
+
+```ts
+import type { ObjectReader } from "unity-asset-reader";
+import { images, type RgbaImage } from "unity-asset-reader-texture";
+
+const decodedTextures = new Map<ObjectReader, RgbaImage>();
+try {
+  for await (const image of images(env, { decodedTextures })) {
+    show(image); // sprites sharing an atlas reuse its pixels
+  }
+} finally {
+  decodedTextures.clear();
+}
+```
+
+The package keeps no decoded textures without this option. You choose when to clear the map
+or delete entries: a 2048×2048 atlas holds 16 MiB of pixels. Treat stored pixels as read-only,
+and clear an entry after editing its source bytes. A Texture2D's `decodeImage().rgba` shares
+the map's array; do not modify it or transfer its buffer while retaining the entry. Sprite
+images have separate arrays. Await each decode before starting the next; concurrent misses
+can decode the same texture more than once.
+
 ### The low-level API
 
 `decodeTexture2D`, `decodeSprite` and `initTexture` work on the objects of `env.objects`
@@ -248,12 +277,12 @@ Every export. Each one has full JSDoc (parameters, return values, what it throws
 | `ImageInfo`, `TextureImageInfo`, `SpriteImageInfo`, `SpriteInfo` | What `imageInfo` returns; `kind` tells the two apart |
 | `ImageCompression` | `compression`'s values |
 | `DecodedImage` | `ImageInfo & { rgba }` |
-| `DecodeImageOptions`, `ImagesOptions` | `{ wasmPath? }`, and `{ wasmPath?, onError? }` |
+| `DecodeImageOptions`, `ImagesOptions` | `{ wasmPath?, decodedTextures? }`, and `{ wasmPath?, decodedTextures?, onError? }` |
 | `initTexture(options?)` | Load the WASM decoder. Optional before `decodeImage` and `images`; call it once, and await it, before `decodeTexture2D` and `decodeSprite` |
 | `InitTextureOptions` | `{ wasmPath?, locateFile? }`, passed to `texture2ddecoder-wasm`'s `initialize` |
 | `decodeTexture2D(texture)` | A `Texture2D`, as `obj.read()` returns it, to RGBA, top row first |
 | `decodeSprite(obj, env, options?)` | A `Sprite` to RGBA, top row first, cut out of its texture or atlas |
-| `DecodeSpriteOptions` | `{ tightMesh? }` |
+| `DecodeSpriteOptions` | `{ tightMesh?, decodedTextures? }` |
 | `convertPlain(data, width, height, format)` | One plain-format image to RGBA, rows **as stored** (bottom row first). No console layouts undone. `decodeTexture2D` is usually what you want |
 | `RgbaImage` | `{ data, width, height }`: 4 bytes per pixel, R G B A |
 
