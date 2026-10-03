@@ -10,7 +10,7 @@ const LOCAL = new URLSearchParams(location.search).has("local");
 // runtime from pinned revisions; third-party bundle data is never committed.
 const SAMPLE_BASE = LOCAL
   ? new URL("/fixtures/bundles/editor/6000.3.25f1/", location.href).href
-  : "https://cdn.jsdelivr.net/gh/fatal10110/texture2ddecoder-wasm@main/fixtures/bundles/editor/6000.3.25f1/";
+  : "https://cdn.jsdelivr.net/gh/fatal10110/unity-asset-reader@main/fixtures/bundles/editor/6000.3.25f1/";
 
 const SAMPLES = [
   {

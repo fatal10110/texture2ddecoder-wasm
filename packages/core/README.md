@@ -20,8 +20,8 @@ against [UnityPy](https://github.com/K0lb3/UnityPy) on bundles built with our ow
 | You want to | Install |
 |---|---|
 | Unpack bundles and read objects: text, scripts' data, raw audio, video and font bytes | `unity-asset-reader` (this package) |
-| Get textures and sprites as RGBA pixels, too | add [`unity-asset-reader-texture`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/texture/README.md) |
-| Load files and folders from disk in Node.js | add [`unity-asset-reader-node`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/node/README.md) |
+| Get textures and sprites as RGBA pixels, too | add [`unity-asset-reader-texture`](https://github.com/fatal10110/unity-asset-reader/blob/main/packages/texture/README.md) |
+| Load files and folders from disk in Node.js | add [`unity-asset-reader-node`](https://github.com/fatal10110/unity-asset-reader/blob/main/packages/node/README.md) |
 
 ## Install
 
@@ -30,7 +30,7 @@ npm install unity-asset-reader
 ```
 
 Types are included. For Node.js versions, CommonJS and bundlers, see
-[Requirements](#requirements) and the [Bundler Guide](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/BUNDLER_GUIDE.md).
+[Requirements](#requirements) and the [Bundler Guide](https://github.com/fatal10110/unity-asset-reader/blob/main/BUNDLER_GUIDE.md).
 
 ## Usage
 
@@ -154,7 +154,7 @@ Pass every file in one `load()` call: a bundle and its dependency bundles, or a 
 its resource files. File names are matched by their last path component, ignoring case, as Unity
 does. To keep two builds apart, load each one with its own `load()`.
 
-In Node.js, [`unity-asset-reader-node`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/node/README.md)'s `loadPath()` reads a file with its
+In Node.js, [`unity-asset-reader-node`](https://github.com/fatal10110/unity-asset-reader/blob/main/packages/node/README.md)'s `loadPath()` reads a file with its
 sidecars, or a whole folder, and calls `load()` for you.
 
 ## Run it in a Worker
@@ -185,8 +185,8 @@ const bytes = await file.arrayBuffer();
 worker.postMessage({ name: file.name, bytes }, [bytes]); // transfer, do not copy
 ```
 
-[`examples/cdn.html`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/examples/cdn.html) is a complete page built this way, with no bundler.
-The [Bundler Guide](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/BUNDLER_GUIDE.md) has the setup for Vite and Next.js.
+[`examples/cdn.html`](https://github.com/fatal10110/unity-asset-reader/blob/main/examples/cdn.html) is a complete page built this way, with no bundler.
+The [Bundler Guide](https://github.com/fatal10110/unity-asset-reader/blob/main/BUNDLER_GUIDE.md) has the setup for Vite and Next.js.
 
 ## 64-bit values and JSON
 
@@ -232,7 +232,7 @@ Nothing returns partial or garbage data without an error.
 ## Supported
 
 Each row is checked against the code. In "Tested on", "fixture" means a bundle built by the Unity editor
-([`fixtures/`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/fixtures/README.md)),
+([`fixtures/`](https://github.com/fatal10110/unity-asset-reader/blob/main/fixtures/README.md)),
 "generated" a container written by UnityPy's bundle writer around made-up bytes, and "unit test" a
 hand-written byte layout in this package's tests.
 
@@ -246,7 +246,7 @@ hand-written byte layout in this package's tests.
 | A gzip-wrapped file | Unwrapped, then opened as whatever is inside | Generated |
 | A loose SerializedFile (`.assets`, `level0`, `globalgamemanagers`) | Yes | Fixtures' SerializedFile nodes, read on their own |
 | `.resS` / `.resource` resource files, loose or bundle nodes | Yes: `Texture2D`, `AudioClip` and `VideoClip` read their data from them | Fixtures |
-| Split files (`.split0`, `.split1`, ...) | Pass the joined file to `load()`; [`unity-asset-reader-node`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/node/README.md)'s `loadPath()` joins them | Unit tests of `-node` |
+| Split files (`.split0`, `.split1`, ...) | Pass the joined file to `load()`; [`unity-asset-reader-node`](https://github.com/fatal10110/unity-asset-reader/blob/main/packages/node/README.md)'s `loadPath()` joins them | Unit tests of `-node` |
 | Bundle block compression | None, LZMA, LZ4, LZ4HC (LZ4HC blocks decode as LZ4) | Fixtures (none, LZMA, LZ4), generated |
 | SerializedFile format versions | 2 to 22, little- and big-endian. See [Unity versions](#unity-versions) | Fixtures (21, 22), unit tests (6, 8, 15) |
 
@@ -266,7 +266,7 @@ version; `Texture2D` has no floor: it reads any older version with its oldest la
 | `MonoBehaviour` (`MonoBehaviourFields`) | `script` (the `MonoScript` pointer), `gameObject`, `enabled`, `name`, and `fields`: every field of the script, with a type tree only | Any | Yes |
 | `MonoScript` (`MonoScriptFields`) | `className`, `namespace`, `assemblyName` | 3.4 | Yes |
 | `Material` (`MaterialFields`) | `shader` pointer, keywords, and `savedProperties`: `texEnvs` (texture slots), `floats`, `ints`, `colors` | 3.4 | Yes |
-| `Texture2D` (`Texture2DFields`) | `width`, `height`, `format` (a `TextureFormat`), `mipCount`, `textureSettings`, `platform` and `imageData`, still encoded (inline or from the `.resS`). Decode it with [`unity-asset-reader-texture`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/texture/README.md) | Any (gates from 2.6; tested from 3.4) | Yes |
+| `Texture2D` (`Texture2DFields`) | `width`, `height`, `format` (a `TextureFormat`), `mipCount`, `textureSettings`, `platform` and `imageData`, still encoded (inline or from the `.resS`). Decode it with [`unity-asset-reader-texture`](https://github.com/fatal10110/unity-asset-reader/blob/main/packages/texture/README.md) | Any (gates from 2.6; tested from 3.4) | Yes |
 | `Sprite` (`SpriteFields`) | `rect`, `pivot`, `border`, `pixelsToUnits`, `renderData` (texture area and mesh). Cut it out with `unity-asset-reader-texture` | 4.3 | 2019.4, 6000.3 |
 | `SpriteAtlas` (`SpriteAtlasFields`) | `packedSprites` and `renderDataMap`. Refused from 6000.6 on, whose layout is not ported | 2017.1 | 2019.4, 6000.3 |
 | `AudioClip` (`AudioClipFields`) | `channels`, `frequency`, `length`, `compressionFormat` and `audioData`: the sound bank as stored (usually FSB5), not decoded | 3.4 | Yes |
@@ -349,7 +349,7 @@ Each of these throws `UnsupportedError` naming what it found:
 
 Out of scope for this package: decoding audio, video or meshes; writing or repacking bundles;
 image encoding (PNG, JPEG). Texture and sprite pixels are in
-[`unity-asset-reader-texture`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/texture/README.md).
+[`unity-asset-reader-texture`](https://github.com/fatal10110/unity-asset-reader/blob/main/packages/texture/README.md).
 
 ## Requirements
 
@@ -358,7 +358,7 @@ image encoding (PNG, JPEG). Texture and sprite pixels are in
 - **Node.js:** 20.19+ or 22.12+ (`engines`: `^20.19.0 || >=22.12.0`), for both `import` and
   `require`. `lzma1` is published as ES modules only, so `require("unity-asset-reader")` needs a
   Node.js that can `require()` an ES module
-  ([#172](https://github.com/fatal10110/texture2ddecoder-wasm/issues/172)). CI tests on 20.19.0
+  ([#172](https://github.com/fatal10110/unity-asset-reader/issues/172)). CI tests on 20.19.0
   and 22.12.0.
 
 ## API reference
@@ -461,9 +461,9 @@ For tools that work below `load()`:
   [lzma1](https://github.com/xseman/lzma1) (MIT) for LZMA: the two runtime dependencies.
 
 The full list, and a comparison with similar npm packages, is in the
-[repository README](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/README.md#acknowledgements).
+[repository README](https://github.com/fatal10110/unity-asset-reader/blob/main/README.md#acknowledgements).
 
 ## License
 
 MIT. This package is a derivative port of AssetStudio (MIT) and uses UnityPy (MIT) as a secondary
-reference. Their copyright notices are in [`NOTICE`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/core/NOTICE).
+reference. Their copyright notices are in [`NOTICE`](https://github.com/fatal10110/unity-asset-reader/blob/main/packages/core/NOTICE).

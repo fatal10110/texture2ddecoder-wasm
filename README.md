@@ -3,7 +3,7 @@
 Read Unity AssetBundles in your browser or Node.js. Browse assets, read text and script data,
 and turn textures and sprites into RGBA pixels.
 
-**[Try the live demo](https://fatal10110.github.io/texture2ddecoder-wasm/)** — open a bundle,
+**[Try the live demo](https://fatal10110.github.io/unity-asset-reader/)** — open a bundle,
 browse its contents, and preview its textures and sprites.
 
 The parser is written in TypeScript. Compressed texture decoding uses WebAssembly.
@@ -113,7 +113,7 @@ The short answer. The full tables, with what each claim is tested on, are in the
 | Classes | Any class, through its type tree. A hand-written reader, which also reads bundles built without type trees, for `AssetBundle`, `TextAsset`, `MonoBehaviour`, `MonoScript`, `Material`, `Texture2D`, `Sprite`, `SpriteAtlas`, `AudioClip`, `VideoClip`, `Font` and `MovieTexture` |
 | Texture formats | 17 plain formats (`RGBA32`, `RGB565`, `RHalf`, `RGB9e5Float`, `YUY2`, ...) in TypeScript. Through WASM: BC1 (`DXT1`), BC3 (`DXT5`), BC4 to BC7; ETC1, ETC2 and their 3DS variants; EAC R and RG, signed too; PVRTC 2 and 4 bpp; ATC; ASTC LDR and HDR at 4x4 to 12x12; Crunch (`DXT1Crunched`, `DXT5Crunched`, `ETC_RGB4Crunched`, `ETC2_RGBA8Crunched`). Output is RGBA8, top row first, first mip level |
 | Sprites | Cut out of their texture, or of their `SpriteAtlas` when it is loaded; packer flips and rotations undone; optional transparency outside a tight mesh |
-| Platforms | Xbox 360 textures are byte-swapped back and Switch textures deswizzled. Textures of every other build target are decoded as stored, except PS4 and PS5 ones, which are refused ([#130](https://github.com/fatal10110/texture2ddecoder-wasm/issues/130)) |
+| Platforms | Xbox 360 textures are byte-swapped back and Switch textures deswizzled. Textures of every other build target are decoded as stored, except PS4 and PS5 ones, which are refused ([#130](https://github.com/fatal10110/unity-asset-reader/issues/130)) |
 | Runtimes | Browsers and Web Workers (ES2020, WebAssembly for textures); Node.js `^20.19.0 \|\| >=22.12.0`, `import` and `require` |
 
 ### Unity versions
@@ -158,8 +158,8 @@ repacking bundles.
 ## Development
 
 ```bash
-git clone --recurse-submodules https://github.com/fatal10110/texture2ddecoder-wasm.git
-cd texture2ddecoder-wasm
+git clone --recurse-submodules https://github.com/fatal10110/unity-asset-reader.git
+cd unity-asset-reader
 npm ci
 npm run verify   # build, test, check:browser, no-C# guard
 ```

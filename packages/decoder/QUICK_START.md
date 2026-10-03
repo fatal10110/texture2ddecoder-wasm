@@ -343,7 +343,7 @@ await initialize({ wasmPath: "/wasm" }); // ✅ Correct
 - **Detailed configurations:** [BUNDLER_GUIDE.md](BUNDLER_GUIDE.md)
 - **API reference:** [README.md#api-reference](README.md#api-reference)
 - **Working examples:** [examples/](examples/)
-- **Report issues:** [GitHub Issues](https://github.com/fatal10110/texture2ddecoder-wasm/issues)
+- **Report issues:** [GitHub Issues](https://github.com/fatal10110/unity-asset-reader/issues)
 
 ---
 

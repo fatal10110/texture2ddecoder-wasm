@@ -21,8 +21,8 @@ test("root NOTICE names every upstream of the per-package NOTICE files", () => {
     assert.ok(named.length > 0, `packages/${pkg}/NOTICE lists no upstream`);
     for (const url of named) {
       // The decoder is a workspace package, not an upstream; the root NOTICE
-      // points at its LICENSE instead. Its URL is this repo's until the rename (plan D8).
-      if (url.endsWith("/fatal10110/texture2ddecoder-wasm")) continue;
+      // points at its LICENSE instead. Its URL is this repo's (plan D8).
+      if (url.endsWith("/fatal10110/unity-asset-reader")) continue;
       assert.ok(rootUpstreams.has(url), `root NOTICE is missing ${url} (packages/${pkg}/NOTICE)`);
     }
   }
@@ -86,7 +86,7 @@ test("root README Acknowledgements link every upstream with its license", () => 
     for (const url of upstreams(read(`packages/${pkg}/NOTICE`))) urls.add(url);
   }
   for (const source of decoderCodecSources()) urls.add(`https://github.com/${source}`);
-  urls.delete("https://github.com/fatal10110/texture2ddecoder-wasm");
+  urls.delete("https://github.com/fatal10110/unity-asset-reader");
   assert.ok(urls.size >= 8, `expected at least 8 upstreams, found ${urls.size}`);
   for (const url of urls) {
     const row = credits.split("\n").find((line) => line.includes(`](${url}`));
@@ -112,7 +112,7 @@ test("each reader package README credits its NOTICE upstreams and ported sources
     const readme = `packages/${pkg}/README.md`;
     const credits = section(read(readme), "Acknowledgements");
     for (const url of upstreams(read(`packages/${pkg}/NOTICE`))) {
-      if (url.endsWith("/fatal10110/texture2ddecoder-wasm")) {
+      if (url.endsWith("/fatal10110/unity-asset-reader")) {
         assert.ok(credits.includes("texture2ddecoder-wasm"), `${readme} does not credit the decoder`);
         continue;
       }

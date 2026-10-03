@@ -1245,10 +1245,10 @@ app.use(
 
 - [Emscripten Documentation](https://emscripten.org/docs/)
 - [WebAssembly MDN](https://developer.mozilla.org/en-US/docs/WebAssembly)
-- [texture2ddecoder-wasm GitHub](https://github.com/fatal10110/texture2ddecoder-wasm)
+- [texture2ddecoder-wasm GitHub](https://github.com/fatal10110/unity-asset-reader)
 
 ---
 
 ## Contributing
 
-Found an issue with these configurations or want to add a new bundler? Please [open an issue](https://github.com/fatal10110/texture2ddecoder-wasm/issues) or submit a pull request!
+Found an issue with these configurations or want to add a new bundler? Please [open an issue](https://github.com/fatal10110/unity-asset-reader/issues) or submit a pull request!

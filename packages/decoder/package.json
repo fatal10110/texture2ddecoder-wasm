@@ -61,7 +61,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fatal10110/texture2ddecoder-wasm.git",
+    "url": "https://github.com/fatal10110/unity-asset-reader.git",
     "directory": "packages/decoder"
   },
   "engines": {

@@ -23,7 +23,7 @@ console.log(decoded.length); // 64 bytes: 4 x 4 pixels x 4 channels
 console.log([...decoded.slice(0, 4)]); // [0, 0, 255, 255] — BGRA, not RGBA
 ```
 
-**Live demo:** [fatal10110.github.io/texture2ddecoder-wasm/decoder.html](https://fatal10110.github.io/texture2ddecoder-wasm/decoder.html)
+**Live demo:** [fatal10110.github.io/unity-asset-reader/decoder.html](https://fatal10110.github.io/unity-asset-reader/decoder.html)
 
 For real assets, supply compressed texture payloads and the matching dimensions/format. Browser initialization and WASM asset paths are covered in the [Quick Start Guide](QUICK_START.md).
 
@@ -47,7 +47,7 @@ unpack to the block data underneath, which you then pass to that format's decode
 | Format | Function | Notes |
 |---|---|---|
 | BC1 (DXT1) | `decode_bc1` | |
-| BC3 (DXT5) | `decode_bc3` | Colour always decodes in 4-colour mode, per S3TC ([#137](https://github.com/fatal10110/texture2ddecoder-wasm/issues/137)), so on c0 <= c1 blocks it differs from AssetStudio and K0lb3/texture2ddecoder |
+| BC3 (DXT5) | `decode_bc3` | Colour always decodes in 4-colour mode, per S3TC ([#137](https://github.com/fatal10110/unity-asset-reader/issues/137)), so on c0 <= c1 blocks it differs from AssetStudio and K0lb3/texture2ddecoder |
 | BC4 | `decode_bc4` | One channel |
 | BC5 | `decode_bc5` | Two channels |
 | BC6H | `decode_bc6` | |
@@ -438,8 +438,8 @@ Install Docker from: https://www.docker.com/get-started
 
 ```bash
 # Clone the repository
-git clone https://github.com/fatal10110/texture2ddecoder-wasm.git
-cd texture2ddecoder-wasm
+git clone https://github.com/fatal10110/unity-asset-reader.git
+cd unity-asset-reader
 
 # Install dependencies
 npm install
@@ -507,23 +507,23 @@ The texture compression codecs were derived from the following sources:
 - [texture2ddecoder](https://github.com/K0lb3/texture2ddecoder) - the C++ decoders this package compiles, with Python bindings
 - [AssetStudio](https://github.com/Perfare/AssetStudio) - Original C++ texture decoders
 - [UnityPy](https://github.com/K0lb3/UnityPy) - Unity asset extraction tool
-- [unity-asset-reader-texture](https://www.npmjs.com/package/unity-asset-reader-texture) - decodes Unity `Texture2D` and `Sprite` assets with this package; the [repository README](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/README.md#comparison-with-other-packages) compares it with similar npm packages
+- [unity-asset-reader-texture](https://www.npmjs.com/package/unity-asset-reader-texture) - decodes Unity `Texture2D` and `Sprite` assets with this package; the [repository README](https://github.com/fatal10110/unity-asset-reader/blob/main/README.md#comparison-with-other-packages) compares it with similar npm packages
 
 ## Contributing
 
-Contributions are welcome! Please read our [Contributing Guide](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/CONTRIBUTING.md) to learn about our development process, how to propose bugfixes and improvements, and how to build and test your changes.
+Contributions are welcome! Please read our [Contributing Guide](https://github.com/fatal10110/unity-asset-reader/blob/main/CONTRIBUTING.md) to learn about our development process, how to propose bugfixes and improvements, and how to build and test your changes.
 
 ### Quick Start for Contributors
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/texture2ddecoder-wasm.git`
+2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/unity-asset-reader.git`
 3. Initialize submodules: `git submodule update --init --recursive`
 4. Install dependencies: `npm install`
 5. Build the project: `npm run build`
 6. Run tests: `npm test`
 7. Create a branch, make your changes, and submit a Pull Request
 
-See [CONTRIBUTING.md](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/CONTRIBUTING.md) for detailed guidelines.
+See [CONTRIBUTING.md](https://github.com/fatal10110/unity-asset-reader/blob/main/CONTRIBUTING.md) for detailed guidelines.
 
 ## Platform Support
 

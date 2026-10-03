@@ -22,7 +22,7 @@ This project follows a code of conduct to ensure a welcoming environment for all
 
 Before contributing, please:
 
-1. Check existing [issues](https://github.com/fatal10110/texture2ddecoder-wasm/issues) to see if your concern has already been reported
+1. Check existing [issues](https://github.com/fatal10110/unity-asset-reader/issues) to see if your concern has already been reported
 2. Read through this contributing guide
 3. Familiarize yourself with the project structure
 
@@ -39,8 +39,8 @@ Before contributing, please:
 1. **Fork and clone the repository:**
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/texture2ddecoder-wasm.git
-cd texture2ddecoder-wasm
+git clone https://github.com/YOUR_USERNAME/unity-asset-reader.git
+cd unity-asset-reader
 ```
 
 2. **Initialize git submodules:**
@@ -326,7 +326,7 @@ For feature requests, describe:
 
 If you have questions that aren't covered in this guide:
 
-1. Check existing [GitHub Discussions](https://github.com/fatal10110/texture2ddecoder-wasm/discussions)
+1. Check existing [GitHub Discussions](https://github.com/fatal10110/unity-asset-reader/discussions)
 2. Open a new discussion
 3. Reach out to maintainers
 
@@ -339,4 +339,3 @@ The reader packages are hand-ported from AssetStudio and UnityPy (MIT); the root
 ---
 
 Thank you for contributing to unity-asset-reader! 🎉
-

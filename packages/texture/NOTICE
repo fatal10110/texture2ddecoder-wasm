@@ -46,6 +46,6 @@ AssetsTools.NET -- https://github.com/nesrak1/AssetsTools.NET (MIT)
   Copyright (c) 2020 nesrak1
   UnityPy's Switch deswizzle is based on its SwitchSwizzle.cs.
 
-texture2ddecoder-wasm -- https://github.com/fatal10110/texture2ddecoder-wasm (MIT)
+texture2ddecoder-wasm -- https://github.com/fatal10110/unity-asset-reader (MIT)
   Copyright (c) K0lb3
   Block and Crunch texture decoding, used as a runtime dependency.
