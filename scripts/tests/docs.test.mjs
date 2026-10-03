@@ -9,7 +9,16 @@ const root = join(import.meta.dirname, "../..");
 const read = (path) => readFileSync(join(root, path), "utf8");
 
 /** Where a package README's links into this repo point: they must work on npmjs.com too. */
-const REPO_BLOB = "https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/";
+const REPO_BLOB = "https://github.com/fatal10110/unity-asset-reader/blob/main/";
+
+test("package repository metadata points at the renamed repo (#199)", () => {
+  for (const pkg of ["core", "texture", "node", "decoder"]) {
+    const { repository } = JSON.parse(read(`packages/${pkg}/package.json`));
+    assert.equal(repository.type, "git");
+    assert.equal(repository.url, "https://github.com/fatal10110/unity-asset-reader.git");
+    assert.equal(repository.directory, `packages/${pkg}`);
+  }
+});
 
 /** Docs that live in the repo only: relative links, resolved against the file. */
 const REPO_DOCS = ["README.md", "QUICK_START.md", "BUNDLER_GUIDE.md"];

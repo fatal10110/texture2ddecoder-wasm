@@ -1,6 +1,6 @@
 # unity-asset-reader-node
 
-Node.js adapter for [`unity-asset-reader`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/core/README.md).
+Node.js adapter for [`unity-asset-reader`](https://github.com/fatal10110/unity-asset-reader/blob/main/packages/core/README.md).
 It adds `loadPath()`, which reads a Unity file or a whole folder from disk and unpacks it. It
 finds each file's `.resS` / `.resource` sidecars and merges split files (`.split0`, `.split1`,
 ...).
@@ -35,9 +35,9 @@ const textures = level.objects.filter((obj) => obj.type === ClassID.Texture2D);
 ```
 
 `loadPath()` returns the same `Env` as `load()`, so everything in the
-[`unity-asset-reader` README](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/core/README.md)
+[`unity-asset-reader` README](https://github.com/fatal10110/unity-asset-reader/blob/main/packages/core/README.md)
 applies: `env.files`, `env.objects`, `obj.read()`, `env.resolve()`. Add
-[`unity-asset-reader-texture`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/texture/README.md)
+[`unity-asset-reader-texture`](https://github.com/fatal10110/unity-asset-reader/blob/main/packages/texture/README.md)
 for pixels.
 
 ## What `loadPath()` reads
@@ -78,7 +78,7 @@ build with its own call to keep them apart.
 - Loading only the files a file depends on. `loadPath(file)` reads the file and its sidecars, not
   the other files its `m_Externals` name. Pointers into those resolve as `fileNotLoaded`; pass the
   folder to load them
-  ([#165](https://github.com/fatal10110/texture2ddecoder-wasm/issues/165)).
+  ([#165](https://github.com/fatal10110/unity-asset-reader/issues/165)).
 - Streaming, or reading a large `.resS` in pieces: every file is read into memory whole.
 - Browsers. Use `unity-asset-reader`'s `load()` with the bytes of a `File` or `fetch` response.
 
@@ -105,9 +105,9 @@ Full JSDoc is in the bundled `index.d.ts`.
 - [UnityPy](https://github.com/K0lb3/UnityPy) (MIT, © K0lb3): generates the test goldens.
 
 The full list, and a comparison with similar npm packages, is in the
-[repository README](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/README.md#acknowledgements).
+[repository README](https://github.com/fatal10110/unity-asset-reader/blob/main/README.md#acknowledgements).
 
 ## License
 
 MIT. `loadPath()` ports parts of AssetStudio (MIT); see
-[`NOTICE`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/node/NOTICE).
+[`NOTICE`](https://github.com/fatal10110/unity-asset-reader/blob/main/packages/node/NOTICE).

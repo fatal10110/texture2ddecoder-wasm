@@ -106,7 +106,7 @@ Tested with Next.js 16 (Turbopack, and `next build --webpack`), with `next build
 Import the packages in a module Worker started from a client component. No `next.config.js`
 change is needed. `unity-asset-reader-texture` needs `texture2ddecoder-wasm` 1.2.4 or later
 here: with 1.2.3 and earlier, the build fails with `Can't resolve 'module'`
-([#171](https://github.com/fatal10110/texture2ddecoder-wasm/issues/171)).
+([#171](https://github.com/fatal10110/unity-asset-reader/issues/171)).
 
 1. Install, and copy the WASM files into `public/`:
 
@@ -164,7 +164,7 @@ On the server, in a route handler, `initTexture()` takes no options, as in
 [Node.js](#nodejs-esm-and-commonjs). No `next.config.js` change is needed either.
 `next build --webpack` needs `texture2ddecoder-wasm` 1.2.5 or later: with 1.2.4 and earlier,
 `initTexture()` fails with `TypeError: a is not a function`
-([#202](https://github.com/fatal10110/texture2ddecoder-wasm/issues/202)).
+([#202](https://github.com/fatal10110/unity-asset-reader/issues/202)).
 
 ## CDN, no bundler
 
@@ -187,7 +187,7 @@ a texture. Its Worker is [`examples/cdn-worker.js`](examples/cdn-worker.js).
   `unity-asset-reader` that `unity-asset-reader-texture`'s peer range allows (the same major),
   and a `texture2ddecoder-wasm` that its dependency range allows (`@1.2.3` or later).
 - **In a Worker, `texture2ddecoder-wasm` must be 1.2.3 or later.** 1.2.2 refuses to initialize in
-  a Worker ([#149](https://github.com/fatal10110/texture2ddecoder-wasm/issues/149)).
+  a Worker ([#149](https://github.com/fatal10110/unity-asset-reader/issues/149)).
 - **Try it on this repo's builds** with `node examples/serve.mjs`, a local stand-in for jsDelivr,
   and open `cdn.html?local`. See [`examples/README.md`](examples/README.md).
 
@@ -212,7 +212,7 @@ In Node.js, `initTexture()` takes no options: the WASM files are found in the in
 
 All three reader packages need Node.js 20.19+ or 22.12+ (`engines`: `^20.19.0 || >=22.12.0`),
 for both `import` and `require`, and CI tests on 20.19.0 and 22.12.0
-([#172](https://github.com/fatal10110/texture2ddecoder-wasm/issues/172)). `require()` needs a
+([#172](https://github.com/fatal10110/unity-asset-reader/issues/172)). `require()` needs a
 Node.js that can `require()` an ES module, because the LZMA decoder `lzma1` is published as ES
 modules only. `initTexture()` needs a Node.js that detects ES-module syntax in
 `texture2ddecoder-wasm`'s glue code.
@@ -226,11 +226,11 @@ installed location.
 | Symptom | Cause and fix |
 |---|---|
 | `Invalid value "iife" for option "worker.format"` (Vite build) | Set `worker: { format: "es" }` in `vite.config.js`. |
-| `Failed to fetch dynamically imported module: .../wasm/texture2ddecoder.js?import` (Vite dev) | `texture2ddecoder-wasm` 1.2.3 or earlier with a root-relative `wasmPath` ([#171](https://github.com/fatal10110/texture2ddecoder-wasm/issues/171)). Update it to 1.2.4 or later, or pass an absolute URL: `wasmPath: new URL("/wasm/", location.href).href`. |
+| `Failed to fetch dynamically imported module: .../wasm/texture2ddecoder.js?import` (Vite dev) | `texture2ddecoder-wasm` 1.2.3 or earlier with a root-relative `wasmPath` ([#171](https://github.com/fatal10110/unity-asset-reader/issues/171)). Update it to 1.2.4 or later, or pass an absolute URL: `wasmPath: new URL("/wasm/", location.href).href`. |
 | `Failed to load WASM module from ...` | The two files are not at that URL. Run `npx texture2ddecoder-copy-wasm public/wasm`, and check that `<wasmPath>/texture2ddecoder.js` opens in the browser. |
 | `Browser environment requires wasmPath parameter` | `initTexture()` without options only works in Node.js. |
-| `Can't resolve 'module'`, `Cannot find module 'unknown'` or `Cannot find module 'http://…/texture2ddecoder.js'` (Next.js) | `texture2ddecoder-wasm` 1.2.3 or earlier ([#171](https://github.com/fatal10110/texture2ddecoder-wasm/issues/171)). Update it to 1.2.4 or later: `npm update texture2ddecoder-wasm`. |
-| `TypeError: a is not a function` from `initTexture()` in a Next.js route handler (`next build --webpack`) | `texture2ddecoder-wasm` 1.2.4 or earlier ([#202](https://github.com/fatal10110/texture2ddecoder-wasm/issues/202)). Update it to 1.2.5 or later, or add `serverExternalPackages: ["texture2ddecoder-wasm"]` to `next.config.js`. |
+| `Can't resolve 'module'`, `Cannot find module 'unknown'` or `Cannot find module 'http://…/texture2ddecoder.js'` (Next.js) | `texture2ddecoder-wasm` 1.2.3 or earlier ([#171](https://github.com/fatal10110/unity-asset-reader/issues/171)). Update it to 1.2.4 or later: `npm update texture2ddecoder-wasm`. |
+| `TypeError: a is not a function` from `initTexture()` in a Next.js route handler (`next build --webpack`) | `texture2ddecoder-wasm` 1.2.4 or earlier ([#202](https://github.com/fatal10110/unity-asset-reader/issues/202)). Update it to 1.2.5 or later, or add `serverExternalPackages: ["texture2ddecoder-wasm"]` to `next.config.js`. |
 | `decodeTexture2D: the texture decoder is not initialized` | Await `initTexture()` before the first decode. Plain formats need it too. |
 | `ERR_REQUIRE_ESM` on `lzma1` | Node.js below 20.19 / 22.12 cannot `require()` it. Use `import`, or a newer Node.js. |
 | `Cannot use 'import.meta' outside a module` from `initTexture()` | Node.js below 20.19. Upgrade. |

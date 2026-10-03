@@ -159,14 +159,14 @@ For each package, on npmjs.com as a maintainer with 2FA:
 |---|---|
 | Publisher | GitHub Actions |
 | Organization or user | `fatal10110` |
-| Repository | `texture2ddecoder-wasm` (the current name; see [After the repo rename](#after-the-repo-rename)) |
+| Repository | `unity-asset-reader` |
 | Workflow filename | `release.yml` (file name only, with the extension; all fields are case-sensitive) |
 | Environment name | `npm` |
 
 or, from a shell logged in to npm with 2FA:
 
 ```bash
-npm trust github <name> --file release.yml --repo fatal10110/texture2ddecoder-wasm --env npm --allow-publish
+npm trust github <name> --file release.yml --repo fatal10110/unity-asset-reader --env npm --allow-publish
 ```
 
 npm does not validate the entry when it is saved; a typo shows up as `ENEEDAUTH` at publish time.
@@ -219,12 +219,13 @@ whether or not the secret is still set, because npm tries the OIDC token before 
 
 ## After the repo rename
 
-The repo is to be renamed to `unity-asset-reader` (plan D8). Two things follow it, before the
-next release:
+The repo is now `fatal10110/unity-asset-reader` (plan D8, #199). Before the next release:
 
 - `repository.url` in every `package.json`. GitHub redirects the old URL, but npm checks
   provenance against `repository.url`, which has to be the repository the job runs in. Keep each
   package's `repository.directory`. Changing it is not a version change, so it publishes nothing.
+  The updated metadata reaches npm with each package's next release; already-published versions
+  keep the old URL.
 - Each package's trusted publisher. It names the repository, so it has to name the new one. npm's
   docs say an existing connection cannot be changed, only deleted and added again
   ([npm docs](https://docs.npmjs.com/trusted-publishers)); do that per package.

@@ -1,7 +1,7 @@
 # unity-asset-reader-texture
 
 Decodes Unity `Texture2D` and `Sprite` objects read by
-[`unity-asset-reader`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/core/README.md)
+[`unity-asset-reader`](https://github.com/fatal10110/unity-asset-reader/blob/main/packages/core/README.md)
 to RGBA8 pixels. It runs in browsers, Web Workers and Node.js.
 
 - **Plain formats** (RGBA32, RGB565, RHalf, ...) are converted in TypeScript.
@@ -128,13 +128,13 @@ the plain ones too.
   `await initTexture({ wasmPath: "https://cdn.jsdelivr.net/npm/texture2ddecoder-wasm@1/wasm" })`.
 
 **In a Web Worker**, `texture2ddecoder-wasm` 1.2.3 or later is needed. 1.2.2 refuses to
-initialize in a Worker ([#149](https://github.com/fatal10110/texture2ddecoder-wasm/issues/149)).
+initialize in a Worker ([#149](https://github.com/fatal10110/unity-asset-reader/issues/149)).
 This package depends on `^1.2.3`; a CDN `wasmPath` should point at 1.2.3 or later too.
 
-The [Bundler Guide](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/BUNDLER_GUIDE.md)
+The [Bundler Guide](https://github.com/fatal10110/unity-asset-reader/blob/main/BUNDLER_GUIDE.md)
 has the setup for Vite, Next.js and CDN pages. Next.js, and a root-relative `wasmPath` in the
 Vite dev server, need `texture2ddecoder-wasm` 1.2.4 or later
-([#171](https://github.com/fatal10110/texture2ddecoder-wasm/issues/171)).
+([#171](https://github.com/fatal10110/unity-asset-reader/issues/171)).
 
 ### Sprites
 
@@ -155,7 +155,7 @@ What is supported, and what it is tested on (sprites built by 2019.4.41f2 and 60
 | Cut from its own texture, inline or in the `.resS` | Yes, at any rectangle and pivot, with a border |
 | Packed into a `SpriteAtlas` (Sprite Atlas V1 fixtures), tight or rectangle packing | Yes, when the atlas is loaded |
 | Packer rotation `FlipHorizontal`, `FlipVertical`, `Rotate180` | Undone |
-| Packer rotation `Rotate90` | Undone as AssetStudio does; no fixture ([#160](https://github.com/fatal10110/texture2ddecoder-wasm/issues/160)) |
+| Packer rotation `Rotate90` | Undone as AssetStudio does; no fixture ([#160](https://github.com/fatal10110/unity-asset-reader/issues/160)) |
 | Pixels outside a tight mesh | Transparent with `decodeSprite`'s `{ tightMesh: true }` |
 | Alpha texture (ETC1 split alpha), variant atlas (`downscaleMultiplier` other than 1) | Refused |
 
@@ -190,7 +190,7 @@ Details worth knowing:
 - `DXT1Crunched` / `DXT5Crunched` from before Unity 2017.3 use the original crunch format. It is
   unpacked too, and checked against AssetStudio's decoder only.
 - `DXT5` color is decoded in 4-color mode, as the S3TC spec says. On blocks with `c0 <= c1` that differs from AssetStudio
-  ([#137](https://github.com/fatal10110/texture2ddecoder-wasm/issues/137)).
+  ([#137](https://github.com/fatal10110/unity-asset-reader/issues/137)).
 
 ### Platforms
 
@@ -199,7 +199,7 @@ Details worth knowing:
   refused.
 - **Xbox 360:** the byte order of `ARGB4444`, `RGB565`, `DXT1` and `DXT5` is swapped back.
 - **PS4, PS5:** refused. Their textures can be tiled, and no reference implementation detiles them
-  yet ([#130](https://github.com/fatal10110/texture2ddecoder-wasm/issues/130)).
+  yet ([#130](https://github.com/fatal10110/unity-asset-reader/issues/130)).
 - **Every other build target** (Windows, macOS, Linux, Android, iOS, WebGL, ...): the image data
   is decoded as stored.
 
@@ -222,7 +222,7 @@ Not provided at all: mip levels other than the first; the `Cubemap`, `Texture2DA
 
 `Rotate90`-packed sprites are turned the way AssetStudio turns them, which no test bundle has
 confirmed against Unity's packer yet
-([#160](https://github.com/fatal10110/texture2ddecoder-wasm/issues/160)).
+([#160](https://github.com/fatal10110/unity-asset-reader/issues/160)).
 
 ## Requirements
 
@@ -230,7 +230,7 @@ confirmed against Unity's packer yet
 - **Node.js:** 20.19+ or 22.12+ (`engines`: `^20.19.0 || >=22.12.0`), for both `import` and
   `require`; CI tests on 20.19.0 and 22.12.0. `initTexture()` loads
   `texture2ddecoder-wasm`'s ES-module glue code, which older Node.js versions refuse
-  ([#172](https://github.com/fatal10110/texture2ddecoder-wasm/issues/172)). Node.js 22 prints a
+  ([#172](https://github.com/fatal10110/unity-asset-reader/issues/172)). Node.js 22 prints a
   `MODULE_TYPELESS_PACKAGE_JSON` warning while loading it. The warning is harmless.
 
 ## API reference
@@ -273,14 +273,14 @@ Every export. Each one has full JSDoc (parameters, return values, what it throws
   compiled to WASM with [Emscripten](https://github.com/emscripten-core/emscripten).
 
 The full list, and a comparison with similar npm packages, is in the
-[repository README](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/README.md#acknowledgements).
+[repository README](https://github.com/fatal10110/unity-asset-reader/blob/main/README.md#acknowledgements).
 
 ## License
 
 `MIT AND Apache-2.0`. The package is MIT, except the sprite tight-mesh fill in `decodeSprite`. That
 fill is derived from [ImageSharp.Drawing](https://github.com/SixLabors/ImageSharp.Drawing) and is
 under the Apache License 2.0. See
-[`NOTICE`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/texture/NOTICE)
+[`NOTICE`](https://github.com/fatal10110/unity-asset-reader/blob/main/packages/texture/NOTICE)
 and
-[`LICENSE-APACHE`](https://github.com/fatal10110/texture2ddecoder-wasm/blob/main/packages/texture/LICENSE-APACHE).
+[`LICENSE-APACHE`](https://github.com/fatal10110/unity-asset-reader/blob/main/packages/texture/LICENSE-APACHE).
 The texture conversion is ported from AssetStudio and UnityPy (MIT).

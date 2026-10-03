@@ -23,6 +23,9 @@ to release is in [RELEASING.md](RELEASING.md).
 
 ### 1.0.2 - Unreleased
 
+- Update repository metadata and documentation links after the GitHub repository rename to
+  `fatal10110/unity-asset-reader` (#199).
+
 - `load()` and `open()` accept a `unityVersion` fallback for version-stripped files and files
   below SerializedFile format 7. Recorded versions and usable enclosing-bundle revisions take
   precedence; without the option, unknown versions stay `[0, 0, 0, 0]` (#105).
@@ -72,6 +75,11 @@ First release. The core: isomorphic, synchronous, no WASM.
 
 ## unity-asset-reader-texture
 
+### 1.0.2 - Unreleased
+
+- Update repository metadata and documentation links after the GitHub repository rename to
+  `fatal10110/unity-asset-reader` (#199).
+
 ### 1.0.1 - 2026-09-28
 
 - `engines` is `^20.19.0 || >=22.12.0`, was `>=18.0.0`. In Node.js, `initTexture()` loads
@@ -98,6 +106,11 @@ First release. Peer: `unity-asset-reader@^1`; depends on `texture2ddecoder-wasm@
 
 ## unity-asset-reader-node
 
+### 1.0.2 - Unreleased
+
+- Update repository metadata and documentation links after the GitHub repository rename to
+  `fatal10110/unity-asset-reader` (#199).
+
 ### 1.0.1 - 2026-09-28
 
 - `engines` is `^20.19.0 || >=22.12.0`, was `>=18.0.0`, the same as `unity-asset-reader`, which
@@ -111,6 +124,11 @@ First release. Peer: `unity-asset-reader@^1`.
   picks up `.resS`/`.resource` sidecars.
 
 ## texture2ddecoder-wasm
+
+### 1.2.6 - Unreleased
+
+- Update repository metadata and documentation links after the GitHub repository rename to
+  `fatal10110/unity-asset-reader` (#199). The npm package name stays `texture2ddecoder-wasm`.
 
 ### 1.2.5 - 2026-09-29
 
@@ -139,4 +157,4 @@ First release. Peer: `unity-asset-reader@^1`.
 
 ### 1.2.2 and earlier
 
-See the [GitHub releases](https://github.com/fatal10110/texture2ddecoder-wasm/releases).
+See the [GitHub releases](https://github.com/fatal10110/unity-asset-reader/releases).
