@@ -2,8 +2,8 @@
 
 Node.js adapter for [`unity-asset-reader`](https://github.com/fatal10110/unity-asset-reader/blob/main/packages/core/README.md).
 It adds `loadPath()`, which reads a Unity file or a whole folder from disk and unpacks it. It
-finds each file's `.resS` / `.resource` sidecars and merges split files (`.split0`, `.split1`,
-...).
+finds each file's `.resS` / `.resource` sidecars, loads a loose serialized file's external
+dependencies from the same folder, and merges split files (`.split0`, `.split1`, ...).
 
 `unity-asset-reader` itself takes bytes (`Uint8Array`) and works anywhere. Use this package only
 when the files are on a local disk.
@@ -28,7 +28,7 @@ for (const obj of env.objects) {
   console.log(classIdName(obj.type), obj.pathId);
 }
 
-// Or one file, with its sidecars from the same folder
+// Or one file, with its externals and sidecars from the same folder
 // (here sharedassets0.assets.resS and sharedassets0.resource, when they exist).
 const level = loadPath("Game_Data/sharedassets0.assets");
 const textures = level.objects.filter((obj) => obj.type === ClassID.Texture2D);
@@ -46,8 +46,11 @@ for pixels.
   symbolic link to a file is read; a link to a folder is not followed.
 - **A file** is loaded with its sidecars from the same folder: `<name>.resS` and
   `<stem>.resource`. For `sharedassets0.assets` those are `sharedassets0.assets.resS` and
-  `sharedassets0.resource`. Names are matched ignoring case. Nothing else in the folder is read.
-  To load more, pass the folder.
+  `sharedassets0.resource`. A loose serialized file also loads the files its `m_Externals`
+  reference, along with their sidecars and split parts. This follows further external references,
+  skipping names already loaded. External and sidecar names are matched ignoring case. Only
+  neighboring files are considered, never subfolders; unrelated files are not read. Missing
+  externals are skipped and pointers into them remain `fileNotLoaded`.
 - **Split files** (`<name>.split0` ... `<name>.splitN`, as Unity writes large files for Android)
   are merged in memory into one input named `<name>`. A path to any one part loads the whole
   file. When the merged `<name>` already sits next to its parts, it is used and the parts are
@@ -71,14 +74,14 @@ build with its own call to keep them apart.
 - `Error` when the path is neither a file nor a folder (a socket, a device).
 - `CorruptError` when the parts of a split file have a gap. The message names the file and the
   first missing part.
-- Anything `load()` throws: `UnsupportedError`, `CorruptError`.
+- Anything `load()` or `readSerializedFile()` throws: `UnsupportedError`, `CorruptError`.
+  Loading a single loose serialized file now parses its metadata to find its externals, so
+  invalid metadata fails during `loadPath()` rather than on the first access to `env.objects`.
 
 ## Not supported
 
-- Loading only the files a file depends on. `loadPath(file)` reads the file and its sidecars, not
-  the other files its `m_Externals` name. Pointers into those resolve as `fileNotLoaded`; pass the
-  folder to load them
-  ([#165](https://github.com/fatal10110/unity-asset-reader/issues/165)).
+- Looking up a bundle node's externals on disk. Automatic external lookup applies to loose
+  serialized files; pass all dependency bundles to `load()` or pass their folder to `loadPath()`.
 - Streaming, or reading a large `.resS` in pieces: every file is read into memory whole.
 - Browsers. Use `unity-asset-reader`'s `load()` with the bytes of a `File` or `fetch` response.
 
@@ -93,7 +96,7 @@ Node.js 20.19+ or 22.12+ (`engines`: `^20.19.0 || >=22.12.0`), for both `import`
 
 | Export | What |
 |---|---|
-| `loadPath(fileOrDir)` | Read a file with its sidecars, or every file below a folder, and `load()` them. Returns the `Env`. |
+| `loadPath(fileOrDir)` | Read a file with its externals and sidecars, or every file below a folder, and `load()` them. Returns the `Env`. |
 
 Full JSDoc is in the bundled `index.d.ts`.
 

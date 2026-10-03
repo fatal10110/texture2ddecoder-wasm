@@ -111,6 +111,10 @@ First release. Peer: `unity-asset-reader@^1`; depends on `texture2ddecoder-wasm@
 
 ### 1.0.2 - Unreleased
 
+- `loadPath(file)` loads a loose serialized file's external dependencies from the same
+  directory, transitively, with their sidecars and split parts. Missing externals are skipped;
+  unreadable files throw Node's error. Metadata is parsed during the call to find externals (#165).
+
 - Update repository metadata and documentation links after the GitHub repository rename to
   `fatal10110/unity-asset-reader` (#199).
 
