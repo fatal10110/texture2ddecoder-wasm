@@ -10,7 +10,7 @@ export { gunzip, unzlib } from "./codec/inflate.js";
 export { decompressLz4 } from "./codec/lz4.js";
 export { lzmaDecompress } from "./codec/lzma.js";
 export { load } from "./env.js";
-export type { Env, LoadedFile, LoadInput, LoadSource } from "./env.js";
+export type { Env, LoadedFile, LoadInput, LoadOptions, LoadSource } from "./env.js";
 export { open } from "./open.js";
 export type {
   BlobLike,

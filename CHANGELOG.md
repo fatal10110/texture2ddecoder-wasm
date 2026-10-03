@@ -21,6 +21,12 @@ to release is in [RELEASING.md](RELEASING.md).
 
 ## unity-asset-reader
 
+### 1.0.2 - Unreleased
+
+- `load()` and `open()` accept a `unityVersion` fallback for version-stripped files and files
+  below SerializedFile format 7. Recorded versions and usable enclosing-bundle revisions take
+  precedence; without the option, unknown versions stay `[0, 0, 0, 0]` (#105).
+
 ### 1.0.1 - 2026-09-28
 
 - `engines` is `^20.19.0 || >=22.12.0`, was `>=18.0.0`. `require("unity-asset-reader")` needs a
