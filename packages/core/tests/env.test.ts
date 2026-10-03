@@ -575,7 +575,7 @@ const versions = (objects: ObjectReader[]): unknown[] =>
   objects.map((o) => [o.pathId, o.format, o.version]);
 
 test("a version-stripped input keeps [0, 0, 0, 0] and stays readable", () => {
-  // The ponytail in env.ts: nothing names the editor, so the version stays
+  // Nothing names the editor, so the version stays
   // unknown instead of the whole load throwing; a version-gated class reader
   // refuses [0, 0, 0, 0] itself (decided on PR #107).
   const env = load([{ name: "CAB-stripped", data: STRIPPED }]);
@@ -620,6 +620,60 @@ for (const revision of ["0.0.0", ""]) {
     ]);
   });
 }
+
+// --- caller's version fallback ----------------------------------------------
+
+test("a caller's Unity version fills a stripped loose file and stripped bundle revisions", () => {
+  const env = load([
+    { name: "CAB-loose", data: STRIPPED },
+    { name: "stripped.bundle", data: buildBundle([{ path: "CAB-stripped", data: STRIPPED }], "0.0.0") },
+    { name: "empty.bundle", data: buildBundle([{ path: "CAB-empty", data: STRIPPED }], "") },
+  ], { unityVersion: "2019.4.41f2" });
+
+  assert.deepEqual(env.objects.map((o) => o.version), [
+    [2019, 4, 41, 2],
+    [2019, 4, 41, 2],
+    [2019, 4, 41, 2],
+  ]);
+  assert.ok(env.objects.every((o) => o.buildType === "f"));
+});
+
+test("a caller's Unity version preserves recorded versions and usable bundle revisions", () => {
+  const env = load([
+    format8SerializedFile("3.4.2p3"),
+    buildBundle([{ path: "CAB-recorded", data: format8SerializedFile("3.4.2p3") }], "2017.4.40f1"),
+    buildBundle([{ path: "CAB-stripped", data: STRIPPED }], "2017.4.40f1"),
+    buildBundle([{ path: "CAB-old", data: LEGACY }], "2.6.1f3"),
+  ], { unityVersion: "2019.4.41f2" });
+
+  assert.deepEqual(env.objects.map((o) => [o.version, o.buildType]), [
+    [[3, 4, 2, 3], "p"],
+    [[3, 4, 2, 3], "p"],
+    [[2017, 4, 40, 1], "f"],
+    [[2, 6, 1, 3], "f"],
+  ]);
+});
+
+test("a caller's Unity version fills an old loose file and a UnityWebData node", () => {
+  const env = load([
+    LEGACY,
+    buildWebData([{ path: "CAB-stripped", data: STRIPPED }]),
+  ], { unityVersion: "2019.4.41f2" });
+  assert.deepEqual(env.objects.map((o) => o.version), [[2019, 4, 41, 2], [2019, 4, 41, 2]]);
+});
+
+test("load refuses a caller version that does not name an editor", () => {
+  for (const unityVersion of ["", "0.0.0", "garbage", "2019.4", "2019.4.41f"]) {
+    assert.throws(() => load(STRIPPED, { unityVersion }), RangeError);
+  }
+  // @ts-expect-error - runtime callers must supply a string
+  assert.throws(() => load(STRIPPED, { unityVersion: 2019 }), TypeError);
+});
+
+test("a caller's Unity version accepts editor-specific suffixes after the build number", () => {
+  const env = load(STRIPPED, { unityVersion: "2021.3.15f1c1" });
+  assert.deepEqual(env.objects.map((o) => [o.version, o.buildType]), [[[2021, 3, 15, 1], "f"]]);
+});
 
 // --- refusals ----------------------------------------------------------------
 

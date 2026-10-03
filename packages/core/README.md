@@ -62,8 +62,8 @@ const icon = env.get("Assets/UI/Icon.png"); // by the path the asset had in the 
 for (const sprite of env.assets("Sprite")) sprite.data.rect; // filtered and typed
 ```
 
-- **`load(input)`** takes one file or an array of files. Each is bytes or `{ name, data }`. A file
-  without a name is called `input 0`, `input 1`, ... after its place. That is fine for a bundle,
+- **`load(input, options?)`** takes one file or an array of files. Each is bytes or `{ name, data }`.
+  A file without a name is called `input 0`, `input 1`, ... after its place. That is fine for a bundle,
   whose contents carry their own names, but give loose files (a `.resS`, a `sharedassets0.assets`)
   their real names: resources and pointers between files are found by name.
 - **`await open(source)`** gets the bytes first, then calls `load()`. A `string` or `URL` is
@@ -72,6 +72,8 @@ for (const sprite of env.assets("Sprite")) sprite.data.rect; // filtered and typ
   its URL's path (decoded, without the query) or its `File.name`. A response that is not OK throws
   an `Error` naming the URL and the status. Pass `{ fetch }` to fetch with your own headers or
   credentials: `open(url, { fetch: (input) => fetch(input, { headers }) })`.
+  Both `load()` and `open()` accept `{ unityVersion }` for
+  [version-stripped files](#version-stripped-files).
 - **`env.assets(...types)`** yields every object as an `Asset`: plain data with `type`, `typeName`,
   `classId`, `name`, `path`, `pathId`, `file`, `byteSize`, `data`, the low-level `reader` and the
   `env` that loaded it.
@@ -296,7 +298,16 @@ as a version-stripped file (below).
 ### Version-stripped files
 
 A bundle built with `AssetBundleStripUnityVersion` records `"0.0.0"` as its Unity version, in
-the bundle header and in each SerializedFile. `readTypeTree()` reads it as usual. Each class
+the bundle header and in each SerializedFile. If you know the editor that built it, pass
+`load(bytes, { unityVersion: "2019.4.41f2" })` or
+`await open(url, { unityVersion: "2019.4.41f2" })`. This fallback fills a missing or stripped
+version after trying the enclosing bundle's revision. It preserves recorded versions and
+usable bundle revisions, and also applies to loose files below SerializedFile format 7.
+The option must name an editor (`major.minor.patch` with an optional build suffix and custom
+postfix, such as `2021.3.15f1c1`); invalid strings, including `"0.0.0"`, throw `RangeError`,
+and non-strings throw `TypeError`.
+
+Without a usable version, `readTypeTree()` reads it as usual. Each class
 reader reads such an object only when its bytes or the SerializedFile format leave one layout,
 and throws `UnsupportedError` (kind `"Unity version"`) otherwise:
 
@@ -359,13 +370,14 @@ bundled `index.d.ts`, so your editor shows it on hover.
 
 | Export | What |
 |---|---|
-| `load(inputs)` | Unpack one file or several and index their objects. Returns an `Env` |
+| `load(inputs, options?)` | Unpack one file or several and index their objects. Returns an `Env` |
 | `open(sources, options?)` | Fetch or read files (URL, `Request`, `Response`, `Blob` / `File`, bytes), then `load()` them. Returns a promise of the `Env` |
-| `OpenSource`, `OpenOptions` | What `open()` takes; `options.fetch` replaces the global `fetch` |
+| `OpenSource`, `OpenOptions` | What `open()` takes; options include `LoadOptions` and a `fetch` replacing the global one |
 | `ResponseLike`, `RequestLike`, `BlobLike`, `URLLike` | The parts of the WHATWG types `open()` uses, which `Response`, `Request`, `Blob`, `File` and `URL` fit |
 | `Env` | `files`, `objects`, `assets(...types)`, `get(path)`, `resolve(pptr, from)`, `readResource(ref, from)` |
 | `LoadSource` | One input of `load()`: bytes, a `LoadInput`, or `{ data }` without a name (called `input <index>`) |
 | `LoadInput` | `{ name, data }`: one named file for `load()`; `data` is a `Uint8Array` or `ArrayBuffer` |
+| `LoadOptions` | `unityVersion`: fallback editor version for files that record none or have a stripped version |
 | `LoadedFile` | `{ path, data }`: one unpacked file |
 | `ResourceRef` | `{ path, offset, size }`: a byte range of a resource file (a `StreamingInfo`) |
 | `PPtr` | `{ m_FileID, m_PathID }`: a pointer as a type tree holds it |

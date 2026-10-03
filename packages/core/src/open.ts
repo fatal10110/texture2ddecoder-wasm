@@ -1,4 +1,4 @@
-import { load, type Env, type LoadSource } from "./env.js";
+import { load, type Env, type LoadOptions, type LoadSource } from "./env.js";
 
 // The package compiles with `lib: ["ES2020"]` and no DOM or node types (R4),
 // so the WHATWG types `open()` takes are declared here by the members it
@@ -52,7 +52,7 @@ export interface URLLike {
 export type OpenSource = string | URLLike | RequestLike | ResponseLike | BlobLike | LoadSource;
 
 /** Options of {@link open}. */
-export interface OpenOptions {
+export interface OpenOptions extends LoadOptions {
   /**
    * The `fetch` to use instead of the global one: to add headers or
    * credentials, or where there is no global `fetch`. It is called with the
@@ -80,7 +80,7 @@ declare const fetch: ((input: string | RequestLike) => Promise<ResponseLike>) | 
  * const env3 = await open(url, { fetch: (input) => fetch(input, { headers }) });
  *
  * @param sources one source or several (see {@link OpenSource})
- * @param options a `fetch` of your own
+ * @param options a `fetch` of your own and {@link LoadOptions} passed to `load()`
  * @returns the `Env` that `load()` returns for the files
  * @throws {Error} when a response is not OK (its status outside 200-299),
  *   naming the URL and the status; and a failed `fetch`'s own error, its
@@ -95,7 +95,7 @@ export async function open(
 ): Promise<Env> {
   const list: readonly OpenSource[] = isList(sources) ? sources : [sources];
   const inputs = await Promise.all(list.map((source, index) => read(source, index, options)));
-  return load(inputs);
+  return load(inputs, options);
 }
 
 /** `Array.isArray`, which does not narrow a union with a `readonly` array by itself. */

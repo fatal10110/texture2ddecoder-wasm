@@ -82,6 +82,17 @@ export type LoadSource =
   | LoadInput
   | { name?: string; data: Uint8Array | ArrayBuffer };
 
+/** Options of {@link load}, also accepted by `open()`. */
+export interface LoadOptions {
+  /**
+   * Editor version to use when a file records none or has a stripped version
+   * (`"0.0.0"`), and its enclosing bundle supplies no usable revision.
+   * Recorded versions and usable bundle revisions always take precedence.
+   * Use a version such as `"2019.4.41f2"`; `"0.0.0"` is not an editor version.
+   */
+  unityVersion?: string;
+}
+
 /** One unpacked file, as {@link Env.files} yields it. */
 export interface LoadedFile {
   /**
@@ -140,10 +151,12 @@ export interface Env {
    *
    * A SerializedFile below format 7 does not record the editor that wrote it;
    * when it is a node of a bundle, its objects' `version` is the bundle's
-   * `unityRevision`, as upstream does, and `[0, 0, 0, 0]` otherwise. A
+   * `unityRevision`, as upstream does, then the caller's
+   * {@link LoadOptions.unityVersion}, and `[0, 0, 0, 0]` without either. A
    * SerializedFile whose version was stripped at build time (`"0.0.0"`) takes
    * the `unityRevision` of the bundle it is a node of, too, and keeps
-   * `[0, 0, 0, 0]` when there is none - editors write `"0.0.0"` in the header
+   * the caller's {@link LoadOptions.unityVersion} when there is none, or
+   * `[0, 0, 0, 0]` without either - editors write `"0.0.0"` in the header
    * of a stripped bundle as well. Its objects stay readable; a class reader
    * that branches on `version` has to refuse `[0, 0, 0, 0]` with
    * `UnsupportedError` rather than guess.
@@ -357,15 +370,26 @@ interface EnvIndex {
  *   an `ArrayBuffer` is wrapped, never copied. Files without a name are
  *   called `"input <index>"`, which is fine for a bundle but not for a loose
  *   file whose name is looked up (see {@link LoadInput.name}).
+ * @param options a fallback editor version for files that record none
  * @returns an {@link Env} whose `files` hold every unpacked file
- * @throws {TypeError} for an input that is neither bytes nor `{ name, data }`
+ * @throws {TypeError} for an input that is neither bytes nor `{ name, data }`,
+ *   or a `unityVersion` that is not a string
+ * @throws {RangeError} for a `unityVersion` that is not `major.minor.patch`
+ *   with an optional build suffix and custom postfix, or whose major version is 0
  * @throws {UnsupportedError} for a container, compression type or nesting depth
  *   this library does not implement, its message naming the containers it was
  *   found under, outermost first
  * @throws {CorruptError} when a file claims to be a container but does not hold
  *   together, named the same way
  */
-export function load(inputs: LoadSource | readonly LoadSource[]): Env {
+export function load(inputs: LoadSource | readonly LoadSource[], options: LoadOptions = {}): Env {
+  const { unityVersion } = options;
+  if (unityVersion !== undefined) {
+    if (typeof unityVersion !== "string") throw new TypeError("unityVersion must be a string");
+    if (!/^[1-9]\d*\.\d+\.\d+(?:[A-Za-z]+\d+.*)?$/s.test(unityVersion)) {
+      throw new RangeError(`unityVersion ${JSON.stringify(unityVersion)} does not name an editor`);
+    }
+  }
   const out: Collected = { files: [], serialized: [], byName: new Map(), lastContainer: 0 };
   const list: readonly LoadSource[] = isList(inputs) ? inputs : [inputs];
   list.forEach((input, index) => {
@@ -376,7 +400,7 @@ export function load(inputs: LoadSource | readonly LoadSource[]): Env {
   let index: EnvIndex | undefined;
   const indexed = (): EnvIndex => {
     if (index) return index;
-    index = indexSerializedFiles(out.serialized);
+    index = indexSerializedFiles(out.serialized, unityVersion);
     // `obj.read()` reads a texture's `.resS` data through this env (#103).
     const readResource = env.readResource.bind(env);
     for (const object of index.objects) setResourceReader(object, readResource);
@@ -551,7 +575,10 @@ function readRange({ path, data }: LoadedFile, { offset, size }: ResourceRef): U
  * objects without a word would hand back an `objects` with holes in it. Its
  * bytes stay in `files` either way.
  */
-function indexSerializedFiles(candidates: readonly SerializedCandidate[]): EnvIndex {
+function indexSerializedFiles(
+  candidates: readonly SerializedCandidate[],
+  unityVersion: string | undefined,
+): EnvIndex {
   const objects: ObjectReader[] = [];
   const sourceOf = new Map<ObjectReader, SerializedFileEntry>();
   // Upstream matches externals with `OrdinalIgnoreCase`; lower-casing agrees
@@ -563,7 +590,7 @@ function indexSerializedFiles(candidates: readonly SerializedCandidate[]): EnvIn
   for (const { source, path, data, revision, container } of candidates) {
     let entry: SerializedFileEntry;
     try {
-      entry = readEntry(path, data, revision, container, source);
+      entry = readEntry(path, data, revision, container, source, unityVersion);
     } catch (error) {
       throw withSource(source, error);
     }
@@ -584,20 +611,20 @@ function indexSerializedFiles(candidates: readonly SerializedCandidate[]): EnvIn
  *
  * A file below format 7 does not record the editor that wrote it, so one found
  * in a bundle takes the bundle's `unityRevision` first, before any reader
- * copies the version (upstream `LoadAssetsFromMemory`). Anywhere else it keeps
- * `[0, 0, 0, 0]`, as upstream's loose and `UnityWebData` paths do.
+ * copies the version (upstream `LoadAssetsFromMemory`).
  *
  * A version-stripped file (upstream `CheckStrippedVersion`) takes the revision
  * of the bundle it is a node of too. Upstream takes the first bundle revision
  * its whole load saw instead; the enclosing bundle is UnityPy's fallback, which
  * names the build that wrote this file rather than whichever input came first.
  *
- * When that revision is missing, empty or stripped too, the file keeps
- * `[0, 0, 0, 0]`.
+ * When that revision is missing, empty or stripped too, use the caller's
+ * fallback (upstream `DefaultVersion`), or keep `[0, 0, 0, 0]` without one.
  *
  * @param revision `unityRevision` of the bundle the file is a node of
  * @param container the container the file came out of
  * @param source the containers it was found under, then its own path
+ * @param unityVersion the caller's fallback editor version
  * @throws {CorruptError} when the object table lists a path id twice. Unity
  *   never writes that, and either choice of object would leave a pointer to
  *   it meaning one of two things; upstream's `ObjectsDic.Add` throws too.
@@ -608,6 +635,7 @@ function readEntry(
   revision: string | undefined,
   container: ContainerId,
   source: string,
+  unityVersion: string | undefined,
 ): SerializedFileEntry {
   const file = readSerializedFile(data);
   // An empty revision names nothing; upstream checks `IsNullOrEmpty`.
@@ -616,12 +644,12 @@ function readEntry(
   if (revision && (file.header.version < V.Unknown_7 || stripped)) {
     setUnityVersion(file, revision);
   }
-  // ponytail: a stripped file with no usable revision keeps `[0, 0, 0, 0]`,
-  // like AssetStudio does for the `"0.0.0"` header editors write (UnityPy
-  // raises earlier, in `BundleFile.parse_version`). Typetree reads do not need
-  // the version, so its objects stay readable; a version-gated class reader
-  // must refuse `[0, 0, 0, 0]` with `UnsupportedError` itself (decided on PR
-  // #107). A caller-supplied version (#105) is the upgrade path.
+  if (
+    unityVersion && (file.header.version < V.Unknown_7 || stripped) &&
+    file.version.every((part) => part === 0)
+  ) {
+    setUnityVersion(file, unityVersion);
+  }
   const name = baseName(path);
   const objects = new Map<bigint, ObjectReader>();
   for (const info of file.objects) {

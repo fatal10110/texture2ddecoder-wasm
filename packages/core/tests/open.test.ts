@@ -116,6 +116,15 @@ test("bytes and { name, data } pass straight to load()", async () => {
   );
 });
 
+test("open passes the caller's Unity version to class readers of a stripped bundle", async () => {
+  const stripped = loadFixture("editor/6000.3.25f1/material/lz4-stripped/material");
+  const env = await open(new Blob([stripped]), { unityVersion: "6000.3.25f1" });
+  assert.ok(env.objects.length > 0);
+  assert.ok(env.objects.every((o) => o.version.join(".") === "6000.3.25.1"));
+  const [material] = env.assets("Material");
+  assert.ok(material!.data.name.length > 0);
+});
+
 test("a non-OK response throws, naming the URL and the status", async () => {
   const url = `${base}/bundles/missing.bundle`;
   await assert.rejects(open(url), { message: `${url}: HTTP 404 Not Found` });
