@@ -22,10 +22,18 @@ import type {
   UnityVersion,
 } from "unity-asset-reader";
 import type { RgbaImage } from "./convert.js";
-import { decodeTexture2D } from "./decode.js";
+import { decodeTextureObject } from "./decode.js";
 
 /** Options of {@link decodeSprite}. */
 export interface DecodeSpriteOptions {
+  /**
+   * Reuse textures across sequential decodes. Keys are the Texture2D objects
+   * from `env.objects`; values are `decodeTexture2D` images (RGBA, top row first).
+   * Missing textures are decoded and added only on success. This map belongs
+   * to the caller: clear or delete entries to free pixels or after editing
+   * the input. No textures are retained by the package without this option.
+   */
+  decodedTextures?: Map<ObjectReader, RgbaImage>;
   /**
    * Clear the pixels outside the sprite's mesh, as upstream does for a sprite
    * whose packing mode is Tight: they become transparent black. Without it
@@ -81,9 +89,9 @@ export interface SpriteSource {
  * other way, mistranslates the same upstream call rather than checking it
  * independently (#34; verification tracked in #160).
  *
- * Every call decodes the texture again. ponytail: an atlas with many sprites
- * is decoded once per sprite; a cache of decoded textures (or a variant that
- * takes the decoded atlas) is the upgrade path when that shows up in a profile.
+ * With `options.decodedTextures`, sequential calls reuse their shared atlas.
+ * The caller owns the map and decides how long to retain its decoded pixels.
+ * Without it, every call decodes the texture again.
  *
  * Unlike upstream, which hands back no image or an unmasked one, this throws
  * where the result would be wrong: see below.
@@ -121,8 +129,9 @@ export async function decodeSprite(
   env: Env,
   options: DecodeSpriteOptions = {},
 ): Promise<RgbaImage> {
-  const source = findSpriteSource(sprite, env);
-  const image = await decodeTexture2D(source.texture);
+  const source = locateSprite(sprite, env);
+  refuseAlphaTexture(source.alphaTexture, `sprite "${source.sprite.m_Name}" (path id ${sprite.pathId})`);
+  const image = await decodeTextureObject(source.texture, options.decodedTextures);
   return cutSprite(image, source.sprite, source.rect, sprite.version, options.tightMesh === true);
 }
 

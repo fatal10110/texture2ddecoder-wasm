@@ -4,14 +4,15 @@
 // their results by the asset's type; each `@ts-expect-error` fails the compile
 // if the line after it stops being an error.
 
-import type { Asset, Env } from "unity-asset-reader";
-import { decodeImage, imageInfo, images, isImage } from "../../src/index.js";
+import type { Asset, Env, ObjectReader } from "unity-asset-reader";
+import { decodeImage, decodeSprite, imageInfo, images, isImage } from "../../src/index.js";
 import type {
   DecodedImage,
   ImageAsset,
   ImageInfo,
   SpriteImageInfo,
   TextureImageInfo,
+  RgbaImage,
 } from "../../src/index.js";
 
 /** `A` and `B` are the same type. */
@@ -52,7 +53,8 @@ export async function usage(env: Env): Promise<UsageResult> {
     }
   }
   const all: DecodedImage[] = [];
-  for await (const image of images(env, { onError: "throw" })) {
+  const decodedTextures = new Map<ObjectReader, RgbaImage>();
+  for await (const image of images(env, { onError: "throw", decodedTextures })) {
     // every Texture2D and Sprite, decoded
     all.push(image);
   }
@@ -73,6 +75,9 @@ export function typeChecks(
   void decodeImage(sprite).then((image) => {
     expectType<Equal<typeof image, DecodedImage<SpriteImageInfo>>>(true);
   });
+  const decodedTextures = new Map<ObjectReader, RgbaImage>();
+  void decodeImage(texture, { decodedTextures });
+  void decodeSprite(sprite.reader, sprite.env, { decodedTextures, tightMesh: true });
   if (info.kind === "Sprite") {
     expectType<Equal<typeof info, SpriteImageInfo>>(true);
   } else {

@@ -5,12 +5,12 @@ import type {
   Env,
   ObjectReader,
   Rectf,
-  Texture2DData,
   Vector2,
   Vector4,
 } from "unity-asset-reader";
-import { decodeTexture2D, ensureTexture, FORMAT_NAMES } from "./decode.js";
+import { decodeTextureObject, ensureTexture, FORMAT_NAMES } from "./decode.js";
 import { decodeSprite, locateSprite, spriteSize } from "./sprite.js";
+import type { DecodeSpriteOptions } from "./sprite.js";
 
 // ES2020 has no timers in its lib, and this package takes no DOM or Node
 // types (R4); every browser, Worker and Node.js has this one.
@@ -157,7 +157,7 @@ export type ImageInfo = TextureImageInfo | SpriteImageInfo;
 export type DecodedImage<I extends ImageInfo = ImageInfo> = I & { rgba: Uint8Array };
 
 /** Options of {@link decodeImage}. */
-export interface DecodeImageOptions {
+export interface DecodeImageOptions extends Pick<DecodeSpriteOptions, "decodedTextures"> {
   /**
    * Where the WASM files are, for the first decode's auto-init: see
    * `initTexture`. Browsers need it unless `initTexture` was called first;
@@ -258,8 +258,10 @@ export function imageInfo(asset: ImageAsset): ImageInfo {
  * before.
  *
  * @param asset a Texture2D or Sprite asset (see {@link isImage})
- * @param options where the WASM files are, for the auto-init
- * @returns a new {@link DecodedImage}
+ * @param options WASM location and an optional caller-owned decoded texture map
+ * @returns a new {@link DecodedImage}; a cached Texture2D shares its RGBA array
+ *   with the map, so keep it unmodified and do not transfer its buffer while
+ *   retaining that entry. Sprite pixels are always a new array.
  * @throws {TypeError} when `asset` is not a Texture2D or Sprite asset
  * @throws {Error} when the WASM decoder cannot be loaded
  * @throws {UnsupportedError} for a format with no decoder here, and what
@@ -292,8 +294,8 @@ export async function decodeImage(
   // The reader, not `asset.data`: `decodeTexture2D` takes `obj.read()`'s shape.
   const image =
     asset.type === "Texture2D"
-      ? await decodeTexture2D(asset.reader.read<Texture2DData>())
-      : await decodeSprite(asset.reader, asset.env);
+      ? await decodeTextureObject(asset.reader, options.decodedTextures)
+      : await decodeSprite(asset.reader, asset.env, { decodedTextures: options.decodedTextures });
   return { ...info, width: image.width, height: image.height, rgba: image.data };
 }
 
@@ -308,7 +310,8 @@ export async function decodeImage(
  * decoder that cannot be loaded throws, and so does parsing the env.
  *
  * @param env the env to decode the images of
- * @param options `onError`, and `wasmPath` for the auto-init
+ * @param options `onError`, `wasmPath` for auto-init, and `decodedTextures` to
+ *   reuse atlas pixels. The caller owns the map; no implicit cache is created.
  * @throws {TypeError} for an `onError` other than `"throw"` or `"skip"`
  * @throws what {@link decodeImage} throws, with `onError: "throw"`
  * @example
@@ -330,7 +333,7 @@ export async function* images(
     await ensureTexture({ wasmPath: options.wasmPath });
     let image: DecodedImage;
     try {
-      image = await decodeImage(asset);
+      image = await decodeImage(asset, options);
     } catch (error) {
       if (onError === "skip") continue;
       throw error;
